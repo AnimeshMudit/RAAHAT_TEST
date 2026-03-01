@@ -24,14 +24,17 @@ def is_safe(text):
             return False
     return True
 
-def get_response(text,history=[]):
+def get_response(text, history=[], context=""):
     if not is_safe(text):
-        return "⚠️ I am concerned about your safety.Please call the helpline: 14416."
+        return "I am concerned about your safety.Please call the helpline: 14416."
     
-    messages = [{"role":"system","content":SYSTEM_PROMPT}]
+    dynamic_prompt = SYSTEM_PROMPT + f"\n\nHere is some verified reference material from the psychological first aid guide. Use it to inform your answer if relevant:\n---\n{context}\n---"
+    
+    messages = [{"role":"system","content":dynamic_prompt}]
 
     for msg in history:
-         messages.append({"role":msg["role"],"content":msg["content"]})
+         role = "assistant" if msg["role"] == "ai" else msg["role"]
+         messages.append({"role": role, "content": msg["content"]})
 
     messages.append({"role":"user","content":text})
 
@@ -39,7 +42,7 @@ def get_response(text,history=[]):
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile", 
             messages=messages,
-            temperature=0.6,
+            temperature=0.4,
             max_tokens=150
         )
         return completion.choices[0].message.content
@@ -76,3 +79,16 @@ if __name__=="__main__":
     
     # We pass BOTH the new message AND the history
     print(Fore.GREEN + f"Bot:  {get_response(msg3, mock_db_history)}\n")  
+    
+    # Test 4: The RAG / Context Verification Test
+    print(Fore.CYAN + "\n--- Testing Vector Context (RAG) ---")
+    
+    # We pretend knowledge.py fetched this highly specific paragraph from your PDF.
+    # (I added a fake "Code Blue-Indigo" protocol to prove it reads THIS text, not the internet).
+    mock_retrieved_context = "The core actions of Psychological First Aid (PFA) involve linking survivors to services. If you encounter a Level 3 severe panic response, you must immediately initiate the 'Code Blue-Indigo' grounding protocol before doing anything else."
+    
+    msg4 = "What should I do if a survivor has a Level 3 severe panic response?"
+    print(Fore.YELLOW + f"User: {msg4}")
+    
+    # We pass the message, empty history, and our mock CONTEXT
+    print(Fore.GREEN + f"Bot:  {get_response(msg4, history=[], context=mock_retrieved_context)}\n")

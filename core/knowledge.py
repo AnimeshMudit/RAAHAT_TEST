@@ -1,43 +1,69 @@
 import os
-from pypdf import PdfReader
+import PyPDF2
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+from langchain_huggingface import HuggingFaceEmbeddings
 
-data=r"C:\Users\Animesh\Documents\Projects\RAAHAT_TAHAAR\data"
-
-def extract_from_pdf(file_path):
-    """Reads a PDF and returns all its text as a single string."""
-    with open(file_path,"rb") as f:
-        file=PdfReader(f)
-
-        full_page=""
+def extract_text(file_path):
+    print(f"Reading:{file_path}...")
+    
+    raw=''
+    
+    with open(file_path,'rb') as f:
+        reader=PyPDF2.PdfReader(f)
         
-        for page in file.pages:
-            page_text=page.extract_text()
-            
-            if page_text:
-                full_page+=page_text+"\n"
+        for page in reader.pages:
+            extract=page.extract_text()
+            if extract:
+                raw+=extract+"\n"
                 
-    return full_page
+    return raw
 
-def chunk_text(text,chunk_size=1000):
-    chunks=[]
+def split_chunks(raw):
+    print("Chopping text into chunks...")
+    splitter=RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200,
+        length_function=len
+    )
     
-    for i in range(0,len(text),chunk_size):
-        chunk=text[i:i+chunk_size]
-        chunks.append(chunk)
-
+    chunks=splitter.split_text(raw)
     return chunks
+
+def create_vector(chunks):
+    print("Converting text into math (Vectorizing)... this might take a minute.")
+    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     
-if __name__=="__main__":
-    sample = os.path.join(data, "Grounding-Exercise.pdf")
+    vector_store = FAISS.from_texts(chunks, embeddings)
+    return vector_store
+
+def search_knowledge(query, vector_store):
+    print(f"\n Searching for: '{query}'")
     
-    # 1. Extract the giant string
-    text = extract_from_pdf(sample)
+    results = vector_store.similarity_search(query, k=3)
     
-    # 2. Chop it up into chunks of 500 characters
-    text_chunks = chunk_text(text, chunk_size=500)
+    return [doc.page_content for doc in results]
+
+if __name__ == "__main__":
+    test_file = "data/sample.pdf" 
     
-    print(f"Total chunks created: {len(text_chunks)}")
-    print("--- CHUNK #1 ---")
-    print(text_chunks[0])
-    print("--- CHUNK #2 ---")
-    print(text_chunks[1])
+    if os.path.exists(test_file):
+        document_text = extract_text(test_file)
+        document_chunks = split_chunks(document_text)
+        
+        # 1. Create the Vector Database
+        vector_db = create_vector(document_chunks)
+        print("✅ Vector Database created successfully!")
+        
+        # 2. Ask a question!
+        user_question = "What are the core actions of psychological first aid?"
+        
+        # 3. Search the database
+        answers = search_knowledge(user_question, vector_db)
+        
+        print("\n--- 🎯 TOP SEARCH RESULT ---")
+        print(answers[0])
+        print("---------------------------")
+        
+    else:
+        print(f"❌ Error: Could not find {test_file}.")
