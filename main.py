@@ -1,6 +1,7 @@
 import os
 import colorama
 from colorama import Fore,Style
+import getpass
 
 from core import memory
 from core import brain
@@ -31,21 +32,53 @@ def main():
             print(Fore.RED + "Warning: PDFs were empty or unreadable.")
             vector_db = None
     else:
-        print(Fore.RED + f"\ Warning: '{data_folder}' folder not found. RAAHAT will run without context.")
+        print(Fore.RED + f" Warning: '{data_folder}' folder not found. RAAHAT will run without context.")
         vector_db = None
         
     print(Fore.CYAN + "\n--- SYSTEM LOGIN ---")
-    user_id = input(Fore.YELLOW + "Enter your username: " + Style.RESET_ALL).strip()
     
-    print(Fore.GREEN + f"\nWelcome, {user_id}. RAAHAT is online and connected to Supabase. Type 'quit' to exit.\n")
+    #Authentication
+    while True:
+        user_name = input(Fore.YELLOW + "Enter your username: " + Style.RESET_ALL).strip()
+        password = getpass.getpass(Fore.YELLOW + "Enter your password: " + Style.RESET_ALL) #need to know the working
+         
+        user_id = memory.get_or_create_user(user_name,password) 
+        if user_id:
+            print(Fore.GREEN + f"\nWelcome, {user_name}. RAAHAT is online and connected to Supabase. Type 'quit' to exit.\n")
+            break
+        else:
+            print(Fore.RED + "❌ Login failed. Wrong username or password.")
+            
+    #greeting message
+    print(Fore.CYAN + "—" * 60)
+    
+    greeting = (
+        f"Welcome back, {user_name}.\n\n"
+        "The world asks a lot of you, but here, you don't have to be anyone but yourself.\n"
+        "Your secrets are safe, your burdens are shared, and your pace is respected.\n"
+        "Whenever you're ready to let it out, I'm here to listen."
+    )
+    
+    print(Fore.LIGHTWHITE_EX + greeting)
+    print(Fore.CYAN + "—" * 60 + "\n")
+
+
+    #saving greeting message to supabase so ai know it spoke first
+    memory.save_message(user_id, "ai", greeting)
     
     while True:
         #User Input
         user_input = input(Fore.YELLOW + "You: " + Style.RESET_ALL)
         
+        if not user_input: # Handle empty enters
+            continue
+        
         if user_input.lower() in ['quit', 'exit']:
             print(Fore.CYAN + "RAAHAT shutting down. Take care.")
             break
+        
+        #user query is saved 
+        memory.save_message(user_id, "user", user_input)
         
         context_text = ""
         if vector_db:
@@ -62,8 +95,7 @@ def main():
         # Speak to the User
         print(Fore.GREEN + f"RAAHAT: {response}\n")
         
-        # Save State to the Cloud
-        memory.save_message(user_id, "user", user_input)
+        # Save AI response to the Cloud
         memory.save_message(user_id, "ai", response)
 
 if __name__ == "__main__":
