@@ -13,20 +13,25 @@ def main():
     print(Fore.CYAN + "========================================")
     
     data_folder = "data"
-    if os.path.exists(data_folder):
-        print(Fore.YELLOW + f"\nReading all knowledge from {data_folder} directory...")
+    faiss_path = "faiss_index"
+    
+    if os.path.exists(faiss_path):
+        vector_db = knowledge.load_vector_store()
+        print(Fore.GREEN + "Vector Vault Online! (Loaded from disk)")
         
+    elif os.path.exists(data_folder):
+        print(Fore.YELLOW + f"\nFirst boot detected! Reading knowledge from {data_folder} directory...")
         raw_text = knowledge.load_all_pdfs_from_folder(data_folder)
         
         if raw_text.strip():
             chunks = knowledge.split_chunks(raw_text)
-            vector_db = knowledge.create_vector_store(chunks)
+            vector_db = knowledge.create_vector_store(chunks) 
             print(Fore.GREEN + f"Vector Vault Online! Processed {len(chunks)} total chunks.")
         else:
             print(Fore.RED + "Warning: PDFs were empty or unreadable.")
             vector_db = None
     else:
-        print(Fore.RED + f"\nWarning: '{data_folder}' folder not found. RAAHAT will run without context.")
+        print(Fore.RED + f"\ Warning: '{data_folder}' folder not found. RAAHAT will run without context.")
         vector_db = None
         
     print(Fore.CYAN + "\n--- SYSTEM LOGIN ---")
