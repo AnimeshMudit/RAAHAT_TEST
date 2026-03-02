@@ -43,18 +43,29 @@ def split_chunks(raw):
     chunks=splitter.split_text(raw)
     return chunks
 
-def create_vector(chunks):
-    print("Converting text into math (Vectorizing)... this might take a minute.")
+FAISS_DB_PATH = "faiss_index"
+
+def create_vector_store(chunks):
+    print("🧠 Converting text into math (Vectorizing)... this might take a minute.")
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     
     vector_store = FAISS.from_texts(chunks, embeddings)
+    
+    vector_store.save_local(FAISS_DB_PATH)
+    print("Vector Vault permanently saved to disk!")
+    
     return vector_store
 
+def load_vector_store():
+    """Loads the pre-calculated vector database from your hard drive."""
+    print("Loading existing Vector Vault from disk... (Skipping PDF extraction!)")
+    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    
+    return FAISS.load_local(FAISS_DB_PATH, embeddings, allow_dangerous_deserialization=True)
+
 def search_knowledge(query, vector_store):
-    print(f"\n Searching for: '{query}'")
-    
+    """Translates the user's question into math and finds the closest text."""
     results = vector_store.similarity_search(query, k=3)
-    
     return [doc.page_content for doc in results]
 
 def load_all(folder_path="data"):
@@ -67,15 +78,15 @@ def load_all(folder_path="data"):
             combined_text += extract_text(file_path) + "\n"
             
     return combined_text
-
-def create_vector_store(chunks):
+#old stuff...slow
+'''def create_vector_store(chunks):
     print("Converting text into math (Vectorizing)... this might take a minute.")
     
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     
     # Create the vector database 
     vector_store = FAISS.from_texts(chunks, embeddings)
-    return vector_store
+    return vector_store'''
 
 def search_knowledge(query, vector_store):
     results = vector_store.similarity_search(query, k=3)
