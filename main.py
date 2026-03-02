@@ -29,8 +29,10 @@ def main():
         print(Fore.RED + f"\nWarning: '{data_folder}' folder not found. RAAHAT will run without context.")
         vector_db = None
         
-    user_id = "Animesh_Terminal"
-    print(Fore.GREEN + "\nRAAHAT is online and connected to Supabase Memory. Type 'quit' to exit.\n")
+    print(Fore.CYAN + "\n--- SYSTEM LOGIN ---")
+    user_id = input(Fore.YELLOW + "Enter your username: " + Style.RESET_ALL).strip()
+    
+    print(Fore.GREEN + f"\nWelcome, {user_id}. RAAHAT is online and connected to Supabase. Type 'quit' to exit.\n")
     
     while True:
         #User Input

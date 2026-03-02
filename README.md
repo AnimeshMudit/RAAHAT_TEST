@@ -9,7 +9,7 @@ The goal is to bridge the gap between expensive therapy and accessible mental he
 
 ## 🛠️ Tech Stack
 * **Language:** Python 3.10+
-* **Brain (LLM):** Groq API (Llama 3.2 / 3-8B)
+* **Brain (LLM):** Groq API (Llama 3.3-70B)
 * **Memory (Database):** Supabase (PostgreSQL)
 * **Interface:** Hybrid CLI (Command Line) -> Future PWA
 * **Safety:** Custom Python Middleware + Regex Guardrails

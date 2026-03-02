@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv # this is to load the .env file
 from supabase import create_client #this helps in executing supabase commands
+from colorama import Fore
 
 load_dotenv()       #this loads the .env file 
 url = os.getenv("SUPABASE_URL")     #gets the url by looking at system active memory
@@ -9,27 +10,56 @@ key = os.getenv("SUPABASE_KEY")     #gets the key
 supabase = create_client(url,key)   #i guess it establish the connection between database and my code 
 
 
-def save_message(user_id,role,content):
-    d = {
+
+def get_or_create_user(username,password):
+    f = supabase.table("users").select("*").eq("username",username).execute() #returns the API response object and .data converts it to list
+    if len(f.data):
+        if f.data[0]["password_hash"] == password:
+            return f.data[0]["id"]
+        else:
+            return None
+    else:
+        d = {
+            "username" : username,
+            "password_hash" : password
+        }
+        new_user = supabase.table("users").insert(d).execute()
+        return new_user.data[0]["id"]
+            
+
+def save_message(user_id, role, content):
+    d={
         "user_id" : user_id,
         "role" : role,
         "content" : content
     }
-    supabase.table("chats").insert(d).execute()
-
+    supabase.table("messages").insert(d).execute()
+    
 def fetch_history(user_id):
-    response = supabase.table("chats").select("*").eq("user_id",user_id).execute()
+    response = supabase.table("messages").select("*").eq("user_id",user_id).order("created_at").execute()
     return response.data
 
+
 if __name__ == "__main__":
-    print("⏳ Sending data to the cloud...")
+    print("⏳ Testing the Relational Database Flow...")
     
-    # 1. Test saving a message
-    save_message("Anshuman", "user", "Hello Raahat, this is my first cloud memory!")
+    # 1. Test Authentication (This will create you if you don't exist, or log you in if you do)
+    print("\n🔐 Attempting Login...")
+    test_user_id = get_or_create_user("Anshuman", "my_secure_password")
     
-    # 2. Test reading it back
-    history = fetch_history("Anshuman")
-    
-    print("\n📜 Reading from Memory:")
-    for row in history:
-        print(f"[{row['created_at'][:10]}] {row['role']}: {row['content']}")
+    if test_user_id:
+        print(f"✅ Login Successful! Your UUID is: {test_user_id}")
+        
+        # 2. Test saving a message (Notice we pass the UUID variable, not your name!)
+        print("\n💾 Saving a test message to the 'messages' table...")
+        save_message(test_user_id, "user", "Testing the new two-table architecture!")
+        
+        # 3. Test reading it back
+        print("\n📜 Reading from Memory:")
+        history = fetch_history(test_user_id)
+        
+        for row in history:
+            # We slice the timestamp so it looks pretty in the terminal
+            print(f"[{row['created_at'][:19]}] {row['role']}: {row['content']}")
+    else:
+        print(Fore.RED + "❌ Login failed. Wrong password.")
