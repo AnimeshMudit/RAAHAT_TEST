@@ -1,215 +1,334 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="h-full" lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAAHAT | Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>RAAHAT - Wellness Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap"
+        rel="stylesheet" />
+
     <style>
-        /* THE DOMIO VIBE: Warm, luxury, minimalist architecture */
+        :root {
+            --bg-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2070');
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --inner-glass: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --greeting-color: #ffffff;
+            --panel-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.35);
+        }
+
+        .light-mode {
+            /* REFINED LIGHT THEME PALETTE */
+            --bg-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=2070');
+            --glass-bg: rgba(248, 250, 252, 0.82);
+            --inner-glass: rgba(30, 41, 59, 0.06);
+            --glass-border: rgba(30, 41, 59, 0.2);
+            /* Deep slate border for definition */
+            --text-main: #1e293b;
+            /* High-contrast Slate */
+            --text-muted: #64748b;
+            --greeting-color: #0f172a;
+            /* Solid contrast for time-greeting */
+            --panel-shadow: 0 12px 40px -10px rgba(30, 41, 59, 0.12);
+        }
+
         body {
             font-family: 'Outfit', sans-serif;
-            background: url('https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=2560&auto=format&fit=crop') no-repeat center center fixed;
+            background-image: var(--bg-image);
             background-size: cover;
-            color: #e2e8f0;
-            margin: 0;
-            height: 100vh;
-            overflow: hidden;
+            background-position: center;
+            background-attachment: fixed;
+            transition: all 0.6s ease;
+        }
+
+        .moving-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background: inherit;
+            animation: gentle-pan 25s alternate infinite ease-in-out;
+            will-change: transform;
+        }
+
+        @keyframes gentle-pan {
+            0% {
+                transform: scale(1.0);
+            }
+
+            100% {
+                transform: scale(1.03);
+            }
         }
 
         .bg-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 15, 18, 0.4); 
-            backdrop-filter: blur(8px); 
-            -webkit-backdrop-filter: blur(8px);
+            position: fixed;
+            inset: 0;
             z-index: -1;
+            background: rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(2px);
         }
 
         .glass-panel {
-            background: linear-gradient(135deg, rgba(30, 30, 35, 0.45) 0%, rgba(15, 15, 18, 0.65) 100%);
-            backdrop-filter: blur(50px);
-            -webkit-backdrop-filter: blur(50px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-top: 1px solid rgba(255, 255, 255, 0.15); 
-            border-left: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.7);
+            background: var(--glass-bg);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            box-shadow: var(--panel-shadow);
+            color: var(--text-main);
         }
 
         .inner-glass {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-        }
-        
-        .inner-glass-hover:hover {
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: var(--inner-glass);
+            backdrop-filter: blur(4px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
         }
 
-        .center-panel-bg {
-            background: radial-gradient(circle at top right, rgba(255,255,255,0.03) 0%, transparent 70%);
+        /* DYNAMIC CHAT BUBBLES */
+        .message-bubble-left {
+            background: #ffffff;
+            color: #0f172a;
+            border-radius: 4px 18px 18px 18px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
-        /* THE FIX: Buttery smooth CSS pan and zoom for the left panel */
-        @keyframes gentle-pan {
-            0% { transform: scale(1.0) translate(0px, 0px); }
-            50% { transform: scale(1.1) translate(-2%, 2%); }
-            100% { transform: scale(1.0) translate(0px, 0px); }
-        }
-        .moving-image {
-            animation: gentle-pan 35s alternate infinite ease-in-out;
-            will-change: transform; /* Tells the browser to use GPU acceleration */
+        .light-mode .message-bubble-left {
+            background: #1e293b;
+            /* Dark bubble for AI in Light Mode for focus */
+            color: #f8fafc;
         }
 
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+        .message-bubble-right {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--text-main);
+            border-radius: 18px 18px 4px 18px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .light-mode .message-bubble-right {
+            background: rgba(30, 41, 59, 0.08);
+            border: 1px solid rgba(30, 41, 59, 0.15);
+        }
     </style>
 </head>
-<body class="p-4 md:p-8 flex justify-center items-center">
-    
+
+<body class="h-screen overflow-hidden p-6">
+    <div class="moving-bg"></div>
     <div class="bg-overlay"></div>
 
-    <div class="glass-panel w-full h-full max-w-[1400px] rounded-[2.5rem] grid grid-cols-1 lg:grid-cols-4 gap-5 p-5 relative">
-
-        <div class="hidden lg:flex flex-col gap-5 col-span-1 h-full">
-            <div class="pl-3 pt-3">
-                <h1 class="text-3xl font-medium tracking-widest text-white drop-shadow-md">RAAHAT</h1>
-            </div>
-
-            <div class="flex-grow rounded-3xl overflow-hidden relative inner-glass border-none shadow-2xl">
-                <img src="https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover opacity-80 moving-image">
-                <div class="absolute inset-0 bg-gradient-to-t from-[#0f1115] via-transparent to-transparent"></div>
-            </div>
-
-            <div class="inner-glass rounded-3xl p-6 h-48 flex flex-col justify-center transition-transform hover:scale-[1.02] cursor-pointer">
-                <h2 class="text-xl font-medium mb-2 leading-tight text-white">Daily Wellness<br>Companion</h2>
-                <p class="text-xs text-slate-300 leading-relaxed font-light">Explore personalized guidance on grounding and mindfulness.</p>
-            </div>
-        </div>
-
-        <div class="col-span-1 lg:col-span-2 flex flex-col h-full inner-glass center-panel-bg rounded-3xl p-7 relative">
-            
-            <div class="flex justify-start mb-10">
-                <div class="inner-glass rounded-full p-1.5 flex gap-1">
-                    <button class="px-6 py-2 rounded-full text-sm font-medium bg-white/10 text-white shadow-sm transition-all border border-white/10">Chat</button>
-                    <button class="px-6 py-2 rounded-full text-sm font-medium text-slate-400 hover:text-white transition-all">Mindfulness</button>
-                    <button class="px-6 py-2 rounded-full text-sm font-medium text-slate-400 hover:text-white transition-all">Resources</button>
+    <main class="flex h-full w-full gap-5 max-w-[1500px] mx-auto">
+        <aside class="w-1/4 flex flex-col gap-5 h-full">
+            <section class="glass-panel flex-grow p-7 flex flex-col justify-between overflow-hidden">
+                <div class="pt-2">
+                    <h1 class="text-3xl font-semibold tracking-widest mb-4">RAAHAT</h1>
+                    <p class="text-base font-light text-[var(--text-muted)] leading-snug">The private sanctuary for your
+                        mind.</p>
                 </div>
-            </div>
-
-            <div class="mb-8">
-                <p id="dynamic-greeting" class="text-xs text-slate-300 font-medium tracking-widest uppercase mb-3"></p>
-                <h2 class="text-4xl lg:text-5xl font-light text-white leading-tight drop-shadow-sm">Your Path to<br><span class="font-medium">Wellness.</span></h2>
-            </div>
-
-            <div class="flex-grow overflow-y-auto space-y-6 mb-4 pr-2">
-                <div class="flex items-start gap-4">
-                    <img src="https://ui-avatars.com/api/?name=R&background=1e293b&color=e2e8f0" class="w-9 h-9 rounded-full border border-white/10 shadow-lg mt-1">
-                    <div class="inner-glass rounded-3xl rounded-tl-none px-6 py-4 text-sm text-slate-100 max-w-[85%] leading-relaxed shadow-md">
-                        Welcome to RAAHAT, Animesh. Let's start with a grounding breath...
-                    </div>
-                </div>
-                <div class="flex items-start gap-4 flex-row-reverse">
-                    <div class="w-9 h-9 rounded-full bg-slate-800 border border-white/10 shadow-lg mt-1 flex items-center justify-center text-xs font-bold text-slate-300">AN</div>
-                    <div class="bg-white/10 border border-white/10 rounded-3xl rounded-tr-none px-6 py-4 text-sm text-white max-w-[85%] leading-relaxed shadow-md backdrop-blur-md">
-                        I have that major exam tomorrow and my chest feels tight.
-                    </div>
-                </div>
-            </div>
-            
-            <div class="mt-auto pt-4">
-                <div class="relative mb-5">
-                    <input type="text" class="w-full inner-glass rounded-full pl-6 pr-14 py-4 text-sm text-white placeholder-slate-400 focus:outline-none focus:bg-white/10 transition-all border-white/10" placeholder="Type your message...">
-                    <button class="absolute right-2 top-2 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors border border-white/10">
-                        <svg class="w-4 h-4 text-white transform translate-x-px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                <div class="inner-glass p-5">
+                    <h2 class="text-lg font-medium text-[var(--text-main)] mb-1">Daily Companion</h2>
+                    <p class="text-[11px] text-[var(--text-muted)] mb-3">Grounding and mindfulness tools.</p>
+                    <button
+                        class="w-9 h-9 rounded-full bg-orange-500/20 text-orange-600 flex items-center justify-center transition-all hover:bg-orange-500 hover:text-white">
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
                     </button>
                 </div>
+            </section>
+        </aside>
 
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <span class="text-xs text-slate-400 font-medium tracking-wide uppercase">Tools:</span>
-                        <div class="flex gap-2">
-                            <button class="flex items-center gap-2 inner-glass inner-glass-hover px-4 py-2 rounded-full transition-colors text-xs text-slate-200">
-                                <span class="opacity-80">🌱</span> Grounding
-                            </button>
-                            <button class="flex items-center gap-2 inner-glass inner-glass-hover px-4 py-2 rounded-full transition-colors text-xs text-slate-200">
-                                <span class="opacity-80">🌬️</span> Breathwork
-                            </button>
+        <section class="flex-1 flex flex-col gap-5 h-full">
+            <div class="inner-glass h-[28%] p-7 flex flex-col justify-between relative overflow-hidden">
+                <nav class="flex items-center justify-between relative z-10">
+                    <div class="flex items-center inner-glass p-1 gap-1">
+                        <button class="px-5 py-1.5 rounded-full bg-white/10 text-xs font-medium">Chat</button>
+                        <button class="px-5 py-1.5 rounded-full text-xs opacity-50">Mindfulness</button>
+                    </div>
+                    <button id="theme-toggle"
+                        class="w-10 h-10 rounded-full inner-glass flex items-center justify-center">
+                        <span class="material-symbols-outlined text-xl">light_mode</span>
+                    </button>
+                </nav>
+                <div class="relative z-10">
+                    <p id="dynamic-greeting" class="text-[10px] font-bold tracking-[0.25em] uppercase mb-1"
+                        style="color: var(--greeting-color)"></p>
+                    <h2 class="text-4xl font-light text-[var(--text-main)] leading-tight">Your Path to <span
+                            class="font-medium">Wellness.</span></h2>
+                </div>
+            </div>
+
+            <div class="glass-panel flex-1 p-7 flex flex-col overflow-hidden">
+                <div class="flex-1 overflow-y-auto pr-3 space-y-5 flex flex-col" id="chat-messages">
+                    <div class="flex items-start gap-4">
+                        <div
+                            class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold shrink-0 text-[10px]">
+                            R</div>
+                        <div class="message-bubble-left px-5 py-3 text-sm max-w-[80%] leading-relaxed shadow-sm">
+                            Welcome to your safe space, Animesh. Let's find your center.
                         </div>
                     </div>
-                    <button class="inner-glass inner-glass-hover text-white text-xs font-medium px-6 py-2.5 rounded-full transition-all border-white/10">
-                        Explore Paths
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="hidden lg:flex flex-col gap-5 col-span-1 h-full pl-2 pt-2 pb-2">
-            
-            <div class="flex justify-between items-center mb-1">
-                <h3 class="text-sm font-medium text-white tracking-wide">Wellness Topics</h3>
-                <span class="text-slate-400 text-xs cursor-pointer hover:text-white transition-colors">ⓘ</span>
-            </div>
-
-            <div class="space-y-3">
-                <div class="inner-glass inner-glass-hover rounded-2xl p-3.5 flex items-center gap-4 cursor-pointer group transition-all">
-                    <div class="w-10 h-10 rounded-full bg-slate-800 overflow-hidden flex-shrink-0 border border-white/10">
-                        <img src="https://images.unsplash.com/photo-1528319725582-ddc096101511?w=100&auto=format&fit=crop" class="w-full h-full object-cover opacity-90">
-                    </div>
-                    <div class="flex-grow">
-                        <h4 class="text-sm font-medium text-slate-100 group-hover:text-white transition-colors">Grounding</h4>
-                        <p class="text-[11px] text-slate-400 mt-0.5">24 exercises</p>
-                    </div>
-                    <svg class="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 </div>
 
-                <div class="inner-glass inner-glass-hover rounded-2xl p-3.5 flex items-center gap-4 cursor-pointer group transition-all">
-                    <div class="w-10 h-10 rounded-full bg-slate-800 overflow-hidden flex-shrink-0 border border-white/10">
-                        <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=100&auto=format&fit=crop" class="w-full h-full object-cover opacity-90">
+                <div class="mt-5 pt-5 border-t border-black/5">
+                    <div class="relative">
+                        <input id="user-input"
+                            class="w-full bg-black/5 border border-black/5 rounded-2xl py-4 px-7 focus:ring-1 focus:ring-black/10 focus:outline-none placeholder:text-slate-500 text-[var(--text-main)] text-sm"
+                            placeholder="Speak your mind..." type="text" />
+                        <button id="send-btn"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-white hover:bg-orange-600 transition-colors">
+                            <span class="material-symbols-outlined text-lg">send</span>
+                        </button>
                     </div>
-                    <div class="flex-grow">
-                        <h4 class="text-sm font-medium text-slate-100 group-hover:text-white transition-colors">Mindfulness</h4>
-                        <p class="text-[11px] text-slate-400 mt-0.5">32 paths</p>
-                    </div>
-                    <svg class="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 </div>
             </div>
+        </section>
 
-            <div class="bg-gradient-to-br from-orange-500 to-red-600 rounded-3xl p-6 shadow-lg shadow-red-900/30 transform hover:scale-[1.02] transition-transform cursor-pointer mt-2 border border-red-400/30">
-                <h3 class="text-sm font-bold text-white tracking-wide mb-3 uppercase drop-shadow-sm">Emergency Contacts</h3>
-                <p class="text-xs text-white/90 mb-1.5 font-light">Multiple helpline:</p>
-                <p class="text-sm font-medium text-white mb-0.5 drop-shadow-sm">+1 (683) 323-2623</p>
-                <p class="text-sm font-medium text-white drop-shadow-sm">+1 (303) 595-3533</p>
-            </div>
-
-            <div class="h-36 mt-auto rounded-3xl relative overflow-hidden flex flex-col items-center justify-center p-6 text-center group cursor-pointer inner-glass">
-                <div class="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent group-hover:opacity-100 transition-opacity duration-500 opacity-0"></div>
-                <div class="relative z-10 flex flex-col items-center">
-                    <svg class="w-6 h-6 text-slate-300 mb-2 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    <h3 class="text-xs font-bold text-slate-200 tracking-widest uppercase mb-1 group-hover:text-white transition-colors">Your Diary</h3>
-                    <p class="text-[11px] text-slate-400 font-light">Explore Journal entries.</p>
+        <aside class="w-1/4 flex flex-col gap-5 h-full">
+            <section class="inner-glass p-5 h-[40%] flex flex-col">
+                <h3 class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-3">Knowledge</h3>
+                <div class="space-y-2 overflow-y-auto pr-1">
+                    <div class="inner-glass p-3 border-black/5 hover:bg-black/5 cursor-pointer transition-all">
+                        <h5 class="text-xs font-semibold">Thought Patterns</h5>
+                        <p class="text-[9px] opacity-50">Cognitive distortions guide.</p>
+                    </div>
                 </div>
-            </div>
-            
-        </div>
-    </div>
+            </section>
+
+            <section
+                class="glass-panel p-6 bg-gradient-to-br from-orange-500/10 to-transparent flex flex-col justify-between border-black/5">
+                <div>
+                    <h3 class="text-[10px] uppercase font-bold mb-3 tracking-widest text-orange-600">Emergency</h3>
+                    <p class="text-xl font-bold tracking-tight text-[var(--text-main)]">+11 6836 323</p>
+                </div>
+                <div class="pt-5 border-t border-black/10 text-center">
+                    <h4 class="text-2xl font-bold tracking-tighter text-[var(--text-main)]">DIARY</h4>
+                    <p class="text-[9px] opacity-40 tracking-widest uppercase">Journal Active</p>
+                </div>
+            </section>
+        </aside>
+    </main>
 
     <script>
+        const userId = localStorage.getItem("user_id");
+        const username = localStorage.getItem("username");
+
+        if (!userId) {
+            window.location.href = "/";
+        }
+
         function updateTimeGreeting() {
-            const currentHour = new Date().getHours();
-            let greetingText = '';
-            if (currentHour >= 5 && currentHour < 12) greetingText = 'Good Morning, Animesh.';
-            else if (currentHour >= 12 && currentHour < 17) greetingText = 'Good Afternoon, Animesh.';
-            else if (currentHour >= 17 && currentHour < 23) greetingText = 'Good Evening, Animesh.';
-            else greetingText = 'Still awake, Animesh?';
-            
-            const greetingElement = document.getElementById('dynamic-greeting');
-            if(greetingElement) greetingElement.innerText = greetingText;
+            const hour = new Date().getHours();
+            let text = '';
+            const nameToUse = username ? username.split('@')[0] : 'Guest';
+            if (hour >= 5 && hour < 12) text = `Good Morning, ${nameToUse}.`;
+            else if (hour >= 12 && hour < 17) text = `Good Afternoon, ${nameToUse}.`;
+            else if (hour >= 17 && hour < 22) text = `Good Evening, ${nameToUse}.`;
+            else text = `Still awake, ${nameToUse}?`;
+            document.getElementById('dynamic-greeting').innerText = text;
         }
         updateTimeGreeting();
+
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('light-mode');
+        });
+
+        // Chat Logic
+        const chatContainer = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        let isLoading = false;
+
+        function getInitials(name) {
+            if (!name) return "US";
+            return name.substring(0, 2).toUpperCase();
+        }
+
+        // Clear placeholder message
+        chatContainer.innerHTML = '';
+
+        function appendMessage(role, content) {
+            const msgDiv = document.createElement('div');
+
+            if (role === 'ai' || role === 'assistant') {
+                msgDiv.className = "flex items-start gap-4";
+                msgDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold shrink-0 text-[10px] shadow-sm ring-1 ring-white/10">R</div>
+                    <div class="message-bubble-left px-5 py-3 text-sm max-w-[80%] leading-relaxed shadow-sm whitespace-pre-wrap">${content}</div>
+                `;
+            } else {
+                msgDiv.className = "flex items-start gap-4 flex-row-reverse";
+                const initials = getInitials(username);
+                msgDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold shrink-0 text-[10px] shadow-sm">${initials}</div>
+                    <div class="message-bubble-right px-5 py-3 text-sm max-w-[80%] leading-relaxed shadow-sm whitespace-pre-wrap">${content}</div>
+                `;
+            }
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function loadHistory() {
+            try {
+                const res = await fetch(`/api/history?user_id=${userId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.history && data.history.length > 0) {
+                        data.history.forEach(msg => {
+                            appendMessage(msg.role, msg.content);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching history:", error);
+            }
+        }
+
+        async function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text || isLoading) return;
+
+            // Show user message
+            appendMessage('user', text);
+            chatInput.value = '';
+            isLoading = true;
+            sendBtn.style.opacity = '0.5';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, message: text })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    appendMessage('ai', data.response);
+                } else {
+                    appendMessage('ai', "I'm having trouble connecting right now. Please try again later.");
+                }
+            } catch (error) {
+                console.error("Chat error:", error);
+                appendMessage('ai', "A network error occurred.");
+            } finally {
+                isLoading = false;
+                sendBtn.style.opacity = '1';
+                chatInput.focus();
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Initialize
+        loadHistory();
     </script>
 </body>
+
 </html>
