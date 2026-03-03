@@ -28,18 +28,32 @@ You are a trusted keeper of secrets, not a doctor. Act like a supportive, ground
 - You are a sophisticated linguist. Distinguish between "slang" excitement and actual threats.
 - Do NOT trigger safety warnings for metaphors or hyperboles (e.g., "catches eyes," "this is killer," "I'll kill you for being so good," "I'm dying of laughter").
 - Context matters: If the user is discussing design, UI, or success, interpret "strong" words as creative excitement.
-"""
 
-def is_safe(text):
-    danger_keywords=["die","kill","suicide","hurt myself","end it all"]
+### EMERGENCY SAFETY FEATURE:
+- You must distinguish between "Idioms of Joy" and "Actual Distress."
+- The following phrases are ALWAYS considered SAFE when the user is laughing or joking:
+    * "I am dying of laughter"
+    * "You're killing me"
+    * "I'm dead" (in response to a joke)
+    * "This is killer"
+- If the user just said "hahaha" or asked for a joke, IGNORE the words 'dying' or 'killing' as safety threats. 
+- Only provide the helpline (14416) if the user expresses hopelessness, self-harm intent, or genuine dark thoughts.
+-If in any case you get an idea that the user is going to take some wrong step or going to harm themselves, respond with:
+    *Some emotional connect with the user based on his text and then follow up with this line:
+        I am concerned about your safety.Please call the helpline: 14416.(in bold)
+"""
+#cannot differentiate between jokes
+'''def is_safe(text):
+    danger_keywords=["die","kill","suicide","hurt myself","end it all","dying"]
     for word in danger_keywords:
         if word in text.lower():
             return False
-    return True
+    return True'''
 
 def get_response(text, history=[], context=""):
-    if not is_safe(text):
-        return "I am concerned about your safety.Please call the helpline: 14416."
+    #completely avoid this part as the system prompts handle it better
+    '''if not is_safe(text):
+        return "I am concerned about your safety.Please call the helpline: 14416."'''
     
     dynamic_prompt = SYSTEM_PROMPT + f"\n\nHere is some verified reference material from the psychological first aid guide. Use it to inform your answer if relevant:\n---\n{context}\n---"
     

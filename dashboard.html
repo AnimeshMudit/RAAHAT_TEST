@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAAHAT | Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* THE DOMIO VIBE: Warm, luxury, minimalist architecture */
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: url('https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=2560&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+            color: #e2e8f0;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .bg-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 15, 18, 0.4); 
+            backdrop-filter: blur(8px); 
+            -webkit-backdrop-filter: blur(8px);
+            z-index: -1;
+        }
+
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(30, 30, 35, 0.45) 0%, rgba(15, 15, 18, 0.65) 100%);
+            backdrop-filter: blur(50px);
+            -webkit-backdrop-filter: blur(50px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: 1px solid rgba(255, 255, 255, 0.15); 
+            border-left: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.7);
+        }
+
+        .inner-glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+        
+        .inner-glass-hover:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .center-panel-bg {
+            background: radial-gradient(circle at top right, rgba(255,255,255,0.03) 0%, transparent 70%);
+        }
+
+        /* THE FIX: Buttery smooth CSS pan and zoom for the left panel */
+        @keyframes gentle-pan {
+            0% { transform: scale(1.0) translate(0px, 0px); }
+            50% { transform: scale(1.1) translate(-2%, 2%); }
+            100% { transform: scale(1.0) translate(0px, 0px); }
+        }
+        .moving-image {
+            animation: gentle-pan 35s alternate infinite ease-in-out;
+            will-change: transform; /* Tells the browser to use GPU acceleration */
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex justify-center items-center">
+    
+    <div class="bg-overlay"></div>
+
+    <div class="glass-panel w-full h-full max-w-[1400px] rounded-[2.5rem] grid grid-cols-1 lg:grid-cols-4 gap-5 p-5 relative">
+
+        <div class="hidden lg:flex flex-col gap-5 col-span-1 h-full">
+            <div class="pl-3 pt-3">
+                <h1 class="text-3xl font-medium tracking-widest text-white drop-shadow-md">RAAHAT</h1>
+            </div>
+
+            <div class="flex-grow rounded-3xl overflow-hidden relative inner-glass border-none shadow-2xl">
+                <img src="https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?q=80&w=800&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover opacity-80 moving-image">
+                <div class="absolute inset-0 bg-gradient-to-t from-[#0f1115] via-transparent to-transparent"></div>
+            </div>
+
+            <div class="inner-glass rounded-3xl p-6 h-48 flex flex-col justify-center transition-transform hover:scale-[1.02] cursor-pointer">
+                <h2 class="text-xl font-medium mb-2 leading-tight text-white">Daily Wellness<br>Companion</h2>
+                <p class="text-xs text-slate-300 leading-relaxed font-light">Explore personalized guidance on grounding and mindfulness.</p>
+            </div>
+        </div>
+
+        <div class="col-span-1 lg:col-span-2 flex flex-col h-full inner-glass center-panel-bg rounded-3xl p-7 relative">
+            
+            <div class="flex justify-start mb-10">
+                <div class="inner-glass rounded-full p-1.5 flex gap-1">
+                    <button class="px-6 py-2 rounded-full text-sm font-medium bg-white/10 text-white shadow-sm transition-all border border-white/10">Chat</button>
+                    <button class="px-6 py-2 rounded-full text-sm font-medium text-slate-400 hover:text-white transition-all">Mindfulness</button>
+                    <button class="px-6 py-2 rounded-full text-sm font-medium text-slate-400 hover:text-white transition-all">Resources</button>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <p id="dynamic-greeting" class="text-xs text-slate-300 font-medium tracking-widest uppercase mb-3"></p>
+                <h2 class="text-4xl lg:text-5xl font-light text-white leading-tight drop-shadow-sm">Your Path to<br><span class="font-medium">Wellness.</span></h2>
+            </div>
+
+            <div class="flex-grow overflow-y-auto space-y-6 mb-4 pr-2">
+                <div class="flex items-start gap-4">
+                    <img src="https://ui-avatars.com/api/?name=R&background=1e293b&color=e2e8f0" class="w-9 h-9 rounded-full border border-white/10 shadow-lg mt-1">
+                    <div class="inner-glass rounded-3xl rounded-tl-none px-6 py-4 text-sm text-slate-100 max-w-[85%] leading-relaxed shadow-md">
+                        Welcome to RAAHAT, Animesh. Let's start with a grounding breath...
+                    </div>
+                </div>
+                <div class="flex items-start gap-4 flex-row-reverse">
+                    <div class="w-9 h-9 rounded-full bg-slate-800 border border-white/10 shadow-lg mt-1 flex items-center justify-center text-xs font-bold text-slate-300">AN</div>
+                    <div class="bg-white/10 border border-white/10 rounded-3xl rounded-tr-none px-6 py-4 text-sm text-white max-w-[85%] leading-relaxed shadow-md backdrop-blur-md">
+                        I have that major exam tomorrow and my chest feels tight.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-auto pt-4">
+                <div class="relative mb-5">
+                    <input type="text" class="w-full inner-glass rounded-full pl-6 pr-14 py-4 text-sm text-white placeholder-slate-400 focus:outline-none focus:bg-white/10 transition-all border-white/10" placeholder="Type your message...">
+                    <button class="absolute right-2 top-2 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors border border-white/10">
+                        <svg class="w-4 h-4 text-white transform translate-x-px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    </button>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <span class="text-xs text-slate-400 font-medium tracking-wide uppercase">Tools:</span>
+                        <div class="flex gap-2">
+                            <button class="flex items-center gap-2 inner-glass inner-glass-hover px-4 py-2 rounded-full transition-colors text-xs text-slate-200">
+                                <span class="opacity-80">🌱</span> Grounding
+                            </button>
+                            <button class="flex items-center gap-2 inner-glass inner-glass-hover px-4 py-2 rounded-full transition-colors text-xs text-slate-200">
+                                <span class="opacity-80">🌬️</span> Breathwork
+                            </button>
+                        </div>
+                    </div>
+                    <button class="inner-glass inner-glass-hover text-white text-xs font-medium px-6 py-2.5 rounded-full transition-all border-white/10">
+                        Explore Paths
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="hidden lg:flex flex-col gap-5 col-span-1 h-full pl-2 pt-2 pb-2">
+            
+            <div class="flex justify-between items-center mb-1">
+                <h3 class="text-sm font-medium text-white tracking-wide">Wellness Topics</h3>
+                <span class="text-slate-400 text-xs cursor-pointer hover:text-white transition-colors">ⓘ</span>
+            </div>
+
+            <div class="space-y-3">
+                <div class="inner-glass inner-glass-hover rounded-2xl p-3.5 flex items-center gap-4 cursor-pointer group transition-all">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 overflow-hidden flex-shrink-0 border border-white/10">
+                        <img src="https://images.unsplash.com/photo-1528319725582-ddc096101511?w=100&auto=format&fit=crop" class="w-full h-full object-cover opacity-90">
+                    </div>
+                    <div class="flex-grow">
+                        <h4 class="text-sm font-medium text-slate-100 group-hover:text-white transition-colors">Grounding</h4>
+                        <p class="text-[11px] text-slate-400 mt-0.5">24 exercises</p>
+                    </div>
+                    <svg class="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
+
+                <div class="inner-glass inner-glass-hover rounded-2xl p-3.5 flex items-center gap-4 cursor-pointer group transition-all">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 overflow-hidden flex-shrink-0 border border-white/10">
+                        <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=100&auto=format&fit=crop" class="w-full h-full object-cover opacity-90">
+                    </div>
+                    <div class="flex-grow">
+                        <h4 class="text-sm font-medium text-slate-100 group-hover:text-white transition-colors">Mindfulness</h4>
+                        <p class="text-[11px] text-slate-400 mt-0.5">32 paths</p>
+                    </div>
+                    <svg class="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-orange-500 to-red-600 rounded-3xl p-6 shadow-lg shadow-red-900/30 transform hover:scale-[1.02] transition-transform cursor-pointer mt-2 border border-red-400/30">
+                <h3 class="text-sm font-bold text-white tracking-wide mb-3 uppercase drop-shadow-sm">Emergency Contacts</h3>
+                <p class="text-xs text-white/90 mb-1.5 font-light">Multiple helpline:</p>
+                <p class="text-sm font-medium text-white mb-0.5 drop-shadow-sm">+1 (683) 323-2623</p>
+                <p class="text-sm font-medium text-white drop-shadow-sm">+1 (303) 595-3533</p>
+            </div>
+
+            <div class="h-36 mt-auto rounded-3xl relative overflow-hidden flex flex-col items-center justify-center p-6 text-center group cursor-pointer inner-glass">
+                <div class="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent group-hover:opacity-100 transition-opacity duration-500 opacity-0"></div>
+                <div class="relative z-10 flex flex-col items-center">
+                    <svg class="w-6 h-6 text-slate-300 mb-2 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    <h3 class="text-xs font-bold text-slate-200 tracking-widest uppercase mb-1 group-hover:text-white transition-colors">Your Diary</h3>
+                    <p class="text-[11px] text-slate-400 font-light">Explore Journal entries.</p>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        function updateTimeGreeting() {
+            const currentHour = new Date().getHours();
+            let greetingText = '';
+            if (currentHour >= 5 && currentHour < 12) greetingText = 'Good Morning, Animesh.';
+            else if (currentHour >= 12 && currentHour < 17) greetingText = 'Good Afternoon, Animesh.';
+            else if (currentHour >= 17 && currentHour < 23) greetingText = 'Good Evening, Animesh.';
+            else greetingText = 'Still awake, Animesh?';
+            
+            const greetingElement = document.getElementById('dynamic-greeting');
+            if(greetingElement) greetingElement.innerText = greetingText;
+        }
+        updateTimeGreeting();
+    </script>
+</body>
+</html>
