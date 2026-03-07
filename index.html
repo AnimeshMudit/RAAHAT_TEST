@@ -150,19 +150,40 @@
         </form>
 
         <div class="mt-10 text-center">
-            <p class="text-xs text-slate-500 tracking-wide">
-                New to the path? <a href="#" class="font-bold text-white hover:text-orange-500 transition-colors">Begin
+            <p class="text-xs text-slate-500 tracking-wide" id="toggleText">
+                New to the path? <a href="#" id="toggleModeBtn"
+                    class="font-bold text-white hover:text-orange-500 transition-colors">Begin
                     Journey</a>
             </p>
         </div>
     </div>
 
     <script>
-        document.getElementById('loginBtn').addEventListener('click', async () => {
+        let isLoginMode = true;
+
+        const toggleText = document.getElementById('toggleText');
+        const actionBtn = document.getElementById('loginBtn');
+        const errorMsg = document.getElementById('errorMsg');
+
+        toggleText.addEventListener('click', (e) => {
+            if (e.target.tagName.toLowerCase() === 'a') {
+                e.preventDefault();
+                isLoginMode = !isLoginMode;
+                errorMsg.classList.add('hidden');
+
+                if (isLoginMode) {
+                    actionBtn.textContent = "Enter Sanctuary";
+                    toggleText.innerHTML = 'New to the path? <a href="#" class="font-bold text-white hover:text-orange-500 transition-colors">Begin Journey</a>';
+                } else {
+                    actionBtn.textContent = "Begin Journey";
+                    toggleText.innerHTML = 'Already on the path? <a href="#" class="font-bold text-white hover:text-orange-500 transition-colors">Enter Sanctuary</a>';
+                }
+            }
+        });
+
+        actionBtn.addEventListener('click', async () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const errorMsg = document.getElementById('errorMsg');
-            const btn = document.getElementById('loginBtn');
 
             if (!email || !password) {
                 errorMsg.textContent = "Please enter both email and password.";
@@ -170,12 +191,14 @@
                 return;
             }
 
-            btn.disabled = true;
-            btn.textContent = "Entering...";
+            actionBtn.disabled = true;
+            actionBtn.textContent = isLoginMode ? "Entering..." : "Beginning Journey...";
             errorMsg.classList.add('hidden');
 
+            const endpoint = isLoginMode ? '/api/login' : '/api/signup';
+
             try {
-                const response = await fetch('/api/login', {
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: email, password: password })
@@ -188,15 +211,15 @@
                     window.location.href = "/dashboard";
                 } else {
                     const err = await response.json();
-                    errorMsg.textContent = err.detail || "Login failed.";
+                    errorMsg.textContent = err.detail || (isLoginMode ? "Login failed." : "Signup failed.");
                     errorMsg.classList.remove('hidden');
                 }
             } catch (error) {
                 errorMsg.textContent = "Network error. Please try again.";
                 errorMsg.classList.remove('hidden');
             } finally {
-                btn.disabled = false;
-                btn.textContent = "Enter Sanctuary";
+                actionBtn.disabled = false;
+                actionBtn.textContent = isLoginMode ? "Enter Sanctuary" : "Begin Journey";
             }
         });
     </script>

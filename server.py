@@ -6,7 +6,7 @@ from uuid import UUID
 import uvicorn
 import os
 
-from core import memory, brain, knowledge
+from core import memory, brain, knowledge, security
 
 # Load vector database at startup if available
 vector_db = None
@@ -30,6 +30,10 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+class SignupRequest(BaseModel):
+    username: str
+    password: str
+
 class ChatRequest(BaseModel):
     user_id: UUID
     message: str
@@ -46,24 +50,35 @@ async def serve_dashboard():
         return HTMLResponse(content=file.read(), status_code=200)
 
 # API Endpoints
+@app.post("/api/signup")
+async def signup(request: SignupRequest):
+    user_record = memory.get_user_by_email(request.username)
+    if user_record:
+        raise HTTPException(status_code=400, detail="User already exists")
+    
+    hashed_password = security.get_password_hash(request.password)
+    user_id = memory.create_user(request.username, hashed_password)
+    
+    # Provide an initial greeting for new users
+    greeting = (
+        f"Welcome, {request.username}.\n\n"
+        "The world asks a lot of you, but here, you don't have to be anyone but yourself.\n"
+        "Your secrets are safe, your burdens are shared, and your pace is respected.\n"
+        "Whenever you're ready to let it out, I'm here to listen."
+    )
+    memory.save_message(user_id, "ai", greeting)
+    return {"user_id": user_id, "username": request.username}
+
 @app.post("/api/login")
 async def login(request: LoginRequest):
-    user_id = memory.get_or_create_user(request.username, request.password)
-    if user_id:
-        # Provide an initial greeting for new users when their history is empty
-        history = memory.fetch_history(user_id)
-        if not history:
-            greeting = (
-                f"Welcome, {request.username}.\n\n"
-                "The world asks a lot of you, but here, you don't have to be anyone but yourself.\n"
-                "Your secrets are safe, your burdens are shared, and your pace is respected.\n"
-                "Whenever you're ready to let it out, I'm here to listen."
-            )
-            memory.save_message(user_id, "ai", greeting)
-            
-        return {"user_id": user_id, "username": request.username}
-    else:
+    user_record = memory.get_user_by_email(request.username)
+    if not user_record:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+    if not security.verify_password(request.password, user_record["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+    return {"user_id": user_record["id"], "username": request.username}
 
 @app.get("/api/history")
 async def get_history(user_id: UUID):

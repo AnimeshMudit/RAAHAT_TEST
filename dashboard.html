@@ -214,10 +214,17 @@
                         <button class="px-5 py-1.5 rounded-full bg-white/10 text-xs font-medium">Chat</button>
                         <button class="px-5 py-1.5 rounded-full text-xs opacity-50">Mindfulness</button>
                     </div>
-                    <button id="theme-toggle"
-                        class="w-10 h-10 rounded-full inner-glass flex items-center justify-center">
-                        <span class="material-symbols-outlined text-xl">light_mode</span>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="theme-toggle"
+                            class="w-10 h-10 rounded-full inner-glass flex items-center justify-center transition-all hover:bg-black/5">
+                            <span class="material-symbols-outlined text-xl">light_mode</span>
+                        </button>
+                        <button id="logout-btn"
+                            class="px-4 h-10 rounded-full inner-glass flex items-center justify-center gap-2 transition-all hover:bg-red-500/10 hover:text-red-500">
+                            <span class="material-symbols-outlined text-sm">logout</span>
+                            <span class="text-xs font-bold uppercase tracking-widest hidden sm:block">Logout</span>
+                        </button>
+                    </div>
                 </nav>
                 <div class="relative z-10">
                     <p id="dynamic-greeting" class="text-[10px] font-bold tracking-[0.25em] uppercase mb-1"
@@ -301,6 +308,12 @@
         const themeToggle = document.getElementById('theme-toggle');
         themeToggle.addEventListener('click', () => {
             document.documentElement.classList.toggle('light-mode');
+        });
+
+        const logoutBtn = document.getElementById('logout-btn');
+        logoutBtn.addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = "/";
         });
 
         // Chat Logic

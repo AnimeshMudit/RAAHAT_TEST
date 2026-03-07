@@ -11,21 +11,20 @@ supabase = create_client(url,key)   #i guess it establish the connection between
 
 
 
-def get_or_create_user(username,password):
-    f = supabase.table("users").select("*").eq("username",username).execute() #returns the API response object and .data converts it to list
+def get_user_by_email(email):
+    f = supabase.table("users").select("*").eq("username",email).execute() #returns the API response object and .data converts it to list
     if len(f.data):
-        if f.data[0]["password_hash"] == password:
-            return f.data[0]["id"]
-        else:
-            return None
-    else:
-        d = {
-            "username" : username,
-            "password_hash" : password
-        }
-        new_user = supabase.table("users").insert(d).execute()
-        return new_user.data[0]["id"]
-            
+        return f.data[0]
+    return None
+
+def create_user(email, hashed_password):
+    d = {
+        "username" : email,
+        "password_hash" : hashed_password
+    }
+    new_user = supabase.table("users").insert(d).execute()
+    return new_user.data[0]["id"]
+
 
 def save_message(user_id, role, content):
     d={
