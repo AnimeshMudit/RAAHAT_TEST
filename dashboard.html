@@ -115,6 +115,29 @@
             background: rgba(30, 41, 59, 0.08);
             border: 1px solid rgba(30, 41, 59, 0.15);
         }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .light-mode ::-webkit-scrollbar-thumb:hover {
+            background: rgba(30, 41, 59, 0.3);
+        }
     </style>
 </head>
 
@@ -142,7 +165,7 @@
         </aside>
 
         <section class="flex-1 flex flex-col gap-5 h-full">
-            <div class="inner-glass h-[28%] p-7 flex flex-col justify-between relative overflow-hidden">
+            <div class="inner-glass h-[23%] p-7 flex flex-col justify-between relative overflow-hidden">
                 <nav class="flex items-center justify-between relative z-10">
                     <div class="flex items-center inner-glass p-1 gap-1">
                         <button class="px-5 py-1.5 rounded-full bg-white/10 text-xs font-medium">Chat</button>
@@ -202,7 +225,7 @@
                 class="glass-panel p-6 bg-gradient-to-br from-orange-500/10 to-transparent flex flex-col justify-between border-black/5">
                 <div>
                     <h3 class="text-[10px] uppercase font-bold mb-3 tracking-widest text-orange-600">Emergency</h3>
-                    <p class="text-xl font-bold tracking-tight text-[var(--text-main)]">+11 6836 323</p>
+                    <p class="text-xl font-bold tracking-tight text-[var(--text-main)]">14416</p>
                 </div>
                 <div class="pt-5 border-t border-black/10 text-center">
                     <h4 class="text-2xl font-bold tracking-tighter text-[var(--text-main)]">DIARY</h4>
