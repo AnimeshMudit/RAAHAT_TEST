@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from uuid import UUID
 import uvicorn
 import os
 
@@ -14,13 +16,22 @@ if os.path.exists("faiss_index"):
 
 app = FastAPI(title="RAAHAT API")
 
+# Allow dashboard.html to fetch from this API running locally without CORS errors
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Models for API requests
 class LoginRequest(BaseModel):
     username: str
     password: str
 
 class ChatRequest(BaseModel):
-    user_id: str
+    user_id: UUID
     message: str
 
 # Existing simple HTML serving routes
@@ -39,8 +50,7 @@ async def serve_dashboard():
 async def login(request: LoginRequest):
     user_id = memory.get_or_create_user(request.username, request.password)
     if user_id:
-        # Create an initial greeting if this is a new session/login
-        # We check history; if empty, we add the greeting
+        # Provide an initial greeting for new users when their history is empty
         history = memory.fetch_history(user_id)
         if not history:
             greeting = (
@@ -56,10 +66,8 @@ async def login(request: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
 @app.get("/api/history")
-async def get_history(user_id: str):
-    if not user_id:
-        raise HTTPException(status_code=400, detail="user_id is required")
-    history = memory.fetch_history(user_id)
+async def get_history(user_id: UUID):
+    history = memory.fetch_history(str(user_id))
     return {"history": history}
 
 @app.post("/api/chat")
@@ -68,7 +76,7 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=400, detail="Message cannot be empty")
         
     # Save user message
-    memory.save_message(request.user_id, "user", request.message)
+    memory.save_message(str(request.user_id), "user", request.message)
     
     # Retrieve context
     context_text = ""
@@ -82,13 +90,13 @@ async def chat(request: ChatRequest):
             print(f"Vector search failed: {e}")
             
     # Fetch history for context
-    chat_history = memory.fetch_history(request.user_id)
+    chat_history = memory.fetch_history(str(request.user_id))
     
     # Generate Brain Response
     response_text = brain.get_response(request.message, chat_history, context_text)
     
     # Save AI response
-    memory.save_message(request.user_id, "ai", response_text)
+    memory.save_message(str(request.user_id), "ai", response_text)
     
     return {"response": response_text}
 

@@ -116,6 +116,49 @@
             border: 1px solid rgba(30, 41, 59, 0.15);
         }
 
+        /* TYPING INDICATOR */
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 4px 8px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #000000 !important;
+            border-radius: 50%;
+            opacity: 0.8 !important;
+            z-index: 50;
+            margin: 0 2px;
+            animation: typing 1.2s infinite ease-in-out both;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes typing {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0.4);
+                opacity: 0.4;
+            }
+
+            40% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+        }
+
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
@@ -295,9 +338,37 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
+        // Instantiates the 'RAAHAT is thinking' bouncing dots UI
+        function showTypingIndicator() {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = "flex items-start gap-4 transition-all duration-300 ease-in-out";
+            msgDiv.id = "typing-bubble";
+            msgDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold shrink-0 text-[10px] shadow-sm ring-1 ring-white/10">R</div>
+                <div class="message-bubble-left shadow-sm flex items-center px-4 py-3 min-h-[44px]">
+                    <div class="typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return msgDiv;
+        }
+
+        // Cleanly removes the typing indicator from the DOM
+        function removeTypingIndicator(element) {
+            if (element && element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        }
+
         async function loadHistory() {
             try {
-                const res = await fetch(`/api/history?user_id=${userId}`);
+                // Using an absolute URL so this works when dashboard.html is opened directly
+                const res = await fetch(`http://127.0.0.1:8000/api/history?user_id=${userId}`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.history && data.history.length > 0) {
@@ -315,30 +386,52 @@
             const text = chatInput.value.trim();
             if (!text || isLoading) return;
 
-            // Show user message
+            // Immediately display the user's message in the UI and clear the input field
             appendMessage('user', text);
             chatInput.value = '';
+
+            // Lock the UI state to prevent duplicate rapid-fire API calls while waiting
             isLoading = true;
+            sendBtn.disabled = true;
             sendBtn.style.opacity = '0.5';
 
+            // Show 'RAAHAT is thinking...' indicator immediately
+            const typingIndicator = showTypingIndicator();
+
             try {
-                const response = await fetch('/api/chat', {
+                // We use await to pause execution here until the FastAPI server responds
+                const response = await fetch('http://127.0.0.1:8000/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: userId, message: text })
                 });
 
+                // Check if the server successfully processed the request (HTTP 200-299)
                 if (response.ok) {
                     const data = await response.json();
+
+                    // Force the UI to wait at least 800ms before removing the typing dots
+                    // so the bouncing animation has time to be seen, even on fast localhosts
+                    await new Promise(resolve => setTimeout(resolve, 800));
+
+                    // Remove the typing indicator right before appending the real reply
+                    removeTypingIndicator(typingIndicator);
+                    // Pass RAAHAT's reply back to the UI renderer
                     appendMessage('ai', data.response);
                 } else {
-                    appendMessage('ai', "I'm having trouble connecting right now. Please try again later.");
+                    removeTypingIndicator(typingIndicator);
+                    // This catches server-side crashes (like 500s or 422s Validation Errors)
+                    appendMessage('ai', "The sanctuary is currently offline. Please try again later.");
                 }
             } catch (error) {
-                console.error("Chat error:", error);
-                appendMessage('ai', "A network error occurred.");
+                removeTypingIndicator(typingIndicator);
+                // This block specifically catches network-level failures (e.g., server isn't running)
+                console.error("Chat backend unreachable:", error);
+                appendMessage('ai', "The sanctuary is currently offline. Please try again later.");
             } finally {
+                // The finally block guarantees the UI unlocks, regardless of success or failure
                 isLoading = false;
+                sendBtn.disabled = false;
                 sendBtn.style.opacity = '1';
                 chatInput.focus();
             }
