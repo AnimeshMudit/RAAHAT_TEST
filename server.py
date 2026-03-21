@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from uuid import UUID
 import uvicorn
@@ -15,6 +16,7 @@ if os.path.exists("faiss_index"):
     print("Vector Vault Online! (Loaded from disk)")
 
 app = FastAPI(title="RAAHAT API")
+app.mount("/static", StaticFiles(directory="."), name="static")
 
 # Allow dashboard.html to fetch from this API running locally without CORS errors
 app.add_middleware(

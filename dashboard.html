@@ -6,10 +6,8 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>RAAHAT - Wellness Dashboard</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap"
-        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap" rel="stylesheet" />
 
     <style>
         :root {
@@ -24,17 +22,13 @@
         }
 
         .light-mode {
-            /* REFINED LIGHT THEME PALETTE */
             --bg-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=2070');
             --glass-bg: rgba(248, 250, 252, 0.82);
             --inner-glass: rgba(30, 41, 59, 0.06);
             --glass-border: rgba(30, 41, 59, 0.2);
-            /* Deep slate border for definition */
             --text-main: #1e293b;
-            /* High-contrast Slate */
             --text-muted: #64748b;
             --greeting-color: #0f172a;
-            /* Solid contrast for time-greeting */
             --panel-shadow: 0 12px 40px -10px rgba(30, 41, 59, 0.12);
         }
 
@@ -48,28 +42,16 @@
         }
 
         .moving-bg {
-            position: fixed;
-            inset: 0;
-            z-index: -2;
+            position: fixed; inset: 0; z-index: -2;
             background: inherit;
             animation: gentle-pan 25s alternate infinite ease-in-out;
             will-change: transform;
         }
 
-        @keyframes gentle-pan {
-            0% {
-                transform: scale(1.0);
-            }
-
-            100% {
-                transform: scale(1.03);
-            }
-        }
+        @keyframes gentle-pan { 0% { transform: scale(1.0); } 100% { transform: scale(1.03); } }
 
         .bg-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
+            position: fixed; inset: 0; z-index: -1;
             background: rgba(0, 0, 0, 0.15);
             backdrop-filter: blur(2px);
         }
@@ -90,19 +72,14 @@
             border-radius: 20px;
         }
 
-        /* DYNAMIC CHAT BUBBLES */
+        /* CHAT BUBBLES */
         .message-bubble-left {
-            background: #ffffff;
-            color: #0f172a;
+            background: #ffffff; color: #0f172a;
             border-radius: 4px 18px 18px 18px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
-        .light-mode .message-bubble-left {
-            background: #1e293b;
-            /* Dark bubble for AI in Light Mode for focus */
-            color: #f8fafc;
-        }
+        .light-mode .message-bubble-left { background: #1e293b; color: #f8fafc; }
 
         .message-bubble-right {
             background: rgba(255, 255, 255, 0.2);
@@ -116,71 +93,16 @@
             border: 1px solid rgba(30, 41, 59, 0.15);
         }
 
-        /* TYPING INDICATOR */
-        .typing-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            padding: 4px 8px;
-        }
-
+        .typing-indicator { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 8px; }
         .typing-dot {
-            width: 8px;
-            height: 8px;
-            background: #000000 !important;
-            border-radius: 50%;
-            opacity: 0.8 !important;
-            z-index: 50;
-            margin: 0 2px;
+            width: 8px; height: 8px; background: currentColor !important;
+            border-radius: 50%; opacity: 0.6;
             animation: typing 1.2s infinite ease-in-out both;
         }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0.4); opacity: 0.4; } 40% { transform: scale(1.1); opacity: 1; } }
 
-        .typing-dot:nth-child(1) {
-            animation-delay: -0.32s;
-        }
-
-        .typing-dot:nth-child(2) {
-            animation-delay: -0.16s;
-        }
-
-        @keyframes typing {
-
-            0%,
-            80%,
-            100% {
-                transform: scale(0.4);
-                opacity: 0.4;
-            }
-
-            40% {
-                transform: scale(1.1);
-                opacity: 1;
-            }
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--glass-border);
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .light-mode ::-webkit-scrollbar-thumb:hover {
-            background: rgba(30, 41, 59, 0.3);
-        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
     </style>
 </head>
 
@@ -188,19 +110,21 @@
     <div class="moving-bg"></div>
     <div class="bg-overlay"></div>
 
+    <input type="file" id="avatarInput" class="hidden" accept="image/*" onchange="saveAvatar(event)">
+
     <main class="flex h-full w-full gap-5 max-w-[1500px] mx-auto">
         <aside class="w-1/4 flex flex-col gap-5 h-full">
             <section class="glass-panel flex-grow p-7 flex flex-col justify-between overflow-hidden">
-                <div class="pt-2">
-                    <h1 class="text-3xl font-semibold tracking-widest mb-4">RAAHAT</h1>
-                    <p class="text-base font-light text-[var(--text-muted)] leading-snug">The private sanctuary for your
-                        mind.</p>
+                <div class="pt-2 text-center sm:text-left">
+                    <img src="/static/raahat_light-removebg-preview.png" alt="RAAHAT Logo" 
+                         class="w-16 h-16 mb-4 object-contain mx-auto sm:mx-0">
+                    <h1 class="text-3xl font-semibold tracking-widest mb-2">RAAHAT</h1>
+                    <p class="text-sm font-light text-[var(--text-muted)] leading-snug">The private sanctuary for your mind.</p>
                 </div>
                 <div class="inner-glass p-5">
-                    <h2 class="text-lg font-medium text-[var(--text-main)] mb-1">Daily Companion</h2>
+                    <h2 class="text-lg font-medium mb-1">Daily Companion</h2>
                     <p class="text-[11px] text-[var(--text-muted)] mb-3">Grounding and mindfulness tools.</p>
-                    <button
-                        class="w-9 h-9 rounded-full bg-orange-500/20 text-orange-600 flex items-center justify-center transition-all hover:bg-orange-500 hover:text-white">
+                    <button class="w-9 h-9 rounded-full bg-orange-500/20 text-orange-600 flex items-center justify-center transition-all hover:bg-orange-500 hover:text-white">
                         <span class="material-symbols-outlined text-sm">arrow_forward</span>
                     </button>
                 </div>
@@ -214,45 +138,31 @@
                         <button class="px-5 py-1.5 rounded-full bg-white/10 text-xs font-medium">Chat</button>
                         <button class="px-5 py-1.5 rounded-full text-xs opacity-50">Mindfulness</button>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button id="theme-toggle"
-                            class="w-10 h-10 rounded-full inner-glass flex items-center justify-center transition-all hover:bg-black/5">
+                    <div class="flex items-center gap-3">
+                        <div id="nav-avatar-container" class="cursor-pointer" onclick="triggerAvatarUpload()"></div>
+                        <button id="theme-toggle" class="w-10 h-10 rounded-full inner-glass flex items-center justify-center hover:bg-black/5">
                             <span class="material-symbols-outlined text-xl">light_mode</span>
                         </button>
-                        <button id="logout-btn"
-                            class="px-4 h-10 rounded-full inner-glass flex items-center justify-center gap-2 transition-all hover:bg-red-500/10 hover:text-red-500">
+                        <button id="logout-btn" class="px-4 h-10 rounded-full inner-glass flex items-center justify-center gap-2 hover:bg-red-500/10 hover:text-red-500">
                             <span class="material-symbols-outlined text-sm">logout</span>
                             <span class="text-xs font-bold uppercase tracking-widest hidden sm:block">Logout</span>
                         </button>
                     </div>
                 </nav>
                 <div class="relative z-10">
-                    <p id="dynamic-greeting" class="text-[10px] font-bold tracking-[0.25em] uppercase mb-1"
-                        style="color: var(--greeting-color)"></p>
-                    <h2 class="text-4xl font-light text-[var(--text-main)] leading-tight">Your Path to <span
-                            class="font-medium">Wellness.</span></h2>
+                    <p id="dynamic-greeting" class="text-[10px] font-bold tracking-[0.25em] uppercase mb-1" style="color: var(--greeting-color)"></p>
+                    <h2 class="text-4xl font-light">Your Path to <span class="font-medium">Wellness.</span></h2>
                 </div>
             </div>
 
             <div class="glass-panel flex-1 p-7 flex flex-col overflow-hidden">
                 <div class="flex-1 overflow-y-auto pr-3 space-y-5 flex flex-col" id="chat-messages">
-                    <div class="flex items-start gap-4">
-                        <div
-                            class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold shrink-0 text-[10px]">
-                            R</div>
-                        <div class="message-bubble-left px-5 py-3 text-sm max-w-[80%] leading-relaxed shadow-sm">
-                            Welcome to your safe space, Animesh. Let's find your center.
-                        </div>
                     </div>
-                </div>
 
                 <div class="mt-5 pt-5 border-t border-black/5">
                     <div class="relative">
-                        <input id="user-input"
-                            class="w-full bg-black/5 border border-black/5 rounded-2xl py-4 px-7 focus:ring-1 focus:ring-black/10 focus:outline-none placeholder:text-slate-500 text-[var(--text-main)] text-sm"
-                            placeholder="Speak your mind..." type="text" />
-                        <button id="send-btn"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-white hover:bg-orange-600 transition-colors">
+                        <input id="user-input" class="w-full bg-black/5 border border-black/5 rounded-2xl py-4 px-7 focus:ring-1 focus:ring-black/10 focus:outline-none placeholder:text-slate-500 text-sm" placeholder="Speak your mind..." type="text" />
+                        <button id="send-btn" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-white hover:bg-orange-600 transition-colors">
                             <span class="material-symbols-outlined text-lg">send</span>
                         </button>
                     </div>
@@ -264,21 +174,19 @@
             <section class="inner-glass p-5 h-[40%] flex flex-col">
                 <h3 class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-3">Knowledge</h3>
                 <div class="space-y-2 overflow-y-auto pr-1">
-                    <div class="inner-glass p-3 border-black/5 hover:bg-black/5 cursor-pointer transition-all">
+                    <div class="inner-glass p-3 border-black/5 hover:bg-black/5 cursor-pointer">
                         <h5 class="text-xs font-semibold">Thought Patterns</h5>
                         <p class="text-[9px] opacity-50">Cognitive distortions guide.</p>
                     </div>
                 </div>
             </section>
-
-            <section
-                class="glass-panel p-6 bg-gradient-to-br from-orange-500/10 to-transparent flex flex-col justify-between border-black/5">
+            <section class="glass-panel p-6 bg-gradient-to-br from-orange-500/10 to-transparent flex flex-col justify-between">
                 <div>
                     <h3 class="text-[10px] uppercase font-bold mb-3 tracking-widest text-orange-600">Emergency</h3>
-                    <p class="text-xl font-bold tracking-tight text-[var(--text-main)]">14416</p>
+                    <p class="text-xl font-bold tracking-tight">14416</p>
                 </div>
                 <div class="pt-5 border-t border-black/10 text-center">
-                    <h4 class="text-2xl font-bold tracking-tighter text-[var(--text-main)]">DIARY</h4>
+                    <h4 class="text-2xl font-bold tracking-tighter">DIARY</h4>
                     <p class="text-[9px] opacity-40 tracking-widest uppercase">Journal Active</p>
                 </div>
             </section>
@@ -287,63 +195,67 @@
 
     <script>
         const userId = localStorage.getItem("user_id");
-        const username = localStorage.getItem("username");
-
-        if (!userId) {
-            window.location.href = "/";
-        }
-
-        function updateTimeGreeting() {
-            const hour = new Date().getHours();
-            let text = '';
-            const nameToUse = username ? username.split('@')[0] : 'Guest';
-            if (hour >= 5 && hour < 12) text = `Good Morning, ${nameToUse}.`;
-            else if (hour >= 12 && hour < 17) text = `Good Afternoon, ${nameToUse}.`;
-            else if (hour >= 17 && hour < 22) text = `Good Evening, ${nameToUse}.`;
-            else text = `Still awake, ${nameToUse}?`;
-            document.getElementById('dynamic-greeting').innerText = text;
-        }
-        updateTimeGreeting();
-
-        const themeToggle = document.getElementById('theme-toggle');
-        themeToggle.addEventListener('click', () => {
-            document.documentElement.classList.toggle('light-mode');
-        });
-
-        const logoutBtn = document.getElementById('logout-btn');
-        logoutBtn.addEventListener('click', () => {
-            localStorage.clear();
-            window.location.href = "/";
-        });
-
-        // Chat Logic
+        const username = localStorage.getItem("username") || "Explorer";
         const chatContainer = document.getElementById('chat-messages');
         const chatInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         let isLoading = false;
 
-        function getInitials(name) {
-            if (!name) return "US";
-            return name.substring(0, 2).toUpperCase();
+        if (!userId) { window.location.href = "/"; }
+
+        // --- AVATAR MANAGEMENT ---
+        function triggerAvatarUpload() { document.getElementById('avatarInput').click(); }
+        function saveAvatar(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    localStorage.setItem("user_avatar", e.target.result);
+                    location.reload(); 
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        function getAvatarHTML(sizeClass = "w-8 h-8") {
+            const savedAvatar = localStorage.getItem("user_avatar");
+            const initials = username.substring(0, 2).toUpperCase();
+            if (savedAvatar) return `<img src="${savedAvatar}" class="${sizeClass} rounded-full object-cover shadow-sm ring-1 ring-white/20">`;
+            return `<div class="${sizeClass} rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-[10px] shadow-sm">${initials}</div>`;
+        }
+        function updateTopNavAvatar() {
+            document.getElementById('nav-avatar-container').innerHTML = getAvatarHTML("w-10 h-10 hover:scale-105 transition-transform");
         }
 
-        // Clear placeholder message
-        chatContainer.innerHTML = '';
+        // --- THEME & GREETING ---
+        document.getElementById('theme-toggle').addEventListener('click', () => document.documentElement.classList.toggle('light-mode'));
+        document.getElementById('logout-btn').addEventListener('click', () => { localStorage.clear(); window.location.href = "/"; });
+        
+        function updateTimeGreeting() {
+            const hour = new Date().getHours();
+            let text = '';
+            const name = username.split('@')[0];
+            if (hour >= 5 && hour < 12) text = `Good Morning, ${name}.`;
+            else if (hour >= 12 && hour < 17) text = `Good Afternoon, ${name}.`;
+            else if (hour >= 17 && hour < 22) text = `Good Evening, ${name}.`;
+            else text = `Still awake, ${name}?`;
+            document.getElementById('dynamic-greeting').innerText = text;
+        }
 
+        // --- MESSAGING LOGIC ---
         function appendMessage(role, content) {
             const msgDiv = document.createElement('div');
-
             if (role === 'ai' || role === 'assistant') {
                 msgDiv.className = "flex items-start gap-4";
                 msgDiv.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold shrink-0 text-[10px] shadow-sm ring-1 ring-white/10">R</div>
+                    <div class="w-8 h-8 rounded-full overflow-hidden shrink-0 shadow-sm ring-1 ring-white/10 bg-slate-800 flex items-center justify-center">
+                        <img src="/static/raahat_light-removebg-preview.png" alt="R" class="w-full h-full object-cover">
+                    </div>
                     <div class="message-bubble-left px-5 py-3 text-sm max-w-[80%] leading-relaxed shadow-sm whitespace-pre-wrap">${content}</div>
                 `;
             } else {
                 msgDiv.className = "flex items-start gap-4 flex-row-reverse";
-                const initials = getInitials(username);
                 msgDiv.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold shrink-0 text-[10px] shadow-sm">${initials}</div>
+                    <div class="cursor-pointer" onclick="triggerAvatarUpload()">${getAvatarHTML("w-8 h-8")}</div>
                     <div class="message-bubble-right px-5 py-3 text-sm max-w-[80%] leading-relaxed shadow-sm whitespace-pre-wrap">${content}</div>
                 `;
             }
@@ -351,19 +263,28 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // Instantiates the 'RAAHAT is thinking' bouncing dots UI
+        async function loadHistory() {
+            try {
+                const res = await fetch(`http://127.0.0.1:8000/api/history?user_id=${userId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && Array.isArray(data.history)) {
+                        data.history.forEach(msg => appendMessage(msg.role, msg.content));
+                    }
+                }
+            } catch (e) { console.error("History fetch failed:", e); }
+        }
+
         function showTypingIndicator() {
             const msgDiv = document.createElement('div');
-            msgDiv.className = "flex items-start gap-4 transition-all duration-300 ease-in-out";
+            msgDiv.className = "flex items-start gap-4";
             msgDiv.id = "typing-bubble";
             msgDiv.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold shrink-0 text-[10px] shadow-sm ring-1 ring-white/10">R</div>
+                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 ring-1 ring-white/10 overflow-hidden">
+                    <img src="/static/raahat_light-removebg-preview.png" class="w-full h-full object-cover">
+                </div>
                 <div class="message-bubble-left shadow-sm flex items-center px-4 py-3 min-h-[44px]">
-                    <div class="typing-indicator">
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                    </div>
+                    <div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
                 </div>
             `;
             chatContainer.appendChild(msgDiv);
@@ -371,93 +292,43 @@
             return msgDiv;
         }
 
-        // Cleanly removes the typing indicator from the DOM
-        function removeTypingIndicator(element) {
-            if (element && element.parentNode) {
-                element.parentNode.removeChild(element);
-            }
-        }
-
-        async function loadHistory() {
-            try {
-                // Using an absolute URL so this works when dashboard.html is opened directly
-                const res = await fetch(`http://127.0.0.1:8000/api/history?user_id=${userId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.history && data.history.length > 0) {
-                        data.history.forEach(msg => {
-                            appendMessage(msg.role, msg.content);
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error("Error fetching history:", error);
-            }
-        }
-
         async function sendMessage() {
             const text = chatInput.value.trim();
             if (!text || isLoading) return;
-
-            // Immediately display the user's message in the UI and clear the input field
             appendMessage('user', text);
             chatInput.value = '';
-
-            // Lock the UI state to prevent duplicate rapid-fire API calls while waiting
             isLoading = true;
-            sendBtn.disabled = true;
-            sendBtn.style.opacity = '0.5';
-
-            // Show 'RAAHAT is thinking...' indicator immediately
             const typingIndicator = showTypingIndicator();
-
             try {
-                // We use await to pause execution here until the FastAPI server responds
                 const response = await fetch('http://127.0.0.1:8000/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: userId, message: text })
                 });
-
-                // Check if the server successfully processed the request (HTTP 200-299)
+                typingIndicator.remove();
                 if (response.ok) {
                     const data = await response.json();
-
-                    // Force the UI to wait at least 800ms before removing the typing dots
-                    // so the bouncing animation has time to be seen, even on fast localhosts
-                    await new Promise(resolve => setTimeout(resolve, 800));
-
-                    // Remove the typing indicator right before appending the real reply
-                    removeTypingIndicator(typingIndicator);
-                    // Pass RAAHAT's reply back to the UI renderer
                     appendMessage('ai', data.response);
-                } else {
-                    removeTypingIndicator(typingIndicator);
-                    // This catches server-side crashes (like 500s or 422s Validation Errors)
-                    appendMessage('ai', "The sanctuary is currently offline. Please try again later.");
-                }
-            } catch (error) {
-                removeTypingIndicator(typingIndicator);
-                // This block specifically catches network-level failures (e.g., server isn't running)
-                console.error("Chat backend unreachable:", error);
-                appendMessage('ai', "The sanctuary is currently offline. Please try again later.");
-            } finally {
-                // The finally block guarantees the UI unlocks, regardless of success or failure
-                isLoading = false;
-                sendBtn.disabled = false;
-                sendBtn.style.opacity = '1';
-                chatInput.focus();
-            }
+                } else { appendMessage('ai', "The sanctuary is temporarily offline."); }
+            } catch (e) {
+                if(typingIndicator) typingIndicator.remove();
+                appendMessage('ai', "Connection lost. Please try again.");
+            } finally { isLoading = false; chatInput.focus(); }
         }
 
         sendBtn.addEventListener('click', sendMessage);
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
-        // Initialize
-        loadHistory();
+        // --- INITIALIZE DASHBOARD ---
+        updateTimeGreeting();
+        updateTopNavAvatar();
+        
+        // Load history then show welcome if empty
+        loadHistory().then(() => {
+            if (chatContainer.children.length === 0) {
+                appendMessage('ai', `Welcome back, ${username.split('@')[0]}. How are you feeling today?`);
+            }
+        });
     </script>
 </body>
-
 </html>
