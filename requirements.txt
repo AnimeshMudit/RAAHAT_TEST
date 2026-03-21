@@ -106,3 +106,4 @@ passlib[bcrypt]
 bcrypt==3.2.0
 uvicorn
 fastapi
+PyPDF2

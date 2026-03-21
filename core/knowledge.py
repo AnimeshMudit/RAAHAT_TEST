@@ -101,7 +101,7 @@ if __name__ == "__main__":
         document_chunks = split_chunks(document_text)
         
         # 1. Create the Vector Database
-        vector_db = create_vector(document_chunks)
+        vector_db = create_vector_store(document_chunks)
         print("✅ Vector Database created successfully!")
         
         # 2. Ask a question!
