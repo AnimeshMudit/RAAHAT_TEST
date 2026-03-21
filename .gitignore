@@ -2,3 +2,5 @@ venv/
 .env
 faiss_index/
 __pycache__/
+.vs/
+core/__pycache__/

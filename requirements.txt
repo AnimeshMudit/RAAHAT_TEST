@@ -104,3 +104,5 @@ yarl==1.22.0
 zstandard==0.25.0
 passlib[bcrypt]
 bcrypt==3.2.0
+uvicorn
+fastapi
