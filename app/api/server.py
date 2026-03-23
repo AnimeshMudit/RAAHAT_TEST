@@ -7,7 +7,7 @@ from uuid import UUID
 import uvicorn
 import os
 
-from core import memory, brain, knowledge, security
+from app.core import memory, brain, knowledge, security
 
 # Load vector database at startup if available
 vector_db = None
@@ -16,7 +16,7 @@ if os.path.exists("faiss_index"):
     print("Vector Vault Online! (Loaded from disk)")
 
 app = FastAPI(title="RAAHAT API")
-app.mount("/static", StaticFiles(directory="."), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Allow dashboard.html to fetch from this API running locally without CORS errors
 app.add_middleware(
@@ -43,12 +43,12 @@ class ChatRequest(BaseModel):
 # Existing simple HTML serving routes
 @app.get("/")
 async def serve_home():
-    with open("index.html", "r", encoding="utf-8") as file:
+    with open("static/index.html", "r", encoding="utf-8") as file:
         return HTMLResponse(content=file.read(), status_code=200)
     
 @app.get("/dashboard")
 async def serve_dashboard():
-    with open("dashboard.html", "r", encoding="utf-8") as file:
+    with open("static/dashboard.html", "r", encoding="utf-8") as file:
         return HTMLResponse(content=file.read(), status_code=200)
 
 # API Endpoints

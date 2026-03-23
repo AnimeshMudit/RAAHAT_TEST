@@ -63,9 +63,9 @@ def load_vector_store():
     
     return FAISS.load_local(FAISS_DB_PATH, embeddings, allow_dangerous_deserialization=True)
 
-def search_knowledge(query, vector_store):
+def search_knowledge(query, vector_store, k=3):
     """Translates the user's question into math and finds the closest text."""
-    results = vector_store.similarity_search(query, k=3)
+    results = vector_store.similarity_search(query, k=k)
     return [doc.page_content for doc in results]
 
 def load_all(folder_path="data"):
@@ -88,10 +88,6 @@ def load_all(folder_path="data"):
     vector_store = FAISS.from_texts(chunks, embeddings)
     return vector_store'''
 
-def search_knowledge(query, vector_store):
-    results = vector_store.similarity_search(query, k=3)
-    
-    return [doc.page_content for doc in results]
 
 if __name__ == "__main__":
     test_file = "data/sample.pdf" 

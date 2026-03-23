@@ -3,9 +3,10 @@ import colorama
 from colorama import Fore,Style
 import getpass
 
-from core import memory
-from core import brain
-from core import knowledge
+from app.core import memory
+from app.core import brain
+from app.core import knowledge
+from app.core import security
 
 def main():
     colorama.init(autoreset=True)
@@ -42,7 +43,16 @@ def main():
         user_name = input(Fore.YELLOW + "Enter your username: " + Style.RESET_ALL).strip()
         password = getpass.getpass(Fore.YELLOW + "Enter your password: " + Style.RESET_ALL) #need to know the working
          
-        user_id = memory.get_or_create_user(user_name,password) 
+        user_record = memory.get_user_by_email(user_name)
+        if user_record:
+            if security.verify_password(password, user_record["password_hash"]):
+                user_id = user_record["id"]
+            else:
+                user_id = None
+        else:
+            hashed_password = security.get_password_hash(password)
+            user_id = memory.create_user(user_name, hashed_password)
+
         if user_id:
             print(Fore.GREEN + f"\nWelcome, {user_name}. RAAHAT is online and connected to Supabase. Type 'quit' to exit.\n")
             break
