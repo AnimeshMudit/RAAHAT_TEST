@@ -58,13 +58,17 @@ def create_vector_store(chunks):
     return vector_store
 
 def load_vector_store():
-    """Loads the pre-calculated vector database from your hard drive."""
-    print("Loading existing Vector Vault from disk... (Skipping PDF extraction!)")
+    print("Loading existing Vector Vault from disk...")
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     
-    return FAISS.load_local(FAISS_DB_PATH, embeddings, allow_dangerous_deserialization=True)
+    return FAISS.load_local(
+        FAISS_DB_PATH, 
+        embeddings, 
+        allow_dangerous_deserialization=True,
+        distance_strategy="COSINE" 
+    )
 
-def search_knowledge(query, vector_store, k=5, threshold=0.6):
+def search_knowledge(query, vector_store, k=5, threshold=0.4):
     """
     Search with a strict threshold.
     lower score = higher similarity. 
@@ -142,13 +146,18 @@ if __name__ == "__main__":
         else:
             # 1. Split documents (this preserves the metadata automatically)
             print(f"Chopping {len(all_documents)} documents into chunks...")
-            splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+            splitter = RecursiveCharacterTextSplitter(chunk_size=400, chunk_overlap=50)
             final_chunks = splitter.split_documents(all_documents)
             
             # 2. Create the Vector Database
             print(f"🧠 Vectorizing {len(final_chunks)} chunks... (Wait for the Potato to finish)")
             embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-            vector_db = FAISS.from_documents(final_chunks, embeddings)
+            # Force Cosine Similarity
+            vector_db = FAISS.from_documents(
+                    final_chunks, 
+                    embeddings, 
+                    distance_strategy="COSINE"
+            )
             
             # 3. Save it
             vector_db.save_local("faiss_index")
