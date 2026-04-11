@@ -70,13 +70,22 @@ def get_response(text, history=[], context=""):
             model="llama-3.3-70b-versatile", 
             messages=messages,
             temperature=0.4,
-            max_tokens=150
+            max_tokens=800
         )
         return completion.choices[0].message.content
         
     except Exception as e:
         return f"❌ Brain Error: {str(e)}"
 
+def generate_search_keywords(user_input):
+    prompt = (
+        f"The user said: '{user_input}'. "
+        "Extract the core concept or clinical term they are asking about. "
+        "Include the exact term used by the user plus 2 synonyms. "
+        "Return ONLY the keywords separated by commas."
+    )
+    keywords = get_response(prompt) 
+    return keywords
 if __name__=="__main__":
     import colorama
     from colorama import Fore,Style

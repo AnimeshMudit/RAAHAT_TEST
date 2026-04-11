@@ -98,9 +98,15 @@ async def chat(request: ChatRequest):
     # Retrieve context
     context_text = ""
     if vector_db:
-        # Try to search the PDF for context
         try:
-            results = knowledge.search_knowledge(request.message, vector_db)
+            # --- ADD THESE 2 LINES HERE ---
+            # 1. Ask the brain to turn "drowning in thoughts" into "Grounding techniques, Stress"
+            search_query = brain.generate_search_keywords(request.message)
+            
+            # 2. Search FAISS with the BETTER keywords instead of the raw message
+            results = knowledge.search_knowledge(search_query, vector_db)
+            # ------------------------------
+
             if results:
                 context_text = "\n".join(results)
         except Exception as e:

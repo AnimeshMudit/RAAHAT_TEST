@@ -77,24 +77,32 @@ def main():
     memory.save_message(user_id, "ai", greeting)
     
     while True:
-        #User Input
+        # User Input
         user_input = input(Fore.YELLOW + "You: " + Style.RESET_ALL)
         
-        if not user_input: # Handle empty enters
+        if not user_input:
             continue
         
         if user_input.lower() in ['quit', 'exit']:
             print(Fore.CYAN + "RAAHAT shutting down. Take care.")
             break
         
-        #user query is saved 
+        # Save user query
         memory.save_message(user_id, "user", user_input)
         
         context_text = ""
         if vector_db:
-            # Search the PDF and join the top 3 chunks into one big string
-            results = knowledge.search_knowledge(user_input, vector_db)
-            context_text = "\n".join(results)
+            try:
+                # --- NEW: SEARCH QUERY EXPANSION ---
+                # 1. Ask brain to generate clinical terms (e.g., "drowning" -> "Grounding")
+                search_query = brain.generate_search_keywords(user_input)
+                print(Fore.MAGENTA + f"🔍 Searching Knowledge Base for: {search_query}")
+                
+                # 2. Search using the REFINED query instead of raw user input
+                results = knowledge.search_knowledge(search_query, vector_db)
+                context_text = "\n".join(results)
+            except Exception as e:
+                print(Fore.RED + f"Search Error: {e}")
         
         # Retrieve Past Memory
         chat_history = memory.fetch_history(user_id)
@@ -105,7 +113,7 @@ def main():
         # Speak to the User
         print(Fore.GREEN + f"RAAHAT: {response}\n")
         
-        # Save AI response to the Cloud
+        # Save AI response
         memory.save_message(user_id, "ai", response)
 
 if __name__ == "__main__":

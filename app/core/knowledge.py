@@ -3,6 +3,7 @@ import PyPDF2
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_core.documents import Document
 
 def extract_text(file_path):
     print(f"Reading:{file_path}...")
@@ -35,8 +36,8 @@ def load_all_pdfs_from_folder(folder_path="data"):
 def split_chunks(raw):
     print("Chopping text into chunks...")
     splitter=RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
+        chunk_size=500,
+        chunk_overlap=50,
         length_function=len
     )
     
@@ -63,10 +64,33 @@ def load_vector_store():
     
     return FAISS.load_local(FAISS_DB_PATH, embeddings, allow_dangerous_deserialization=True)
 
-def search_knowledge(query, vector_store, k=3):
-    """Translates the user's question into math and finds the closest text."""
-    results = vector_store.similarity_search(query, k=k)
-    return [doc.page_content for doc in results]
+def search_knowledge(query, vector_store, k=5, threshold=0.6):
+    """
+    Search with a strict threshold.
+    lower score = higher similarity. 
+    Matches above 0.8 are usually 'hallucinations' or irrelevant.
+    """
+    # 1. Get results with distance scores
+    results = vector_store.similarity_search_with_score(query, k=k)
+    
+    context_chunks = []
+    
+    for doc, score in results:
+        source = doc.metadata.get("source", "Unknown Manual")
+        
+        # --- THE FILTER ---
+        if score <= threshold:
+            # This is a 'Strong Match'
+            formatted_chunk = f"[Source: {source}]\n{doc.page_content}"
+            context_chunks.append(formatted_chunk)
+            print(f"✅ VALID MATCH: {source} (Score: {score:.4f})")
+        else:
+            # This is 'Noise' - Skip it
+            print(f"❌ REJECTED: {source} (Score: {score:.4f} is too weak)")
+
+    # 2. Safety Fallback: If EVERYTHING was rejected, return an empty list
+    # This prevents the AI from being forced to read irrelevant text.
+    return context_chunks
 
 def load_all(folder_path="data"):
     print(f"Scanning folder: {folder_path}...")
@@ -90,25 +114,53 @@ def load_all(folder_path="data"):
 
 
 if __name__ == "__main__":
-    test_file = "data/sample.pdf" 
+    folder = "data" 
     
-    if os.path.exists(test_file):
-        document_text = extract_text(test_file)
-        document_chunks = split_chunks(document_text)
+    if os.path.exists(folder):
+        print(f"🚀 Starting Full Ingestion from: {folder}")
         
-        # 1. Create the Vector Database
-        vector_db = create_vector_store(document_chunks)
-        print("✅ Vector Database created successfully!")
+        all_documents = []
+        for filename in os.listdir(folder):
+            if filename.lower().endswith(".pdf"):
+                path = os.path.join(folder, filename)
+                
+                # Extracting text
+                text = extract_text(path)
+                
+                if text.strip():
+                    # Create a Document object with metadata
+                    doc = Document(
+                        page_content=text, 
+                        metadata={"source": filename}
+                    )
+                    all_documents.append(doc)
+                else:
+                    print(f"⚠️ Warning: {filename} is empty or unreadable.")
         
-        # 2. Ask a question!
-        user_question = "What are the core actions of psychological first aid?"
-        
-        # 3. Search the database
-        answers = search_knowledge(user_question, vector_db)
-        
-        print("\n--- 🎯 TOP SEARCH RESULT ---")
-        print(answers[0])
-        print("---------------------------")
-        
+        if not all_documents:
+            print("❌ No valid text found in any PDFs. Check your data folder!")
+        else:
+            # 1. Split documents (this preserves the metadata automatically)
+            print(f"Chopping {len(all_documents)} documents into chunks...")
+            splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+            final_chunks = splitter.split_documents(all_documents)
+            
+            # 2. Create the Vector Database
+            print(f"🧠 Vectorizing {len(final_chunks)} chunks... (Wait for the Potato to finish)")
+            embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+            vector_db = FAISS.from_documents(final_chunks, embeddings)
+            
+            # 3. Save it
+            vector_db.save_local("faiss_index")
+            print("✅ Full Vector Vault created and saved to 'faiss_index'!")
+            
+            # 4. Test Query
+            user_question = "What are cognitive distortions?"
+            results = search_knowledge(user_question, vector_db)
+            
+            print("\n--- 🎯 TOP SEARCH RESULT ---")
+            if results:
+                print(results[0])
+            print("---------------------------")
     else:
-        print(f"❌ Error: Could not find {test_file}.")
+        print(f"❌ Error: Folder {folder} not found.")
