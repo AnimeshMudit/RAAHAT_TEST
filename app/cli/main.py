@@ -98,7 +98,7 @@ def main():
                 search_query = brain.generate_search_keywords(user_input)
                 print(Fore.MAGENTA + f"🔍 Searching Knowledge Base for: {search_query}")
                 
-                # 2. Search using the REFINED query instead of raw user input
+                # 2. search_knowledge cleans the query internally via clean_query()
                 results = knowledge.search_knowledge(search_query, vector_db)
                 context_text = "\n".join(results)
             except Exception as e:

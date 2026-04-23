@@ -6,8 +6,10 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>RAAHAT - Wellness Dashboard</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap"
+        rel="stylesheet" />
 
     <style>
         :root {
@@ -42,16 +44,28 @@
         }
 
         .moving-bg {
-            position: fixed; inset: 0; z-index: -2;
+            position: fixed;
+            inset: 0;
+            z-index: -2;
             background: inherit;
             animation: gentle-pan 25s alternate infinite ease-in-out;
             will-change: transform;
         }
 
-        @keyframes gentle-pan { 0% { transform: scale(1.0); } 100% { transform: scale(1.03); } }
+        @keyframes gentle-pan {
+            0% {
+                transform: scale(1.0);
+            }
+
+            100% {
+                transform: scale(1.03);
+            }
+        }
 
         .bg-overlay {
-            position: fixed; inset: 0; z-index: -1;
+            position: fixed;
+            inset: 0;
+            z-index: -1;
             background: rgba(0, 0, 0, 0.15);
             backdrop-filter: blur(2px);
         }
@@ -74,12 +88,16 @@
 
         /* CHAT BUBBLES */
         .message-bubble-left {
-            background: #ffffff; color: #0f172a;
+            background: #ffffff;
+            color: #0f172a;
             border-radius: 4px 18px 18px 18px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
-        .light-mode .message-bubble-left { background: #1e293b; color: #f8fafc; }
+        .light-mode .message-bubble-left {
+            background: #1e293b;
+            color: #f8fafc;
+        }
 
         .message-bubble-right {
             background: rgba(255, 255, 255, 0.2);
@@ -93,16 +111,46 @@
             border: 1px solid rgba(30, 41, 59, 0.15);
         }
 
-        .typing-indicator { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 8px; }
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 4px 8px;
+        }
+
         .typing-dot {
-            width: 8px; height: 8px; background: currentColor !important;
-            border-radius: 50%; opacity: 0.6;
+            width: 8px;
+            height: 8px;
+            background: currentColor !important;
+            border-radius: 50%;
+            opacity: 0.6;
             animation: typing 1.2s infinite ease-in-out both;
         }
-        @keyframes typing { 0%, 80%, 100% { transform: scale(0.4); opacity: 0.4; } 40% { transform: scale(1.1); opacity: 1; } }
 
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+        @keyframes typing {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0.4);
+                opacity: 0.4;
+            }
+
+            40% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 10px;
+        }
     </style>
 </head>
 
@@ -116,15 +164,17 @@
         <aside class="w-1/4 flex flex-col gap-5 h-full">
             <section class="glass-panel flex-grow p-7 flex flex-col justify-between overflow-hidden">
                 <div class="pt-2 text-center sm:text-left">
-                    <img src="/static/images/raahat_light-removebg-preview.png" alt="RAAHAT Logo" 
-                         class="w-16 h-16 mb-4 object-contain mx-auto sm:mx-0">
+                    <img src="/static/images/raahat_light-removebg-preview.png" alt="RAAHAT Logo"
+                        class="w-16 h-16 mb-4 object-contain mx-auto sm:mx-0">
                     <h1 class="text-3xl font-semibold tracking-widest mb-2">RAAHAT</h1>
-                    <p class="text-sm font-light text-[var(--text-muted)] leading-snug">The private sanctuary for your mind.</p>
+                    <p class="text-sm font-light text-[var(--text-muted)] leading-snug">The private sanctuary for your
+                        mind.</p>
                 </div>
                 <div class="inner-glass p-5">
                     <h2 class="text-lg font-medium mb-1">Daily Companion</h2>
                     <p class="text-[11px] text-[var(--text-muted)] mb-3">Grounding and mindfulness tools.</p>
-                    <button class="w-9 h-9 rounded-full bg-orange-500/20 text-orange-600 flex items-center justify-center transition-all hover:bg-orange-500 hover:text-white">
+                    <button
+                        class="w-9 h-9 rounded-full bg-orange-500/20 text-orange-600 flex items-center justify-center transition-all hover:bg-orange-500 hover:text-white">
                         <span class="material-symbols-outlined text-sm">arrow_forward</span>
                     </button>
                 </div>
@@ -140,29 +190,35 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <div id="nav-avatar-container" class="cursor-pointer" onclick="triggerAvatarUpload()"></div>
-                        <button id="theme-toggle" class="w-10 h-10 rounded-full inner-glass flex items-center justify-center hover:bg-black/5">
+                        <button id="theme-toggle"
+                            class="w-10 h-10 rounded-full inner-glass flex items-center justify-center hover:bg-black/5">
                             <span class="material-symbols-outlined text-xl">light_mode</span>
                         </button>
-                        <button id="logout-btn" class="px-4 h-10 rounded-full inner-glass flex items-center justify-center gap-2 hover:bg-red-500/10 hover:text-red-500">
+                        <button id="logout-btn"
+                            class="px-4 h-10 rounded-full inner-glass flex items-center justify-center gap-2 hover:bg-red-500/10 hover:text-red-500">
                             <span class="material-symbols-outlined text-sm">logout</span>
                             <span class="text-xs font-bold uppercase tracking-widest hidden sm:block">Logout</span>
                         </button>
                     </div>
                 </nav>
                 <div class="relative z-10">
-                    <p id="dynamic-greeting" class="text-[10px] font-bold tracking-[0.25em] uppercase mb-1" style="color: var(--greeting-color)"></p>
+                    <p id="dynamic-greeting" class="text-[10px] font-bold tracking-[0.25em] uppercase mb-1"
+                        style="color: var(--greeting-color)"></p>
                     <h2 class="text-4xl font-light">Your Path to <span class="font-medium">Wellness.</span></h2>
                 </div>
             </div>
 
             <div class="glass-panel flex-1 p-7 flex flex-col overflow-hidden">
                 <div class="flex-1 overflow-y-auto pr-3 space-y-5 flex flex-col" id="chat-messages">
-                    </div>
+                </div>
 
                 <div class="mt-5 pt-5 border-t border-black/5">
                     <div class="relative">
-                        <input id="user-input" class="w-full bg-black/5 border border-black/5 rounded-2xl py-4 px-7 focus:ring-1 focus:ring-black/10 focus:outline-none placeholder:text-slate-500 text-sm" placeholder="Speak your mind..." type="text" />
-                        <button id="send-btn" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-white hover:bg-orange-600 transition-colors">
+                        <input id="user-input"
+                            class="w-full bg-black/5 border border-black/5 rounded-2xl py-4 px-7 focus:ring-1 focus:ring-black/10 focus:outline-none placeholder:text-slate-500 text-sm"
+                            placeholder="Speak your mind..." type="text" />
+                        <button id="send-btn"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-white hover:bg-orange-600 transition-colors">
                             <span class="material-symbols-outlined text-lg">send</span>
                         </button>
                     </div>
@@ -180,7 +236,8 @@
                     </div>
                 </div>
             </section>
-            <section class="glass-panel p-6 bg-gradient-to-br from-orange-500/10 to-transparent flex flex-col justify-between">
+            <section
+                class="glass-panel p-6 bg-gradient-to-br from-orange-500/10 to-transparent flex flex-col justify-between">
                 <div>
                     <h3 class="text-[10px] uppercase font-bold mb-3 tracking-widest text-orange-600">Emergency</h3>
                     <p class="text-xl font-bold tracking-tight">14416</p>
@@ -211,7 +268,7 @@
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     localStorage.setItem("user_avatar", e.target.result);
-                    location.reload(); 
+                    location.reload();
                 };
                 reader.readAsDataURL(file);
             }
@@ -229,7 +286,7 @@
         // --- THEME & GREETING ---
         document.getElementById('theme-toggle').addEventListener('click', () => document.documentElement.classList.toggle('light-mode'));
         document.getElementById('logout-btn').addEventListener('click', () => { localStorage.clear(); window.location.href = "/"; });
-        
+
         function updateTimeGreeting() {
             const hour = new Date().getHours();
             let text = '';
@@ -311,7 +368,7 @@
                     appendMessage('ai', data.response);
                 } else { appendMessage('ai', "The sanctuary is temporarily offline."); }
             } catch (e) {
-                if(typingIndicator) typingIndicator.remove();
+                if (typingIndicator) typingIndicator.remove();
                 appendMessage('ai', "Connection lost. Please try again.");
             } finally { isLoading = false; chatInput.focus(); }
         }
@@ -322,7 +379,7 @@
         // --- INITIALIZE DASHBOARD ---
         updateTimeGreeting();
         updateTopNavAvatar();
-        
+
         // Load history then show welcome if empty
         loadHistory().then(() => {
             if (chatContainer.children.length === 0) {
@@ -331,4 +388,5 @@
         });
     </script>
 </body>
+
 </html>

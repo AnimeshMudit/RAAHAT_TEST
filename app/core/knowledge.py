@@ -1,23 +1,25 @@
 import os
-import PyPDF2
+import re
+import pdfplumber
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 
 def extract_text(file_path):
-    print(f"Reading:{file_path}...")
-    
-    raw=''
-    
-    with open(file_path,'rb') as f:
-        reader=PyPDF2.PdfReader(f)
-        
-        for page in reader.pages:
-            extract=page.extract_text()
-            if extract:
-                raw+=extract+"\n"
-                
+    print(f"Reading: {file_path}...")
+    raw = ''
+    try:
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text()
+                if text:
+                    # CLEANING: Fixes the 'broken word' issue common in WHO PDFs
+                    text = re.sub(r'(\w)-\n(\w)', r'\1\2', text) # Joins hyphenated words
+                    text = re.sub(r'\s+', ' ', text) # Removes weird spacing
+                    raw += text + "\n"
+    except Exception as e:
+        print(f"Error reading {file_path}: {e}")
     return raw
 
 def load_all_pdfs_from_folder(folder_path="data"):
@@ -34,66 +36,89 @@ def load_all_pdfs_from_folder(folder_path="data"):
     return combined_text
 
 def split_chunks(raw):
-    print("Chopping text into chunks...")
-    splitter=RecursiveCharacterTextSplitter(
-        chunk_size=500,
+    """Splits plain text into micro-chunks for surgical clinical retrieval."""
+    print("Chopping text into micro-chunks...")
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=350,
         chunk_overlap=50,
         length_function=len
     )
     
-    chunks=splitter.split_text(raw)
+    chunks = splitter.split_text(raw)
     return chunks
 
 FAISS_DB_PATH = "faiss_index"
 
+# --- EMBEDDING MODEL (Upgraded for Clinical Precision) ---
+EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
+
+def _get_embeddings():
+    """Returns a normalized embedding model for stable cosine scores."""
+    return HuggingFaceEmbeddings(
+        model_name=EMBEDDING_MODEL,
+        encode_kwargs={"normalize_embeddings": True}  # Keeps all scores between 0 and 1
+    )
+
 def create_vector_store(chunks):
+    """Creates FAISS index from plain text chunks (no metadata)."""
     print("🧠 Converting text into math (Vectorizing)... this might take a minute.")
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = _get_embeddings()
     
-    vector_store = FAISS.from_texts(chunks, embeddings)
+    vector_store = FAISS.from_texts(chunks, embeddings, distance_strategy="COSINE")
     
     vector_store.save_local(FAISS_DB_PATH)
-    print("Vector Vault permanently saved to disk!")
+    print("✅ Vector Vault permanently saved to disk!")
     
     return vector_store
 
 def load_vector_store():
+    """Loads the FAISS index from disk with the upgraded, normalized embeddings."""
     print("Loading existing Vector Vault from disk...")
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = _get_embeddings()
     
     return FAISS.load_local(
         FAISS_DB_PATH, 
         embeddings, 
         allow_dangerous_deserialization=True,
-        distance_strategy="COSINE" 
+        distance_strategy="COSINE"
     )
 
-def search_knowledge(query, vector_store, k=5, threshold=0.4):
+def clean_query(query: str) -> str:
     """
-    Search with a strict threshold.
-    lower score = higher similarity. 
-    Matches above 0.8 are usually 'hallucinations' or irrelevant.
+    Strips redundant synonyms from a comma-separated keyword string.
+    Takes only the first keyword to keep FAISS search surgical and precise.
+    Example: 'grounding, anchoring, calming technique' -> 'grounding'
     """
-    # 1. Get results with distance scores
-    results = vector_store.similarity_search_with_score(query, k=k)
+    primary = query.split(',')[0].strip()
+    # Normalize whitespace and lowercase for consistent matching
+    return re.sub(r'\s+', ' ', primary).lower()
+
+def search_knowledge(query, vector_store, k=5, threshold=0.35):
+    """
+    Searches the FAISS index with a strict cosine similarity threshold.
+    With normalized embeddings, distance scores stay between 0 and 1:
+      - 0.00–0.15 → Near-exact match
+      - 0.15–0.35 → High-quality clinical match (VALID)
+      - 0.35+     → Weak/irrelevant match (REJECTED)
+    """
+    cleaned = clean_query(query)
+    print(f"🔍 Clean query sent to FAISS: '{cleaned}'")
+    
+    results = vector_store.similarity_search_with_score(cleaned, k=k)
     
     context_chunks = []
     
     for doc, score in results:
+        # Preserve source filename from metadata for citation
         source = doc.metadata.get("source", "Unknown Manual")
         
-        # --- THE FILTER ---
         if score <= threshold:
-            # This is a 'Strong Match'
             formatted_chunk = f"[Source: {source}]\n{doc.page_content}"
             context_chunks.append(formatted_chunk)
             print(f"✅ VALID MATCH: {source} (Score: {score:.4f})")
         else:
-            # This is 'Noise' - Skip it
-            print(f"❌ REJECTED: {source} (Score: {score:.4f} is too weak)")
+            print(f"❌ REJECTED: {source} (Score: {score:.4f} — too weak)")
 
-    # 2. Safety Fallback: If EVERYTHING was rejected, return an empty list
-    # This prevents the AI from being forced to read irrelevant text.
     return context_chunks
 
 def load_all(folder_path="data"):
@@ -144,20 +169,16 @@ if __name__ == "__main__":
         if not all_documents:
             print("❌ No valid text found in any PDFs. Check your data folder!")
         else:
-            # 1. Split documents (this preserves the metadata automatically)
-            print(f"Chopping {len(all_documents)} documents into chunks...")
-            splitter = RecursiveCharacterTextSplitter(chunk_size=400, chunk_overlap=50)
+            # 1. Split documents — micro-chunks preserve metadata automatically
+            print(f"Chopping {len(all_documents)} documents into micro-chunks...")
+            splitter = RecursiveCharacterTextSplitter(chunk_size=350, chunk_overlap=50)
             final_chunks = splitter.split_documents(all_documents)
             
-            # 2. Create the Vector Database
-            print(f"🧠 Vectorizing {len(final_chunks)} chunks... (Wait for the Potato to finish)")
-            embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-            # Force Cosine Similarity
-            vector_db = FAISS.from_documents(
-                    final_chunks, 
-                    embeddings, 
-                    distance_strategy="COSINE"
-            )
+            # 2. Create the Vector Database with normalized embeddings + cosine similarity
+            print(f"🧠 Vectorizing {len(final_chunks)} chunks with all-mpnet-base-v2...")
+            embeddings = _get_embeddings()
+            print(f"Starting batch vectorization of {len(final_chunks)} chunks...")
+            vector_db = FAISS.from_documents(final_chunks, embeddings, distance_strategy="COSINE")
             
             # 3. Save it
             vector_db.save_local("faiss_index")
