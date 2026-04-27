@@ -6,11 +6,10 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>RAAHAT - Wellness Dashboard</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap"
-        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap" rel="stylesheet" />
 
+    <link rel="stylesheet" href="/static/ui.css" />
     <style>
         :root {
             --bg-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2070');
@@ -36,48 +35,60 @@
 
         body {
             font-family: 'Outfit', sans-serif;
+            background-color: #0f172a;
+            transition: all 0.6s ease;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* --- 3D PARALLAX BACKGROUND --- */
+        .moving-bg {
+            position: fixed;
+            inset: -5%; /* Extra 5% for movement room */
+            z-index: -2;
             background-image: var(--bg-image);
             background-size: cover;
             background-position: center;
-            background-attachment: fixed;
-            transition: all 0.6s ease;
-        }
-
-        .moving-bg {
-            position: fixed;
-            inset: 0;
-            z-index: -2;
-            background: inherit;
-            animation: gentle-pan 25s alternate infinite ease-in-out;
+            transition: transform 0.2s ease-out; /* Smooth parallax */
             will-change: transform;
         }
 
-        @keyframes gentle-pan {
-            0% {
-                transform: scale(1.0);
-            }
-
-            100% {
-                transform: scale(1.03);
-            }
-        }
-
         .bg-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            background: rgba(0, 0, 0, 0.15);
-            backdrop-filter: blur(2px);
+            position: fixed; inset: 0; z-index: -1;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(1px);
         }
 
+        /* --- GLASS REFRACTION & HOVER --- */
         .glass-panel {
             background: var(--glass-bg);
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(12px);
             border: 1px solid var(--glass-border);
             border-radius: 28px;
             box-shadow: var(--panel-shadow);
             color: var(--text-main);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
+
+        .glass-panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.45);
+        }
+
+        /* Shimmer Effect */
+        .glass-panel::after {
+            content: "";
+            position: absolute;
+            top: -150%; left: -150%;
+            width: 300%; height: 300%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.05), transparent);
+            transform: rotate(45deg);
+            transition: all 0.8s ease;
+            pointer-events: none;
+        }
+        .glass-panel:hover::after { top: 150%; left: 150%; }
 
         .inner-glass {
             background: var(--inner-glass);
@@ -86,139 +97,91 @@
             border-radius: 20px;
         }
 
-        /* CHAT BUBBLES */
-        .message-bubble-left {
-            background: #ffffff;
-            color: #0f172a;
-            border-radius: 4px 18px 18px 18px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        /* --- BREATHE WIDGET --- */
+        @keyframes breathe {
+            0%, 100% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.15); opacity: 1; border-color: rgba(249, 115, 22, 0.8); }
         }
+        .breathe-circle { animation: breathe 8s infinite ease-in-out; }
 
-        .light-mode .message-bubble-left {
-            background: #1e293b;
-            color: #f8fafc;
-        }
+        /* Existing Bubbles */
+        .message-bubble-left { background: #ffffff; color: #0f172a; border-radius: 4px 18px 18px 18px; }
+        .light-mode .message-bubble-left { background: #1e293b; color: #f8fafc; }
+        .message-bubble-right { background: rgba(255, 255, 255, 0.15); color: var(--text-main); border-radius: 18px 18px 4px 18px; border: 1px solid var(--glass-border); }
+        
+        .typing-dot { width: 8px; height: 8px; background: currentColor; border-radius: 50%; opacity: 0.6; animation: typing 1.2s infinite ease-in-out both; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0.4); opacity: 0.4; } 40% { transform: scale(1.1); opacity: 1; } }
 
-        .message-bubble-right {
-            background: rgba(255, 255, 255, 0.2);
-            color: var(--text-main);
-            border-radius: 18px 18px 4px 18px;
-            border: 1px solid var(--glass-border);
-        }
-
-        .light-mode .message-bubble-right {
-            background: rgba(30, 41, 59, 0.08);
-            border: 1px solid rgba(30, 41, 59, 0.15);
-        }
-
-        .typing-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            padding: 4px 8px;
-        }
-
-        .typing-dot {
-            width: 8px;
-            height: 8px;
-            background: currentColor !important;
-            border-radius: 50%;
-            opacity: 0.6;
-            animation: typing 1.2s infinite ease-in-out both;
-        }
-
-        @keyframes typing {
-
-            0%,
-            80%,
-            100% {
-                transform: scale(0.4);
-                opacity: 0.4;
-            }
-
-            40% {
-                transform: scale(1.1);
-                opacity: 1;
-            }
-        }
-
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--glass-border);
-            border-radius: 10px;
-        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
     </style>
 </head>
 
-<body class="h-screen overflow-hidden p-6">
-    <div class="moving-bg"></div>
+<body class="h-screen p-6">
+    <div class="moving-bg" id="parallax-bg"></div>
+    <canvas id="particleCanvas" class="fixed inset-0 z-[-1] pointer-events-none opacity-40"></canvas>
     <div class="bg-overlay"></div>
 
     <input type="file" id="avatarInput" class="hidden" accept="image/*" onchange="saveAvatar(event)">
 
-    <main class="flex h-full w-full gap-5 max-w-[1500px] mx-auto">
-        <aside class="w-1/4 flex flex-col gap-5 h-full">
-            <section class="glass-panel flex-grow p-7 flex flex-col justify-between overflow-hidden">
+    <main class="flex h-full w-full gap-5 max-w-[1500px] mx-auto relative z-10">
+        <aside class="w-1/4 flex flex-col gap-5 h-full reveal-text reveal-delay-1">
+            <section class="glass-panel spotlight-card tilt-element flex-grow p-7 flex flex-col justify-between overflow-hidden">
                 <div class="pt-2 text-center sm:text-left">
-                    <img src="/static/images/raahat_light-removebg-preview.png" alt="RAAHAT Logo"
-                        class="w-16 h-16 mb-4 object-contain mx-auto sm:mx-0">
+                    <img src="/static/images/raahat_light-removebg-preview.png" alt="RAAHAT Logo" 
+                         class="w-16 h-16 mb-4 object-contain mx-auto sm:mx-0 drop-shadow-lg">
                     <h1 class="text-3xl font-semibold tracking-widest mb-2">RAAHAT</h1>
-                    <p class="text-sm font-light text-[var(--text-muted)] leading-snug">The private sanctuary for your
-                        mind.</p>
+                    <p class="text-sm font-light text-[var(--text-muted)] leading-snug">The private sanctuary for your mind.</p>
                 </div>
+                
+                <div class="inner-glass p-5 flex flex-col items-center justify-center text-center">
+                    <p class="text-[9px] uppercase tracking-[0.2em] mb-3 opacity-60">Focus Breath</p>
+                    <div class="breathe-circle w-14 h-14 rounded-full border border-orange-500/40 flex items-center justify-center mb-1">
+                        <span id="breathe-text" class="text-[9px] font-bold text-orange-500">IN</span>
+                    </div>
+                </div>
+
                 <div class="inner-glass p-5">
-                    <h2 class="text-lg font-medium mb-1">Daily Companion</h2>
-                    <p class="text-[11px] text-[var(--text-muted)] mb-3">Grounding and mindfulness tools.</p>
-                    <button
-                        class="w-9 h-9 rounded-full bg-orange-500/20 text-orange-600 flex items-center justify-center transition-all hover:bg-orange-500 hover:text-white">
-                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                    <h2 class="text-lg font-medium mb-1">Mindfulness</h2>
+                    <p class="text-[11px] text-[var(--text-muted)] mb-3">Stay grounded in the now.</p>
+                    <button class="w-9 h-9 rounded-full bg-orange-500/20 text-orange-600 flex items-center justify-center transition-all hover:bg-orange-500 hover:text-white group">
+                        <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
                     </button>
                 </div>
             </section>
         </aside>
 
-        <section class="flex-1 flex flex-col gap-5 h-full">
-            <div class="inner-glass h-[23%] p-7 flex flex-col justify-between relative overflow-hidden">
+        <section class="flex-1 flex flex-col gap-5 h-full reveal-text reveal-delay-2">
+            <div class="inner-glass spotlight-card h-[23%] p-7 flex flex-col justify-between relative overflow-hidden">
                 <nav class="flex items-center justify-between relative z-10">
                     <div class="flex items-center inner-glass p-1 gap-1">
                         <button class="px-5 py-1.5 rounded-full bg-white/10 text-xs font-medium">Chat</button>
-                        <button class="px-5 py-1.5 rounded-full text-xs opacity-50">Mindfulness</button>
+                        <button class="px-5 py-1.5 rounded-full text-xs opacity-50 hover:opacity-100 transition-opacity">Mindfulness</button>
                     </div>
                     <div class="flex items-center gap-3">
                         <div id="nav-avatar-container" class="cursor-pointer" onclick="triggerAvatarUpload()"></div>
-                        <button id="theme-toggle"
-                            class="w-10 h-10 rounded-full inner-glass flex items-center justify-center hover:bg-black/5">
+                        <button id="theme-toggle" class="w-10 h-10 rounded-full inner-glass flex items-center justify-center hover:bg-white/10 transition-colors">
                             <span class="material-symbols-outlined text-xl">light_mode</span>
                         </button>
-                        <button id="logout-btn"
-                            class="px-4 h-10 rounded-full inner-glass flex items-center justify-center gap-2 hover:bg-red-500/10 hover:text-red-500">
+                        <button id="logout-btn" class="px-4 h-10 rounded-full inner-glass flex items-center justify-center gap-2 hover:bg-red-500/10 hover:text-red-500 transition-all cursor-pointer">
                             <span class="material-symbols-outlined text-sm">logout</span>
                             <span class="text-xs font-bold uppercase tracking-widest hidden sm:block">Logout</span>
                         </button>
                     </div>
                 </nav>
                 <div class="relative z-10">
-                    <p id="dynamic-greeting" class="text-[10px] font-bold tracking-[0.25em] uppercase mb-1"
-                        style="color: var(--greeting-color)"></p>
+                    <p id="dynamic-greeting" class="text-[10px] font-bold tracking-[0.25em] uppercase mb-1" style="color: var(--greeting-color)"></p>
                     <h2 class="text-4xl font-light">Your Path to <span class="font-medium">Wellness.</span></h2>
                 </div>
             </div>
 
-            <div class="glass-panel flex-1 p-7 flex flex-col overflow-hidden">
-                <div class="flex-1 overflow-y-auto pr-3 space-y-5 flex flex-col" id="chat-messages">
-                </div>
+            <div class="glass-panel spotlight-card flex-1 p-7 flex flex-col overflow-hidden">
+                <div class="flex-1 overflow-y-auto pr-3 space-y-5 flex flex-col" id="chat-messages"></div>
 
-                <div class="mt-5 pt-5 border-t border-black/5">
+                <div class="mt-5 pt-5 border-t border-white/5">
                     <div class="relative">
-                        <input id="user-input"
-                            class="w-full bg-black/5 border border-black/5 rounded-2xl py-4 px-7 focus:ring-1 focus:ring-black/10 focus:outline-none placeholder:text-slate-500 text-sm"
-                            placeholder="Speak your mind..." type="text" />
-                        <button id="send-btn"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-white hover:bg-orange-600 transition-colors">
+                        <input id="user-input" class="w-full bg-white/5 border border-white/5 rounded-2xl py-4 px-7 focus:ring-1 focus:ring-orange-500/30 focus:outline-none placeholder:text-slate-500 text-sm transition-all" placeholder="Speak your mind..." type="text" />
+                        <button id="send-btn" class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center text-white hover:bg-orange-600 transition-all active:scale-90">
                             <span class="material-symbols-outlined text-lg">send</span>
                         </button>
                     </div>
@@ -226,41 +189,149 @@
             </div>
         </section>
 
-        <aside class="w-1/4 flex flex-col gap-5 h-full">
-            <section class="inner-glass p-5 h-[40%] flex flex-col">
+        <aside class="w-1/4 flex flex-col gap-5 h-full reveal-text reveal-delay-3">
+            <section class="inner-glass spotlight-card p-5 h-[40%] flex flex-col">
                 <h3 class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-3">Knowledge</h3>
                 <div class="space-y-2 overflow-y-auto pr-1">
-                    <div class="inner-glass p-3 border-black/5 hover:bg-black/5 cursor-pointer">
+                    <div class="inner-glass p-3 border-white/5 hover:bg-white/5 cursor-pointer transition-colors">
                         <h5 class="text-xs font-semibold">Thought Patterns</h5>
                         <p class="text-[9px] opacity-50">Cognitive distortions guide.</p>
                     </div>
                 </div>
             </section>
-            <section
-                class="glass-panel p-6 bg-gradient-to-br from-orange-500/10 to-transparent flex flex-col justify-between">
+            
+            <section class="glass-panel spotlight-card tilt-element p-6 bg-gradient-to-br from-orange-500/10 to-transparent flex flex-col justify-between">
                 <div>
-                    <h3 class="text-[10px] uppercase font-bold mb-3 tracking-widest text-orange-600">Emergency</h3>
-                    <p class="text-xl font-bold tracking-tight">14416</p>
+                    <h3 class="text-[10px] uppercase font-bold mb-3 tracking-widest text-orange-600">SOS Help</h3>
+                    <p class="text-2xl font-bold tracking-tight">14416</p>
+                    <p class="text-[9px] opacity-50 mt-1">Available 24/7</p>
                 </div>
-                <div class="pt-5 border-t border-black/10 text-center">
+                <div class="pt-5 border-t border-white/10 text-center">
                     <h4 class="text-2xl font-bold tracking-tighter">DIARY</h4>
-                    <p class="text-[9px] opacity-40 tracking-widest uppercase">Journal Active</p>
+                    <p class="text-[9px] opacity-40 tracking-widest uppercase">Encryption Active</p>
                 </div>
             </section>
         </aside>
     </main>
 
+    <script src="/static/ui.js"></script>
     <script>
+        // --- 0. HANDLE GOOGLE OAUTH REDIRECT (params → localStorage) ---
+        // The Google OAuth callback sends: /dashboard?user_id=...&username=...
+        // We persist them into localStorage so the rest of the page works the same
+        // regardless of whether the user signed in via Google or email/OTP.
+        (() => {
+            const params = new URLSearchParams(window.location.search);
+            const paramUserId = params.get("user_id");
+            const paramUsername = params.get("username");
+            if (paramUserId) {
+                localStorage.setItem("user_id", String(paramUserId));
+                localStorage.setItem("username", paramUsername || paramUserId);
+                // Clean the URL so user_id isn't visible in the address bar
+                window.history.replaceState({}, document.title, "/dashboard");
+            }
+        })();
+
         const userId = localStorage.getItem("user_id");
-        const username = localStorage.getItem("username") || "Explorer";
+        const username = localStorage.getItem("username") || "Traveler";
         const chatContainer = document.getElementById('chat-messages');
         const chatInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         let isLoading = false;
 
-        if (!userId) { window.location.href = "/"; }
+        if (!userId || userId === "null" || userId === "undefined") {
+            console.error("No valid user_id in localStorage — redirecting to login.");
+            window.location.href = "/login";
+        }
 
-        // --- AVATAR MANAGEMENT ---
+        // --- 1. PARALLAX EFFECT ---
+        let globalMouseX = window.innerWidth / 2;
+        let globalMouseY = window.innerHeight / 2;
+
+        document.addEventListener('mousemove', (e) => {
+            globalMouseX = e.clientX;
+            globalMouseY = e.clientY;
+            const bg = document.getElementById('parallax-bg');
+            const x = (window.innerWidth / 2 - e.pageX) / 50;
+            const y = (window.innerHeight / 2 - e.pageY) / 50;
+            bg.style.transform = `scale(1.1) translate(${x}px, ${y}px)`;
+        });
+
+        // --- 2. ADVANCED ZEN PARTICLES (CANVAS) ---
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.onresize = resize; resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.density = (Math.random() * 30) + 1;
+                this.opacity = Math.random() * 0.6 + 0.1;
+            }
+            update() {
+                let dx = globalMouseX - this.x;
+                let dy = globalMouseY - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                let forceDirectionX = dx / distance;
+                let forceDirectionY = dy / distance;
+                let maxDistance = 150;
+                let force = (maxDistance - distance) / maxDistance;
+                let directionX = forceDirectionX * force * this.density;
+                let directionY = forceDirectionY * force * this.density;
+                
+                if (distance < maxDistance) {
+                    this.x -= directionX;
+                    this.y -= directionY;
+                } else {
+                    if (this.x !== this.baseX) {
+                        let dx = this.x - this.baseX;
+                        this.x -= dx / 50;
+                    }
+                    if (this.y !== this.baseY) {
+                        let dy = this.y - this.baseY;
+                        this.y -= dy / 50;
+                    }
+                }
+                
+                // Slow drift upwards
+                this.baseY -= 0.3;
+                if (this.baseY < -10) this.baseY = canvas.height + 10;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 80; i++) particles.push(new Particle());
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- 3. BREATHE TEXT LOGIC ---
+        const breatheLabel = document.getElementById('breathe-text');
+        setInterval(() => {
+            breatheLabel.innerText = breatheLabel.innerText === "IN" ? "OUT" : "IN";
+        }, 4000);
+
+        // --- 4. AVATAR & THEME (EXISTING) ---
         function triggerAvatarUpload() { document.getElementById('avatarInput').click(); }
         function saveAvatar(event) {
             const file = event.target.files[0];
@@ -268,7 +339,7 @@
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     localStorage.setItem("user_avatar", e.target.result);
-                    location.reload();
+                    location.reload(); 
                 };
                 reader.readAsDataURL(file);
             }
@@ -283,10 +354,9 @@
             document.getElementById('nav-avatar-container').innerHTML = getAvatarHTML("w-10 h-10 hover:scale-105 transition-transform");
         }
 
-        // --- THEME & GREETING ---
         document.getElementById('theme-toggle').addEventListener('click', () => document.documentElement.classList.toggle('light-mode'));
-        document.getElementById('logout-btn').addEventListener('click', () => { localStorage.clear(); window.location.href = "/"; });
-
+        document.getElementById('logout-btn').addEventListener('click', () => { localStorage.clear(); window.location.href = "/login"; });
+        
         function updateTimeGreeting() {
             const hour = new Date().getHours();
             let text = '';
@@ -298,9 +368,13 @@
             document.getElementById('dynamic-greeting').innerText = text;
         }
 
-        // --- MESSAGING LOGIC ---
+        // --- 5. CHAT ENGINE (EXISTING) ---
         function appendMessage(role, content) {
             const msgDiv = document.createElement('div');
+            msgDiv.style.opacity = "0";
+            msgDiv.style.transform = "translateY(10px)";
+            msgDiv.style.transition = "all 0.4s ease";
+
             if (role === 'ai' || role === 'assistant') {
                 msgDiv.className = "flex items-start gap-4";
                 msgDiv.innerHTML = `
@@ -317,12 +391,13 @@
                 `;
             }
             chatContainer.appendChild(msgDiv);
+            setTimeout(() => { msgDiv.style.opacity = "1"; msgDiv.style.transform = "translateY(0)"; }, 50);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         async function loadHistory() {
             try {
-                const res = await fetch(`http://127.0.0.1:8000/api/history?user_id=${userId}`);
+                const res = await fetch(`/api/history?user_id=${userId}`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data && Array.isArray(data.history)) {
@@ -332,43 +407,33 @@
             } catch (e) { console.error("History fetch failed:", e); }
         }
 
-        function showTypingIndicator() {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = "flex items-start gap-4";
-            msgDiv.id = "typing-bubble";
-            msgDiv.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 ring-1 ring-white/10 overflow-hidden">
-                    <img src="/static/images/raahat_light-removebg-preview.png" class="w-full h-full object-cover">
-                </div>
-                <div class="message-bubble-left shadow-sm flex items-center px-4 py-3 min-h-[44px]">
-                    <div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
-                </div>
-            `;
-            chatContainer.appendChild(msgDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            return msgDiv;
-        }
-
         async function sendMessage() {
             const text = chatInput.value.trim();
             if (!text || isLoading) return;
             appendMessage('user', text);
             chatInput.value = '';
             isLoading = true;
-            const typingIndicator = showTypingIndicator();
+            
+            // Typing Indicator
+            const typingDiv = document.createElement('div');
+            typingDiv.className = "flex items-start gap-4";
+            typingDiv.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-800 shrink-0 ring-1 ring-white/10 overflow-hidden"><img src="/static/images/raahat_light-removebg-preview.png" class="w-full h-full"></div><div class="message-bubble-left px-4 py-3"><div class="typing-indicator flex gap-1"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
             try {
-                const response = await fetch('http://127.0.0.1:8000/api/chat', {
+                const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: userId, message: text })
                 });
-                typingIndicator.remove();
+                typingDiv.remove();
                 if (response.ok) {
                     const data = await response.json();
                     appendMessage('ai', data.response);
                 } else { appendMessage('ai', "The sanctuary is temporarily offline."); }
             } catch (e) {
-                if (typingIndicator) typingIndicator.remove();
+                typingDiv.remove();
                 appendMessage('ai', "Connection lost. Please try again.");
             } finally { isLoading = false; chatInput.focus(); }
         }
@@ -376,17 +441,14 @@
         sendBtn.addEventListener('click', sendMessage);
         chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
-        // --- INITIALIZE DASHBOARD ---
+        // Init
         updateTimeGreeting();
         updateTopNavAvatar();
-
-        // Load history then show welcome if empty
         loadHistory().then(() => {
             if (chatContainer.children.length === 0) {
-                appendMessage('ai', `Welcome back, ${username.split('@')[0]}. How are you feeling today?`);
+                appendMessage('ai', `Welcome back, ${username}. How are you feeling today?`);
             }
         });
     </script>
 </body>
-
 </html>
