@@ -1,24 +1,34 @@
+import os
+import sys
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from uuid import UUID
-import uvicorn
-import os
 
+# -------------------- PATH SETUP --------------------
+# This ensures Python can find your 'app' module regardless of where you run the script
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+# -------------------- CORE IMPORTS --------------------
 from app.core import memory, brain, knowledge, security
+from app.core.security import verify_email_real
+from app.core.google_auth import get_google_auth_url
 
-# Load vector database at startup if available
-vector_db = None
-if os.path.exists("faiss_index"):
-    vector_db = knowledge.load_vector_store()
-    print("Vector Vault Online! (Loaded from disk)")
-
+# -------------------- APP INITIALIZATION --------------------
 app = FastAPI(title="RAAHAT API")
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Allow dashboard.html to fetch from this API running locally without CORS errors
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+FAISS_DIR = os.path.join(BASE_DIR, "faiss_index")
+
+# Mount static files to serve images, CSS, and JS assets
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,102 +37,202 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Models for API requests
-class LoginRequest(BaseModel):
+# -------------------- DATA MODELS --------------------
+class AuthRequest(BaseModel):
     username: str
     password: str
 
-class SignupRequest(BaseModel):
-    username: str
-    password: str
+class VerifyRequest(BaseModel):
+    email: str
+    token: str
 
 class ChatRequest(BaseModel):
     user_id: UUID
     message: str
 
-# Existing simple HTML serving routes
-@app.get("/")
-async def serve_home():
-    with open("static/index.html", "r", encoding="utf-8") as file:
-        return HTMLResponse(content=file.read(), status_code=200)
-    
-@app.get("/dashboard")
-async def serve_dashboard():
-    with open("static/dashboard.html", "r", encoding="utf-8") as file:
-        return HTMLResponse(content=file.read(), status_code=200)
+class SyncUserRequest(BaseModel):
+    email: str
 
-# API Endpoints
+# -------------------- UI ROUTING (FRONTEND) --------------------
+
+def no_cache_html(content: str) -> HTMLResponse:
+    return HTMLResponse(content=content, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_root():
+    """The main entry point: Serves the Landing Page."""
+    return await serve_landing()
+
+@app.get("/landing", response_class=HTMLResponse)
+async def serve_landing():
+    """Serves the Sanctuary Entry Portal (landing.html)."""
+    file_path = os.path.join(STATIC_DIR, "landing.html")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="landing.html not found in static folder")
+    with open(file_path, "r", encoding="utf-8") as file:
+        return no_cache_html(file.read())
+
+@app.get("/login", response_class=HTMLResponse)
+async def serve_login():
+    """Serves the Login/Signup Page (formerly index.html)."""
+    file_path = os.path.join(STATIC_DIR, "index.html")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="index.html not found")
+    with open(file_path, "r", encoding="utf-8") as file:
+        return no_cache_html(file.read())
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def serve_dashboard():
+    """Serves the main Wellness Dashboard."""
+    file_path = os.path.join(STATIC_DIR, "dashboard.html")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="dashboard.html not found")
+    with open(file_path, "r", encoding="utf-8") as file:
+        return no_cache_html(file.read())
+
+@app.get("/verify", response_class=HTMLResponse)
+async def serve_verify():
+    """Serves the OTP Verification Page."""
+    file_path = os.path.join(STATIC_DIR, "verify.html")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="verify.html not found")
+    with open(file_path, "r", encoding="utf-8") as file:
+        return no_cache_html(file.read())
+
+# -------------------- GOOGLE AUTH ENDPOINTS --------------------
+
+@app.post("/api/sync-user")
+async def sync_user(request: SyncUserRequest):
+    try:
+        user_record = memory.get_user_by_email(request.email)
+        if not user_record:
+            user_id = memory.create_user(request.email, "google_oauth_user", is_verified=True)
+        else:
+            user_id = user_record["id"]
+        return {"user_id": user_id, "username": request.email}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/auth/google")
+async def login_google():
+    try:
+        # Redirect to /auth/callback so the browser can handle PKCE code exchange
+        url = get_google_auth_url(redirect_to="http://127.0.0.1:8000/auth/callback")
+        return {"url": url}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/auth/callback", response_class=HTMLResponse)
+async def auth_callback():
+    """
+    Serves the frontend callback page.
+    Supabase uses PKCE — the browser holds the code_verifier, so the token
+    exchange MUST happen client-side via the Supabase JS SDK.
+    callback.html handles the exchange, syncs with /api/sync-user, then
+    redirects to /dashboard.
+    """
+    file_path = os.path.join(STATIC_DIR, "callback.html")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="callback.html not found")
+    with open(file_path, "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+# -------------------- TRADITIONAL AUTH API --------------------
+
 @app.post("/api/signup")
-async def signup(request: SignupRequest):
-    user_record = memory.get_user_by_email(request.username)
-    if user_record:
-        raise HTTPException(status_code=400, detail="User already exists")
-    
-    hashed_password = security.get_password_hash(request.password)
-    user_id = memory.create_user(request.username, hashed_password)
-    
-    # Provide an initial greeting for new users
-    greeting = (
-        f"Welcome, {request.username}.\n\n"
-        "The world asks a lot of you, but here, you don't have to be anyone but yourself.\n"
-        "Your secrets are safe, your burdens are shared, and your pace is respected.\n"
-        "Whenever you're ready to let it out, I'm here to listen."
-    )
-    memory.save_message(user_id, "ai", greeting)
-    return {"user_id": user_id, "username": request.username}
+async def signup(request: AuthRequest):
+    try:
+        is_real, normalized_email = verify_email_real(request.username)
+        if not is_real:
+            raise HTTPException(status_code=400, detail=f"Invalid Email: {normalized_email}")
+        
+        memory.supabase.auth.sign_in_with_otp({
+            "email": normalized_email,
+            "options": {"redirect_to": "http://127.0.0.1:8000/dashboard"}
+        })
+
+        existing = memory.get_user_by_email(normalized_email)
+        if not existing:
+            pwd = request.password if request.password else "otp_user"
+            memory.create_user(normalized_email, security.get_password_hash(pwd), is_verified=False)
+        return {"message": "Verification code sent! Check your email."}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/verify-otp")
+async def verify_otp(request: VerifyRequest):
+    res = None
+    # Try "email" type first (used by sign_in_with_otp / magic-link flow for existing & returning users)
+    for otp_type in ["email", "signup"]:
+        try:
+            res = memory.supabase.auth.verify_otp({
+                "email": request.email,
+                "token": request.token,
+                "type": otp_type
+            })
+            if res.user:
+                break  # Verification succeeded
+        except Exception:
+            continue  # Try the next type
+
+    if res and res.user:
+        memory.supabase.table("users").update({"is_verified": True}).eq("username", request.email).execute()
+        user_rec = memory.get_user_by_email(request.email)
+        user_id = user_rec["id"] if user_rec else memory.create_user(request.email, "otp_user", is_verified=True)
+        return {"user_id": user_id, "username": request.email}
+
+    raise HTTPException(status_code=400, detail="Invalid or expired OTP code. Please request a new one.")
 
 @app.post("/api/login")
-async def login(request: LoginRequest):
-    user_record = memory.get_user_by_email(request.username)
-    if not user_record:
+async def login(request: AuthRequest):
+    is_real, normalized_email = verify_email_real(request.username)
+    user_record = memory.get_user_by_email(normalized_email) if is_real else None
+
+    if not user_record or not user_record.get("is_verified", False):
+        raise HTTPException(status_code=401, detail="Invalid credentials or unverified account")
+
+    if user_record.get("password_hash") == "google_oauth_user":
+        raise HTTPException(status_code=401, detail="This account uses Google sign-in.")
+
+    try:
+        res = memory.supabase.auth.sign_in_with_password({"email": normalized_email, "password": request.password})
+        if not res.user:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        return {"user_id": user_record["id"], "username": normalized_email}
+    except Exception:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-        
-    if not security.verify_password(request.password, user_record["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-        
-    return {"user_id": user_record["id"], "username": request.username}
+
+# -------------------- CHAT & KNOWLEDGE API --------------------
 
 @app.get("/api/history")
-async def get_history(user_id: UUID):
-    history = memory.fetch_history(str(user_id))
-    return {"history": history}
+async def get_history(user_id: str):
+    try:
+        return {"history": memory.fetch_history(user_id)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
-    if not request.message.strip():
-        raise HTTPException(status_code=400, detail="Message cannot be empty")
-        
-    # Save user message
+    user_record = memory.supabase.table("users").select("*").eq("id", str(request.user_id)).execute()
+    if not user_record.data:
+        raise HTTPException(status_code=400, detail="User not found.")
+
     memory.save_message(str(request.user_id), "user", request.message)
     
-    # Retrieve context
     context_text = ""
-    if vector_db:
-        try:
-            # --- ADD THESE 2 LINES HERE ---
-            # 1. Ask the brain to turn "drowning in thoughts" into "Grounding techniques, Stress"
-            search_query = brain.generate_search_keywords(request.message)
+    try:
+        vector_db = knowledge.load_vector_store(FAISS_DIR)
+        search_query = brain.generate_search_keywords(request.message)
+        results = knowledge.search_knowledge(search_query, vector_db)
+        context_text = "\n".join(results) if results else ""
+    except Exception as e:
+        print(f"Vector search failed: {e}")
             
-            # 2. Search FAISS with the BETTER keywords instead of the raw message
-            results = knowledge.search_knowledge(search_query, vector_db)
-            # ------------------------------
-
-            if results:
-                context_text = "\n".join(results)
-        except Exception as e:
-            print(f"Vector search failed: {e}")
-            
-    # Fetch history for context
     chat_history = memory.fetch_history(str(request.user_id))
+    display_name = user_record.data[0].get("display_name") or "Traveler"
+    context_text += f"\n\nSystem Note: The user is '{display_name}'."
     
-    # Generate Brain Response
     response_text = brain.get_response(request.message, chat_history, context_text)
-    
-    # Save AI response
     memory.save_message(str(request.user_id), "ai", response_text)
     
     return {"response": response_text}
-
-if __name__ == "__main__":
-    # Runs the server on localhost port 8000
-    uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=True)

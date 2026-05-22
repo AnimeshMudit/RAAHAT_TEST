@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html class="h-full" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>RAAHAT | Verification</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+
+    <link rel="stylesheet" href="/static/ui.css" />
+    <style>
+        :root {
+            --bg-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2070');
+            --nordic-breeze: #D3DDE7;
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --text-main: #f8fafc;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-image: var(--bg-image);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        @keyframes gentle-pan {
+            0% {
+                transform: scale(1.0);
+            }
+
+            100% {
+                transform: scale(1.05);
+            }
+        }
+
+        .moving-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background: inherit;
+            animation: gentle-pan 30s alternate infinite ease-in-out;
+            will-change: transform;
+        }
+
+        .bg-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(4px);
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5);
+        }
+
+        .nordic-btn {
+            background-color: var(--nordic-breeze);
+            color: #0f172a;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nordic-btn:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(211, 221, 231, 0.4);
+        }
+
+        input::placeholder {
+            color: rgba(248, 250, 252, 0.4);
+        }
+        
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-6">
+
+    <div class="moving-bg"></div>
+    <div class="bg-overlay"></div>
+
+    <div class="glass-panel spotlight-card tilt-element w-full max-w-md p-10 relative">
+        <div class="text-center mb-8 reveal-text reveal-delay-1">
+            <h1 class="text-3xl font-bold tracking-[0.15em] text-white mb-2">VERIFY IDENTITY</h1>
+            <p class="text-[10px] text-orange-500 font-bold tracking-[0.2em] uppercase">Enter the 6-digit code sent to your email</p>
+        </div>
+
+        <form class="space-y-6">
+            <div class="reveal-text reveal-delay-2">
+                <label class="block text-[10px] uppercase tracking-widest text-slate-400 mb-2 ml-1">Email Context</label>
+                <input type="email" id="email" disabled
+                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white/50 focus:outline-none transition-all cursor-not-allowed">
+            </div>
+
+            <div class="reveal-text reveal-delay-3">
+                <label class="block text-[10px] uppercase tracking-widest text-slate-400 mb-2 ml-1">One Time Password</label>
+                <input type="number" id="token"
+                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white text-center text-3xl tracking-[0.5em] focus:outline-none focus:ring-1 focus:ring-orange-500/50 transition-all font-mono"
+                    placeholder="------">
+            </div>
+
+            <div class="reveal-text reveal-delay-4">
+                <button type="button" id="verifyBtn"
+                    class="nordic-btn w-full font-bold uppercase tracking-widest rounded-2xl px-4 py-5 mt-4 text-xs">
+                    Confirm Code
+                </button>
+                <p id="errorMsg" class="text-xs mt-2 hidden text-center font-semibold text-red-500"></p>
+            </div>
+        </form>
+
+        <div class="mt-8 text-center reveal-text reveal-delay-4">
+            <p class="text-xs text-slate-500 tracking-wide">
+                <a href="#" onclick="navigateWithTransition('/login')" class="font-bold text-white hover:text-orange-500 transition-colors">Return to Login</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="/static/ui.js"></script>
+    <script>
+        const pendingEmail = localStorage.getItem("pending_email");
+        if (!pendingEmail) {
+            window.location.href = "/";
+        }
+        
+        document.getElementById('email').value = pendingEmail;
+        
+        const verifyBtn = document.getElementById('verifyBtn');
+        const errorMsg = document.getElementById('errorMsg');
+
+        verifyBtn.addEventListener('click', async () => {
+            const token = document.getElementById('token').value;
+
+            if (!token || token.length !== 6) {
+                errorMsg.textContent = "Please enter exactly 6 digits.";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = "Verifying...";
+            errorMsg.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: pendingEmail, token: token.toString() })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success! Validate API response before redirecting
+                    if (!data.user_id) {
+                        errorMsg.textContent = "Verification succeeded but account setup failed. Please try again.";
+                        errorMsg.classList.remove('hidden');
+                        return;
+                    }
+                    localStorage.setItem("user_id", String(data.user_id));
+                    localStorage.setItem("username", data.username || pendingEmail);
+                    localStorage.removeItem("pending_email");
+
+                    navigateWithTransition("/dashboard");
+                } else {
+                    // Fail
+                    errorMsg.textContent = data.detail || "Verification failed. Check the code and try again.";
+                    errorMsg.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorMsg.textContent = "Network error connecting to backend.";
+                errorMsg.classList.remove('hidden');
+            } finally {
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = "Confirm Code";
+            }
+        });
+    </script>
+</body>
+
+</html>

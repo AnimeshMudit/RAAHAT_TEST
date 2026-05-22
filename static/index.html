@@ -6,195 +6,258 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>RAAHAT | Welcome</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
+    <link rel="stylesheet" href="/static/ui.css" />
     <style>
         :root {
             --bg-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2070');
             --nordic-breeze: #D3DDE7;
-            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-bg: rgba(15, 23, 42, 0.75);
             --glass-border: rgba(255, 255, 255, 0.12);
-            --text-main: #f8fafc;
         }
 
         body {
             font-family: 'Outfit', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        /* High-Fidelity Parallax Background */
+        .parallax-bg {
+            position: fixed;
+            top: -10%; left: -10%; width: 120%; height: 120%;
             background-image: var(--bg-image);
             background-size: cover;
             background-position: center;
-            background-attachment: fixed;
-            margin: 0;
-            overflow: hidden;
-        }
-
-        /* 1. CINEMATIC MOTION (Matches Dashboard) */
-        @keyframes gentle-pan {
-            0% {
-                transform: scale(1.0);
-            }
-
-            100% {
-                transform: scale(1.05);
-            }
-        }
-
-        .moving-bg {
-            position: fixed;
-            inset: 0;
             z-index: -2;
-            background: inherit;
-            animation: gentle-pan 30s alternate infinite ease-in-out;
+            transition: transform 0.2s ease-out;
             will-change: transform;
         }
 
         .bg-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            background: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(4px);
+            position: fixed; inset: 0; z-index: -1;
+            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%);
+            backdrop-filter: blur(2px);
         }
 
-        /* 2. DEEP GLASSMORPHISM PANEL */
         .glass-panel {
             background: var(--glass-bg);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid var(--glass-border);
-            border-radius: 32px;
-            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5);
+            border-radius: 40px;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.6);
+            transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        .inner-glass {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--glass-border);
-        }
-
-        /* 3. NORDIC INTERACTIVE ELEMENTS */
         .nordic-btn {
-            background-color: var(--nordic-breeze);
+            background: var(--nordic-breeze);
             color: #0f172a;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .nordic-btn:hover {
+            transform: scale(1.02) translateY(-2px);
+            box-shadow: 0 15px 30px -10px rgba(211, 221, 231, 0.5);
             filter: brightness(1.1);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px -5px rgba(211, 221, 231, 0.4);
         }
 
-        input::placeholder {
-            color: rgba(248, 250, 252, 0.4);
+        input {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            color: white !important;
         }
     </style>
 </head>
 
 <body class="min-h-screen flex items-center justify-center p-6">
 
-    <div class="moving-bg"></div>
+    <div class="parallax-bg" id="bg-layer"></div>
     <div class="bg-overlay"></div>
+    <canvas id="particle-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
-    <div class="glass-panel w-full max-w-md p-10 relative animate-fade-in">
-
-        <div class="text-center mb-12">
-            <h1 class="text-4xl font-bold tracking-[0.2em] text-white mb-3">RAAHAT</h1>
-            <p class="text-[10px] text-orange-500 font-bold tracking-[0.3em] uppercase">Your Path to Wellness</p>
+    <div class="glass-panel spotlight-card tilt-element w-full max-w-md p-10 relative z-10" id="login-card">
+        <div class="text-center mb-12 reveal-text reveal-delay-1">
+            <h1 class="text-4xl font-bold tracking-[0.25em] text-white mb-3">RAAHAT</h1>
+            <p class="text-[10px] text-orange-500 font-bold tracking-[0.4em] uppercase opacity-80">Sanctuary Awaits</p>
         </div>
 
         <form class="space-y-6">
-            <div>
-                <label class="block text-[10px] uppercase tracking-widest text-slate-400 mb-2 ml-1">Account
-                    Email</label>
-                <input type="email" id="email"
-                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-1 focus:ring-orange-500/50 transition-all"
-                    placeholder="name@example.com">
+            <div class="reveal-text reveal-delay-2">
+                <label class="block text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-3 ml-1">Email Address</label>
+                <input type="email" id="email" class="w-full rounded-2xl px-6 py-4 focus:outline-none transition-all placeholder:text-white/20" placeholder="name@example.com">
             </div>
 
-            <div>
-                <label class="block text-[10px] uppercase tracking-widest text-slate-400 mb-2 ml-1">Password</label>
-                <input type="password" id="password"
-                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-1 focus:ring-orange-500/50 transition-all"
-                    placeholder="••••••••">
+            <div class="reveal-text reveal-delay-3">
+                <label class="block text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-3 ml-1">Secret Key</label>
+                <input type="password" id="password" class="w-full rounded-2xl px-6 py-4 focus:outline-none transition-all placeholder:text-white/20" placeholder="••••••••">
             </div>
 
-            <button type="button" id="loginBtn"
-                class="nordic-btn w-full font-bold uppercase tracking-widest rounded-2xl px-4 py-5 mt-4 text-xs">
-                Enter Sanctuary
-            </button>
-            <p id="errorMsg" class="text-xs text-red-500 mt-2 hidden text-center font-semibold"></p>
-
-            <div class="flex items-center my-8">
-                <div class="flex-grow border-t border-white/10"></div>
-                <span class="px-4 text-[10px] text-slate-500 uppercase tracking-widest">Secure Login</span>
-                <div class="flex-grow border-t border-white/10"></div>
+            <div class="reveal-text reveal-delay-4">
+                <button type="button" id="loginBtn" class="nordic-btn w-full font-bold uppercase tracking-widest rounded-2xl px-4 py-5 mt-4 text-xs">
+                    Enter Sanctuary
+                </button>
+                <p id="errorMsg" class="text-xs mt-2 hidden text-center font-medium"></p>
             </div>
 
-            <button type="button"
-                class="w-full inner-glass flex items-center justify-center gap-4 rounded-2xl px-4 py-4 hover:bg-white/10 transition-all text-white border-white/10">
-                <svg class="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="currentColor"
-                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path fill="currentColor"
-                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                        opacity="0.6" />
-                    <path fill="currentColor"
-                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                        opacity="0.6" />
-                    <path fill="currentColor"
-                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                        opacity="0.6" />
-                </svg>
-                <span class="text-xs font-bold uppercase tracking-widest">Continue with Google</span>
-            </button>
+            <div class="flex items-center my-8 reveal-text reveal-delay-4">
+                <div class="flex-grow border-t border-white/5"></div>
+                <span class="px-4 text-[9px] text-slate-500 uppercase tracking-[0.3em]">Encrypted Link</span>
+                <div class="flex-grow border-t border-white/5"></div>
+            </div>
+
+            <div class="reveal-text reveal-delay-4">
+                <button type="button" onclick="handleGoogleLogin()" class="w-full bg-white/90 backdrop-blur-md rounded-2xl px-4 py-4 flex items-center justify-center gap-3 text-slate-700 font-bold text-xs hover:bg-white transition-all transform hover:scale-[1.01]">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="16px">
+                    SIGN IN WITH GOOGLE
+                </button>
+            </div>
         </form>
 
-        <div class="mt-10 text-center">
-            <p class="text-xs text-slate-500 tracking-wide" id="toggleText">
-                New to the path? <a href="#" id="toggleModeBtn"
-                    class="font-bold text-white hover:text-orange-500 transition-colors">Begin
-                    Journey</a>
+        <div class="mt-10 text-center border-t border-white/5 pt-8 reveal-text reveal-delay-4">
+            <p class="text-xs text-slate-400 tracking-wide" id="toggleText">
+                New to the path? <a href="#" id="toggleModeBtn" class="font-bold text-white hover:text-orange-500 transition-colors ml-1">Begin Journey</a>
             </p>
         </div>
     </div>
 
+    <script src="/static/ui.js"></script>
     <script>
-        let isLoginMode = true;
+        // --- 1. CONFIGURATION & SESSION CHECK ---
+        const existingUserId = localStorage.getItem("user_id");
+        if (existingUserId && existingUserId !== "null" && existingUserId !== "undefined") {
+            window.location.href = "/dashboard";
+        }
 
-        const toggleText = document.getElementById('toggleText');
+        const SUPABASE_URL = "https://duyhbflxfjdhdyqjxkoz.supabase.co"; 
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1eWhiZmx4ZmpkaGR5cWp4a296Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyODI5NDIsImV4cCI6MjA4Nzg1ODk0Mn0.L38bpH07Ga2-1RG7Bn4EyVaWdXKWUA3AQNA6jQr-Dyw"; 
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // --- 2. PARALLAX & ADVANCED PARTICLES ---
+        const bg = document.getElementById('bg-layer');
+        let globalMouseX = window.innerWidth / 2;
+        let globalMouseY = window.innerHeight / 2;
+
+        document.addEventListener('mousemove', (e) => {
+            globalMouseX = e.clientX;
+            globalMouseY = e.clientY;
+            const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
+            const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
+            bg.style.transform = `translate(${moveX}px, ${moveY}px) scale(1.05)`;
+        });
+
+        // Advanced Zen Firefly Particles
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.density = (Math.random() * 30) + 1;
+                this.opacity = Math.random() * 0.6 + 0.1;
+            }
+            update() {
+                let dx = globalMouseX - this.x;
+                let dy = globalMouseY - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                let forceDirectionX = dx / distance;
+                let forceDirectionY = dy / distance;
+                let maxDistance = 150;
+                let force = (maxDistance - distance) / maxDistance;
+                let directionX = forceDirectionX * force * this.density;
+                let directionY = forceDirectionY * force * this.density;
+                
+                if (distance < maxDistance) {
+                    this.x -= directionX;
+                    this.y -= directionY;
+                } else {
+                    if (this.x !== this.baseX) {
+                        let dx = this.x - this.baseX;
+                        this.x -= dx / 50;
+                    }
+                    if (this.y !== this.baseY) {
+                        let dy = this.y - this.baseY;
+                        this.y -= dy / 50;
+                    }
+                }
+                
+                // Slow drift
+                this.baseY -= 0.2;
+                if (this.baseY < -10) this.baseY = canvas.height + 10;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(249, 115, 22, ${this.opacity})`; // Orange glow
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 80; i++) particles.push(new Particle());
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- 3. AUTH LOGIC ---
+        let isLoginMode = true;
         const actionBtn = document.getElementById('loginBtn');
         const errorMsg = document.getElementById('errorMsg');
+        const toggleText = document.getElementById('toggleText');
 
         toggleText.addEventListener('click', (e) => {
             if (e.target.tagName.toLowerCase() === 'a') {
                 e.preventDefault();
                 isLoginMode = !isLoginMode;
-                errorMsg.classList.add('hidden');
-
-                if (isLoginMode) {
-                    actionBtn.textContent = "Enter Sanctuary";
-                    toggleText.innerHTML = 'New to the path? <a href="#" class="font-bold text-white hover:text-orange-500 transition-colors">Begin Journey</a>';
-                } else {
-                    actionBtn.textContent = "Begin Journey";
-                    toggleText.innerHTML = 'Already on the path? <a href="#" class="font-bold text-white hover:text-orange-500 transition-colors">Enter Sanctuary</a>';
-                }
+                actionBtn.textContent = isLoginMode ? "Enter Sanctuary" : "Begin Journey";
+                toggleText.innerHTML = isLoginMode ? 
+                    'New to the path? <a href="#" class="font-bold text-white hover:text-orange-500">Begin Journey</a>' : 
+                    'Already on the path? <a href="#" class="font-bold text-white hover:text-orange-500">Enter Sanctuary</a>';
             }
         });
+
+        async function handleGoogleLogin() {
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: `${window.location.origin}/auth/callback`
+                    }
+                });
+                if (error) throw error;
+            } catch (err) {
+                showError("Google sign-in initialization failed.");
+            }
+        }
 
         actionBtn.addEventListener('click', async () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
             if (!email || !password) {
-                errorMsg.textContent = "Please enter both email and password.";
-                errorMsg.classList.remove('hidden');
+                showError("Keys required for entry.");
                 return;
             }
 
             actionBtn.disabled = true;
-            actionBtn.textContent = isLoginMode ? "Entering..." : "Beginning Journey...";
-            errorMsg.classList.add('hidden');
-
+            actionBtn.textContent = "Validating...";
             const endpoint = isLoginMode ? '/api/login' : '/api/signup';
 
             try {
@@ -204,25 +267,32 @@
                     body: JSON.stringify({ username: email, password: password })
                 });
 
+                const data = await response.json();
                 if (response.ok) {
-                    const data = await response.json();
-                    localStorage.setItem("user_id", data.user_id);
-                    localStorage.setItem("username", data.username);
-                    window.location.href = "/dashboard";
+                    if (!isLoginMode) {
+                        localStorage.setItem("pending_email", email);
+                        navigateWithTransition("/verify");
+                    } else {
+                        localStorage.setItem("user_id", data.user_id);
+                        localStorage.setItem("username", data.username);
+                        navigateWithTransition("/dashboard");
+                    }
                 } else {
-                    const err = await response.json();
-                    errorMsg.textContent = err.detail || (isLoginMode ? "Login failed." : "Signup failed.");
-                    errorMsg.classList.remove('hidden');
+                    showError(data.detail || "Access Denied.");
                 }
-            } catch (error) {
-                errorMsg.textContent = "Network error. Please try again.";
-                errorMsg.classList.remove('hidden');
+            } catch (err) {
+                showError("Network interference detected.");
             } finally {
                 actionBtn.disabled = false;
                 actionBtn.textContent = isLoginMode ? "Enter Sanctuary" : "Begin Journey";
             }
         });
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.className = "text-xs mt-2 text-orange-400 text-center font-medium reveal-text";
+            errorMsg.classList.remove('hidden');
+        }
     </script>
 </body>
-
 </html>
