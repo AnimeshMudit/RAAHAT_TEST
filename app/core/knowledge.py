@@ -71,14 +71,13 @@ def create_vector_store(chunks):
     
     return vector_store
 
-def load_vector_store():
-    """Loads the FAISS index from disk with the upgraded, normalized embeddings."""
+def load_vector_store(path=None):
+    load_path = path or FAISS_DB_PATH
     print("Loading existing Vector Vault from disk...")
     embeddings = _get_embeddings()
-    
     return FAISS.load_local(
-        FAISS_DB_PATH, 
-        embeddings, 
+        load_path,
+        embeddings,
         allow_dangerous_deserialization=True,
         distance_strategy="COSINE"
     )
