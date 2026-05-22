@@ -16,12 +16,13 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return plain_password == hashed_password
 
 # --- ADD THIS FUNCTION TO FIX THE IMPORT ERROR ---
-def verify_email_real(email: str) -> bool:
+def verify_email_real(email: str) -> tuple[bool, str]:
     """
     Validates the email format and ensures it meets 
     Raahat's security standards.
     """
     email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    if not email:
-        return False
-    return re.match(email_regex, email) is not None
+    normalized_email = email.strip().lower() if email else ""
+    if not normalized_email:
+        return False, normalized_email
+    return re.match(email_regex, normalized_email) is not None, normalized_email

@@ -17,10 +17,11 @@ def get_user_by_email(email):
         return f.data[0]
     return None
 
-def create_user(email, hashed_password):
+def create_user(email, hashed_password, is_verified=False):
     d = {
         "username" : email,
-        "password_hash" : hashed_password
+        "password_hash" : hashed_password,
+        "is_verified" : is_verified
     }
     new_user = supabase.table("users").insert(d).execute()
     return new_user.data[0]["id"]
