@@ -17,12 +17,24 @@ def get_user_by_email(email):
         return f.data[0]
     return None
 
-def create_user(email, hashed_password, is_verified=False):
+def create_user(
+    email,
+    hashed_password=None,
+    is_verified=False,
+    auth_provider="local",
+    google_id=None,
+    telegram_id=None
+):
     d = {
-        "username" : email,
-        "password_hash" : hashed_password,
-        "is_verified" : is_verified
+        "username": email,
+        "email": email,
+        "password_hash": hashed_password,
+        "is_verified": is_verified,
+        "auth_provider": auth_provider,
+        "google_id": google_id,
+        "telegram_id": telegram_id
     }
+
     new_user = supabase.table("users").insert(d).execute()
     return new_user.data[0]["id"]
 
@@ -34,10 +46,12 @@ def get_user_by_telegram(tg_id: str):
 def create_telegram_user(tg_id: str, first_name: str):
     new_user = {
         "telegram_id": str(tg_id),
-        "username": f"tg_{first_name}", # Placeholder username
-        "password_hash": "tg_authorized_user", # They don't need a password for the bot
-        "is_verified": False
+        "username": f"tg_{first_name}",
+        "password_hash": None,
+        "auth_provider": "telegram",
+        "is_verified": True
     }
+
     response = supabase.table("users").insert(new_user).execute()
     return response.data[0] if response.data else None
 

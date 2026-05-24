@@ -133,7 +133,7 @@
     <script>
         const pendingEmail = localStorage.getItem("pending_email");
         if (!pendingEmail) {
-            window.location.href = "/";
+            navigateWithTransition("/login");
         }
         
         document.getElementById('email').value = pendingEmail;

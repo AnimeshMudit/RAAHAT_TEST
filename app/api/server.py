@@ -127,7 +127,10 @@ async def sync_user(request: SyncUserRequest):
         user_record = memory.get_user_by_email(request.email)
         if not user_record:
             user_id = memory.create_user(
-                request.email, "google_oauth_user", is_verified=True
+                email=request.email,
+                hashed_password=None,
+                is_verified=True,
+                auth_provider="google"
             )
         else:
             user_id = user_record["id"]
@@ -183,9 +186,16 @@ async def signup(request: AuthRequest):
 
         existing = memory.get_user_by_email(normalized_email)
         if not existing:
-            pwd = request.password if request.password else "otp_user"
+            pwd = (
+                security.get_password_hash(request.password)
+                if request.password
+                else None
+            )
             memory.create_user(
-                normalized_email, security.get_password_hash(pwd), is_verified=False
+                normalized_email,
+                pwd,
+                is_verified=False,
+                auth_provider="local"
             )
         return {"message": "Verification code sent! Check your email."}
     except Exception as e:
@@ -234,15 +244,22 @@ async def login(request: AuthRequest):
         )
 
     if (
-        user_record.get("telegram_id")
-        or user_record.get("password_hash") == "tg_authorized_user"
+        user_record.get("auth_provider") == "telegram"
+        and not user_record.get("password_hash")
     ):
         raise HTTPException(
-            status_code=401, detail="This account uses Telegram sign-in."
+            status_code=401,
+            detail="This account uses Telegram sign-in."
         )
 
-    if user_record.get("password_hash") == "google_oauth_user":
-        raise HTTPException(status_code=401, detail="This account uses Google sign-in.")
+    if (
+        user_record.get("auth_provider") == "google"
+        and not user_record.get("password_hash")
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="This account uses Google sign-in. Please set a password first."
+        )
 
     try:
         res = memory.supabase.auth.sign_in_with_password(
