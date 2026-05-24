@@ -42,18 +42,17 @@ You are a trusted keeper of secrets, not a doctor. Act like a supportive, ground
     *Some emotional connect with the user based on his text and then follow up with this line:
         **I am concerned about your safety. Please reach out to these helplines: Kiran (14416), iCall (9152987821), or Vandrevala Foundation (1860-2662-345).**
 """
-#cannot differentiate between jokes
-'''def is_safe(text):
-    danger_keywords=["die","kill","suicide","hurt myself","end it all","dying"]
+def safety_check(text):
+    danger_keywords=["suicide", "kill myself", "want to die", "end it all"]
     for word in danger_keywords:
         if word in text.lower():
-            return False
-    return True'''
+            return "I am concerned about your safety. Please reach out to these helplines: Kiran (14416), iCall (9152987821), or Vandrevala Foundation (1860-2662-345)."
+    return None
 
 def get_response(text, history=[], context=""):
-    #completely avoid this part as the system prompts handle it better
-    '''if not is_safe(text):
-        return "I am concerned about your safety.Please call the helpline: 14416."'''
+    safety_warning = safety_check(text)
+    if safety_warning:
+        return safety_warning
     
     dynamic_prompt = SYSTEM_PROMPT + f"\n\nHere is some verified reference material from the psychological first aid guide. Use it to inform your answer if relevant:\n---\n{context}\n---"
     

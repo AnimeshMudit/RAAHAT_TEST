@@ -50,8 +50,8 @@ def save_message(user_id, role, content):
     supabase.table("messages").insert(d).execute()
     
 def fetch_history(user_id):
-    response = supabase.table("messages").select("*").eq("user_id",user_id).order("created_at").execute()
-    return response.data
+    response = supabase.table("messages").select("*").eq("user_id",user_id).order("created_at", desc=True).limit(25).execute()
+    return list(reversed(response.data))
 
 
 
