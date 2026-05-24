@@ -1,32 +1,15 @@
-# Web Framework & Server
 fastapi==0.115.8
 uvicorn==0.34.0
 pydantic==2.12.5
-
-# Database (Supabase Client)
 supabase==2.13.0
-
-# Security (Hashing & Passwords)
 passlib[bcrypt]==1.7.4
-
-# LLM API Client
 groq==1.0.0
-
-# RAG & Vector Search Core
 langchain-core==0.3.33
 langchain-community==0.3.16
 langchain-text-splitters==0.3.6
 langchain-huggingface==0.1.2
 faiss-cpu==1.13.2
-
-# PDF Processing
 pdfplumber==0.11.5
-
-# Console Styling for CLI
 colorama==0.4.6
-
-# Environment Variable Loader
 python-dotenv==1.0.1
-
-# Telegram Bot Framework
 python-telegram-bot==21.10

@@ -35,7 +35,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context_text = ""
     if vector_db:
         try:
-            rel_chunks = knowledge.search_knowledge(user_text, vector_db, k=4)
+            search_query = brain.generate_search_keywords(user_text)
+            rel_chunks = knowledge.search_knowledge(search_query, vector_db, k=4)
             if rel_chunks:
                 context_text = "\n".join(rel_chunks)
         except Exception as e:
