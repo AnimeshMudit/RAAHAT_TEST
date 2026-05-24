@@ -35,7 +35,8 @@ def create_telegram_user(tg_id: str, first_name: str):
     new_user = {
         "telegram_id": str(tg_id),
         "username": f"tg_{first_name}", # Placeholder username
-        "password_hash": "tg_authorized_user" # They don't need a password for the bot
+        "password_hash": "tg_authorized_user", # They don't need a password for the bot
+        "is_verified": False
     }
     response = supabase.table("users").insert(new_user).execute()
     return response.data[0] if response.data else None

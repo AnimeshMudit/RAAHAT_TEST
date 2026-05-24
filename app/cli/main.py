@@ -45,7 +45,9 @@ def main():
          
         user_record = memory.get_user_by_email(user_name)
         if user_record:
-            if security.verify_password(password, user_record["password_hash"]):
+            if user_record.get("telegram_id"):
+                user_id = None
+            elif security.verify_password(password, user_record["password_hash"]):
                 user_id = user_record["id"]
             else:
                 user_id = None

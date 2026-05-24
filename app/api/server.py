@@ -191,6 +191,9 @@ async def login(request: AuthRequest):
     if not user_record or not user_record.get("is_verified", False):
         raise HTTPException(status_code=401, detail="Invalid credentials or unverified account")
 
+    if user_record.get("telegram_id") or user_record.get("password_hash") == "tg_authorized_user":
+        raise HTTPException(status_code=401, detail="This account uses Telegram sign-in.")
+
     if user_record.get("password_hash") == "google_oauth_user":
         raise HTTPException(status_code=401, detail="This account uses Google sign-in.")
 

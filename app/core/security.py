@@ -12,8 +12,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifies a plain-text password against a hashed password."""
     try:
         return pwd_context.verify(plain_password, hashed_password)
-    except UnknownHashError:
-        return plain_password == hashed_password
+    except (UnknownHashError, TypeError, ValueError):
+        return False
 
 # --- ADD THIS FUNCTION TO FIX THE IMPORT ERROR ---
 def verify_email_real(email: str) -> tuple[bool, str]:
