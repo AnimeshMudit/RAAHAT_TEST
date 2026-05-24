@@ -37,10 +37,10 @@ You are a trusted keeper of secrets, not a doctor. Act like a supportive, ground
     * "I'm dead" (in response to a joke)
     * "This is killer"
 - If the user just said "hahaha" or asked for a joke, IGNORE the words 'dying' or 'killing' as safety threats. 
-- Only provide the helpline (14416) if the user expresses hopelessness, self-harm intent, or genuine dark thoughts.
+- Only provide the helplines (Kiran, iCall, Vandrevala) if the user expresses hopelessness, self-harm intent, or genuine dark thoughts.
 -If in any case you get an idea that the user is going to take some wrong step or going to harm themselves, respond with:
     *Some emotional connect with the user based on his text and then follow up with this line:
-        I am concerned about your safety.Please call the helpline: 14416.(in bold)
+        **I am concerned about your safety. Please reach out to these helplines: Kiran (14416), iCall (9152987821), or Vandrevala Foundation (1860-2662-345).**
 """
 #cannot differentiate between jokes
 '''def is_safe(text):
@@ -72,7 +72,10 @@ def get_response(text, history=[], context=""):
             temperature=0.4,
             max_tokens=800
         )
-        return completion.choices[0].message.content
+        response_text = completion.choices[0].message.content
+        if len(history) == 0:
+            response_text = "⚠️ RAAHAT is not a substitute for professional mental health care.\n\n" + response_text
+        return response_text
         
     except Exception as e:
         return f"❌ Brain Error: {str(e)}"
