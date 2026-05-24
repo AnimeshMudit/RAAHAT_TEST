@@ -49,35 +49,36 @@ def safety_check(text):
             return "I am concerned about your safety. Please reach out to these helplines: Kiran (14416), iCall (9152987821), or Vandrevala Foundation (1860-2662-345)."
     return None
 
+def _llm_call(text, history=[], context=""):
+    """Raw LLM call with no safety layer — internal use only."""
+    dynamic_prompt = SYSTEM_PROMPT + f"\n\nHere is some verified reference material from the psychological first aid guide. Use it to inform your answer if relevant:\n---\n{context}\n---"
+    messages = [{"role": "system", "content": dynamic_prompt}]
+    for msg in history:
+        role = "assistant" if msg["role"] == "ai" else msg["role"]
+        messages.append({"role": role, "content": msg["content"]})
+    messages.append({"role": "user", "content": text})
+    try:
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            temperature=0.4,
+            max_tokens=800
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        return f"❌ Brain Error: {str(e)}"
+
 def get_response(text, history=[], context=""):
     safety_warning = safety_check(text)
     if safety_warning:
         return safety_warning
     
-    dynamic_prompt = SYSTEM_PROMPT + f"\n\nHere is some verified reference material from the psychological first aid guide. Use it to inform your answer if relevant:\n---\n{context}\n---"
+    response_text = _llm_call(text, history, context)
     
-    messages = [{"role":"system","content":dynamic_prompt}]
-
-    for msg in history:
-         role = "assistant" if msg["role"] == "ai" else msg["role"]
-         messages.append({"role": role, "content": msg["content"]})
-
-    messages.append({"role":"user","content":text})
-
-    try:
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile", 
-            messages=messages,
-            temperature=0.4,
-            max_tokens=800
-        )
-        response_text = completion.choices[0].message.content
-        if len(history) <= 1:
-            response_text = "⚠️ RAAHAT is not a substitute for professional mental health care.\n\n" + response_text
-        return response_text
+    if len(history) <= 1 and not response_text.startswith("❌"):
+        response_text = "⚠️ RAAHAT is not a substitute for professional mental health care.\n\n" + response_text
         
-    except Exception as e:
-        return f"❌ Brain Error: {str(e)}"
+    return response_text
 
 def generate_search_keywords(user_input):
     prompt = (
@@ -86,8 +87,7 @@ def generate_search_keywords(user_input):
         "Include the exact term used by the user plus 2 synonyms. "
         "Return ONLY the keywords separated by commas."
     )
-    keywords = get_response(prompt) 
-    return keywords
+    return _llm_call(prompt)
 if __name__=="__main__":
     import colorama
     from colorama import Fore,Style
