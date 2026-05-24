@@ -73,7 +73,7 @@ def get_response(text, history=[], context=""):
             max_tokens=800
         )
         response_text = completion.choices[0].message.content
-        if len(history) == 0:
+        if len(history) <= 1:
             response_text = "⚠️ RAAHAT is not a substitute for professional mental health care.\n\n" + response_text
         return response_text
         
