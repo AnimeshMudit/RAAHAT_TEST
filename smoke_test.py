@@ -40,10 +40,8 @@ def run_test():
         print(f"❌ OTP verify failed: {res.text}")
         sys.exit(1)
 
-    # 3. Login (optional)
-    # Supabase Auth passwordless/OTP flows may not support password login immediately after signup.
-    # The OTP-verified user_id is the stable identifier for the rest of the smoke test.
-    print("\n[3] Login Phase (Optional)")
+    # 3. Login
+    print("\n[3] Login Phase")
     res = requests.post(
         f"{BASE_URL}/api/login", json={"username": email, "password": password}
     )
@@ -53,8 +51,8 @@ def run_test():
         if login_user_id:
             user_id = login_user_id
     else:
-        print(f"⚠️  Login skipped or unavailable: {res.text}")
-        print("    Continuing with the OTP-verified user_id for chat tests.")
+        print(f"❌ Login failed: {res.text}")
+        sys.exit(1)
 
     # 4. Send Message (RAG Pipeline)
     print("\n[4] Chatting Phase (Testing RAG)")

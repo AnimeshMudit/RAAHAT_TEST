@@ -27,18 +27,11 @@ def main():
             Fore.YELLOW
             + f"\nFirst boot detected! Reading knowledge from {data_folder} directory..."
         )
-        raw_text = knowledge.load_all_pdfs_from_folder(data_folder)
-
-        if raw_text.strip():
-            chunks = knowledge.split_chunks(raw_text)
-            vector_db = knowledge.create_vector_store(chunks)
-            print(
-                Fore.GREEN
-                + f"Vector Vault Online! Processed {len(chunks)} total chunks."
-            )
+        vector_db = knowledge.build_vector_store_from_folder(data_folder)
+        if vector_db:
+            print(Fore.GREEN + "Vector Vault Online!")
         else:
-            print(Fore.RED + "Warning: PDFs were empty or unreadable.")
-            vector_db = None
+            print(Fore.RED + "Warning: Could not build Vector Vault.")
     else:
         print(
             Fore.RED

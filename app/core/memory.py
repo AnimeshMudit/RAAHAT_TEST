@@ -27,7 +27,6 @@ def create_user(
 ):
     d = {
         "username": email,
-        "email": email,
         "password_hash": hashed_password,
         "is_verified": is_verified,
         "auth_provider": auth_provider,

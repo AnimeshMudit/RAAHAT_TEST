@@ -141,55 +141,63 @@ def load_all(folder_path="data"):
     return vector_store'''
 
 
+def build_vector_store_from_folder(folder_path="data"):
+    if not os.path.exists(folder_path):
+        print(f"❌ Error: Folder {folder_path} not found.")
+        return None
+
+    print(f"🚀 Starting Full Ingestion from: {folder_path}")
+    
+    all_documents = []
+    for filename in os.listdir(folder_path):
+        if filename.lower().endswith(".pdf"):
+            path = os.path.join(folder_path, filename)
+            
+            # Extracting text
+            text = extract_text(path)
+            
+            if text.strip():
+                # Create a Document object with metadata
+                doc = Document(
+                    page_content=text, 
+                    metadata={"source": filename}
+                )
+                all_documents.append(doc)
+            else:
+                print(f"⚠️ Warning: {filename} is empty or unreadable.")
+    
+    if not all_documents:
+        print("❌ No valid text found in any PDFs. Check your data folder!")
+        return None
+        
+    # 1. Split documents — micro-chunks preserve metadata automatically
+    print(f"Chopping {len(all_documents)} documents into micro-chunks...")
+    splitter = RecursiveCharacterTextSplitter(chunk_size=350, chunk_overlap=50)
+    final_chunks = splitter.split_documents(all_documents)
+    
+    # 2. Create the Vector Database with normalized embeddings + cosine similarity
+    print(f"🧠 Vectorizing {len(final_chunks)} chunks with all-mpnet-base-v2...")
+    embeddings = _get_embeddings()
+    print(f"Starting batch vectorization of {len(final_chunks)} chunks...")
+    vector_db = FAISS.from_documents(final_chunks, embeddings, distance_strategy="COSINE")
+    
+    # 3. Save it
+    vector_db.save_local(FAISS_DB_PATH)
+    print(f"✅ Full Vector Vault created and saved to '{FAISS_DB_PATH}'!")
+    return vector_db
+
+
 if __name__ == "__main__":
     folder = "data" 
     
-    if os.path.exists(folder):
-        print(f"🚀 Starting Full Ingestion from: {folder}")
+    vector_db = build_vector_store_from_folder(folder)
+    
+    if vector_db:
+        # 4. Test Query
+        user_question = "What are cognitive distortions?"
+        results = search_knowledge(user_question, vector_db)
         
-        all_documents = []
-        for filename in os.listdir(folder):
-            if filename.lower().endswith(".pdf"):
-                path = os.path.join(folder, filename)
-                
-                # Extracting text
-                text = extract_text(path)
-                
-                if text.strip():
-                    # Create a Document object with metadata
-                    doc = Document(
-                        page_content=text, 
-                        metadata={"source": filename}
-                    )
-                    all_documents.append(doc)
-                else:
-                    print(f"⚠️ Warning: {filename} is empty or unreadable.")
-        
-        if not all_documents:
-            print("❌ No valid text found in any PDFs. Check your data folder!")
-        else:
-            # 1. Split documents — micro-chunks preserve metadata automatically
-            print(f"Chopping {len(all_documents)} documents into micro-chunks...")
-            splitter = RecursiveCharacterTextSplitter(chunk_size=350, chunk_overlap=50)
-            final_chunks = splitter.split_documents(all_documents)
-            
-            # 2. Create the Vector Database with normalized embeddings + cosine similarity
-            print(f"🧠 Vectorizing {len(final_chunks)} chunks with all-mpnet-base-v2...")
-            embeddings = _get_embeddings()
-            print(f"Starting batch vectorization of {len(final_chunks)} chunks...")
-            vector_db = FAISS.from_documents(final_chunks, embeddings, distance_strategy="COSINE")
-            
-            # 3. Save it
-            vector_db.save_local("faiss_index")
-            print("✅ Full Vector Vault created and saved to 'faiss_index'!")
-            
-            # 4. Test Query
-            user_question = "What are cognitive distortions?"
-            results = search_knowledge(user_question, vector_db)
-            
-            print("\n--- 🎯 TOP SEARCH RESULT ---")
-            if results:
-                print(results[0])
-            print("---------------------------")
-    else:
-        print(f"❌ Error: Folder {folder} not found.")
+        print("\n--- 🎯 TOP SEARCH RESULT ---")
+        if results:
+            print(results[0])
+        print("---------------------------")

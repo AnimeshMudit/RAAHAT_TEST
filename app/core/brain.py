@@ -43,9 +43,23 @@ You are a trusted keeper of secrets, not a doctor. Act like a supportive, ground
         **I am concerned about your safety. Please reach out to these helplines: Kiran (14416), iCall (9152987821), or Vandrevala Foundation (1860-2662-345).**
 """
 def safety_check(text):
-    danger_keywords=["suicide", "kill myself", "want to die", "end it all"]
+    text_lower = text.lower()
+    
+    # Exclude known safe idioms so they don't trigger false positives
+    safe_idioms = [
+        "dying of laughter",
+        "killing me",
+        "i'm dead",
+        "this is killer",
+        "kill for",
+        "killing it"
+    ]
+    for idiom in safe_idioms:
+        text_lower = text_lower.replace(idiom, "")
+
+    danger_keywords=["suicide", "kill myself", "want to die", "end it all", "hopeless", "can't take it anymore", "better off without me"]
     for word in danger_keywords:
-        if word in text.lower():
+        if word in text_lower:
             return "I am concerned about your safety. Please reach out to these helplines: Kiran (14416), iCall (9152987821), or Vandrevala Foundation (1860-2662-345)."
     return None
 
