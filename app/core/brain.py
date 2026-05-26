@@ -116,26 +116,34 @@ def get_response(text, history=None, context=""):
 def generate_search_keywords(user_input):
     text_lower = user_input.lower().strip()
     
-    # Bypass FAISS for simple greetings
-    greetings = ["hi", "hello", "hey", "good morning", "good evening", "how are you", "what's up"]
-    if text_lower in greetings or text_lower.strip('.,!?') in greetings:
+    # Core greeting structural tokens
+    greetings = ["hi", "hello", "hey", "good morning", "good evening", "what's up", "howdy"]
+    
+    # FIX: Check if the text *starts with* a greeting, or matches single word variations
+    starts_with_greeting = any(text_lower.startswith(g) for g in greetings)
+    is_pure_greeting = text_lower in greetings or text_lower.strip('.,!?') in greetings
+    
+    # Catch casual checking-in filler phrases that carry no clinical value
+    casual_filler = ["just checking in", "wanted to say hi", "say hello", "just saying hello"]
+    contains_filler = any(filler in text_lower for filler in casual_filler)
+
+    # Tight conditional trigger for the SKIP path
+    if is_pure_greeting or (starts_with_greeting and contains_filler):
         return "SKIP"
         
-    # Bypass FAISS for memory-recall queries
-    memory_phrases = [
-        "how have i", "do you remember", "what did i", 
-        "what is my", "what's my", "who am i", "my name"
-    ]
+    # Keep your existing memory-recall array block...
+    memory_phrases = ["how have i", "do you remember", "what did i", "what is my", "who am i"]
     if any(phrase in text_lower for phrase in memory_phrases):
         return "SKIP"
 
     # FIX: Run a clean utility call instead of overloading the emotional companion prompt
     utility_prompt = (
-        "You are a linguistic extraction tool. "
+        "You are a semantic search query generator. "
         f"Analyze the user input: '{user_input}'. "
-        "Extract the core clinical or psychological concept as a 2-3 word phrase, then add 2 synonym phrases. "
-        "Example output: 'emotional exhaustion, mental fatigue, burnout' "
-        "Return ONLY the phrases separated by commas. No conversational filler, no markdown formatting, no explanations."
+        "Generate 3 short natural-language emotional themes that would help retrieve relevant mental-health support material. "
+        "Keep them conversational and human-sounding, not academic jargon. "
+        "Example output: 'feeling emotionally drained, overwhelmed by stress, mentally exhausted' "
+        "Return ONLY comma-separated phrases. NO EXPLANATIONS. NO QUOTES. NO REPETITIONS."
     )
     
     try:
