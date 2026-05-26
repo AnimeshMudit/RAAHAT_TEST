@@ -58,15 +58,27 @@ def safety_check(text):
 
 def _llm_call(text, history=[], context=""):
     """Raw LLM call with no safety layer — internal use only."""
-    dynamic_prompt = SYSTEM_PROMPT + f"""
+    
+    # If context exists, dynamically elevate the instruction hierarchy
+    context_enforcement = ""
+    if context:
+        context_enforcement = """
+### CRITICAL DIRECTION ON CLINICAL RAG CONTEXT:
+You have been provided verified psychological manual excerpts below. 
+You are strictly FORBIDDEN from relying entirely on generic empathy or casual reassurance. 
+You MUST weave the specific structural advice, frameworks, or protocols given in the context box into your short response. 
+Frame it naturally as a suggestion from a grounded friend, but ensure the core methodology matches the context data.
+"""
 
+    dynamic_prompt = SYSTEM_PROMPT + f"\n{context_enforcement}\n" + f"""
 ### RETRIEVED CLINICAL CONTEXT (USE THIS):
 The following is verified material from psychological first aid manuals. 
 You MUST reference or draw from this when forming your response — do not ignore it:
 ---
 {context}
 ---
-Incorporate this knowledge naturally. Do not quote it directly."""
+Incorporate this knowledge naturally into your response strategy. Do not quote it directly."""
+
     messages = [{"role": "system", "content": dynamic_prompt}]
     for msg in history:
         role = "assistant" if msg["role"] == "ai" else msg["role"]
@@ -111,14 +123,25 @@ def generate_search_keywords(user_input):
     if any(phrase in text_lower for phrase in memory_phrases):
         return "SKIP"
 
-    prompt = (
-        f"The user said: '{user_input}'. "
-        "Extract the core clinical or psychological concept as a 2-3 word phrase. "
-        "Then add 2 synonym phrases. "
+    # FIX: Run a clean utility call instead of overloading the emotional companion prompt
+    utility_prompt = (
+        "You are a linguistic extraction tool. "
+        f"Analyze the user input: '{user_input}'. "
+        "Extract the core clinical or psychological concept as a 2-3 word phrase, then add 2 synonym phrases. "
         "Example output: 'emotional exhaustion, mental fatigue, burnout' "
-        "Return ONLY the phrases separated by commas. No explanation."
+        "Return ONLY the phrases separated by commas. No conversational filler, no markdown formatting, no explanations."
     )
-    return _llm_call(prompt)
+    
+    try:
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": utility_prompt}],
+            temperature=0.1,  # Low temperature for precise keyword tokens
+            max_tokens=50
+        )
+        return completion.choices[0].message.content.strip()
+    except Exception as e:
+        return f"ERROR_KEYWORD_FAIL: {str(e)}"
 if __name__=="__main__":
     import colorama
     from colorama import Fore,Style

@@ -96,31 +96,30 @@ while True:
     # STEP 2 — RAG RETRIEVAL
     # =====================================================
 
-    print("\n[STEP 2] Knowledge Retrieval")
-    print("-" * 40)
-
     try:
-
-        retrieved_chunks = search_knowledge(
-            keywords,
-            vector_store
-        )
-
-        if not retrieved_chunks:
-
-            print("⚠️ No relevant RAG context retrieved.")
-
+        if keywords.strip().upper() == "SKIP":
+            print("\n[STEP 2] Knowledge Retrieval")
+            print("-" * 40)
+            print("⏭️ SKIP path detected. Bypassing FAISS knowledge retrieval entirely.\n")
+            retrieved_chunks = []
         else:
+            print("\n[STEP 2] Knowledge Retrieval")
+            print("-" * 40)
+            print(f"🔍 Clean query sent to FAISS: '{keywords}'")
+            
+            retrieved_chunks = search_knowledge(
+                keywords,
+                vector_store
+            )
 
-            print(f"✅ Retrieved {len(retrieved_chunks)} context chunks.\n")
-
-            for i, chunk in enumerate(retrieved_chunks, start=1):
-
-                print(f"\n--- CONTEXT CHUNK {i} ---\n")
-
-                print(chunk)
-
-                print("\n" + "-" * 60)
+            if not retrieved_chunks:
+                print("⚠️ No relevant RAG context retrieved.")
+            else:
+                print(f"✅ Retrieved {len(retrieved_chunks)} context chunks.\n")
+                for i, chunk in enumerate(retrieved_chunks, start=1):
+                    print(f"\n--- CONTEXT CHUNK {i} ---\n")
+                    print(chunk)
+                    print("\n" + "-" * 60)
 
     except Exception as e:
         print(f"❌ Retrieval failed: {e}")
@@ -134,21 +133,12 @@ while True:
     print("-" * 40)
 
     try:
-
-        # -------------------------------------------------
-        # IMPORTANT:
-        # Check your actual get_response() signature
-        # inside:
-        #
-        # app/core/brain.py
-        #
-        # If needed, adjust this call.
-        # -------------------------------------------------
+        context_text = "\n".join(retrieved_chunks) if retrieved_chunks else ""
 
         response = get_response(
             query,
             history,
-            vector_store
+            context_text
         )
 
         print("\n🤖 AI RESPONSE:\n")

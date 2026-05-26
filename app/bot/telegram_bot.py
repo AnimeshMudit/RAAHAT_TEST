@@ -36,7 +36,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if vector_db:
         try:
             search_query = brain.generate_search_keywords(user_text)
-            rel_chunks = knowledge.search_knowledge(search_query, vector_db, k=4)
+            if search_query == "SKIP":
+                rel_chunks = []
+            else:
+                rel_chunks = knowledge.search_knowledge(search_query, vector_db, k=4)
             if rel_chunks:
                 context_text = "\n".join(rel_chunks)
         except Exception as e:
