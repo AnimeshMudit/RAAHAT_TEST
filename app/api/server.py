@@ -300,13 +300,16 @@ async def chat(request: ChatRequest):
     try:
         vector_db = knowledge.load_vector_store(FAISS_DIR)
         search_query = brain.generate_search_keywords(request.message)
-        results = knowledge.search_knowledge(search_query, vector_db)
+        if search_query == "SKIP":
+            results = []
+        else:
+            results = knowledge.search_knowledge(search_query, vector_db)
         context_text = "\n".join(results) if results else ""
     except Exception as e:
         print(f"Vector search failed: {e}")
 
     chat_history = memory.fetch_history(str(request.user_id))
-    display_name = user_record.data[0].get("display_name") or "Traveler"
+    display_name = user_record.data[0].get("display_name") or user_record.data[0].get("username") or "friend"
     context_text += f"\n\nSystem Note: The user is '{display_name}'."
 
     response_text = brain.get_response(request.message, chat_history, context_text)

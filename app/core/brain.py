@@ -29,18 +29,11 @@ You are a trusted keeper of secrets, not a doctor. Act like a supportive, ground
 - Do NOT trigger safety warnings for metaphors or hyperboles (e.g., "catches eyes," "this is killer," "I'll kill you for being so good," "I'm dying of laughter").
 - Context matters: If the user is discussing design, UI, or success, interpret "strong" words as creative excitement.
 
-### EMERGENCY SAFETY FEATURE:
-- You must distinguish between "Idioms of Joy" and "Actual Distress."
-- The following phrases are ALWAYS considered SAFE when the user is laughing or joking:
-    * "I am dying of laughter"
-    * "You're killing me"
-    * "I'm dead" (in response to a joke)
-    * "This is killer"
-- If the user just said "hahaha" or asked for a joke, IGNORE the words 'dying' or 'killing' as safety threats. 
-- Only provide the helplines (Kiran, iCall, Vandrevala) if the user expresses hopelessness, self-harm intent, or genuine dark thoughts.
--If in any case you get an idea that the user is going to take some wrong step or going to harm themselves, respond with:
-    *Some emotional connect with the user based on his text and then follow up with this line:
-        **I am concerned about your safety. Please reach out to these helplines: Kiran (14416), iCall (9152987821), or Vandrevala Foundation (1860-2662-345).**
+### 5. SAFETY & CRISIS DETECTION
+- You are NOT responsible for crisis detection.
+- A separate deterministic system handles all safety interventions.
+- DO NOT trigger helplines or append safety warnings to your responses under any circumstances.
+- If a user expresses distress or asks hopeful questions (e.g., "do people recover from this?"), respond naturally and compassionately without adding hotline numbers.
 """
 def safety_check(text):
     text_lower = text.lower()
@@ -97,12 +90,27 @@ def get_response(text, history=[], context=""):
     
     response_text = _llm_call(text, history, context)
     
-    if len(history) <= 1 and not response_text.startswith("❌"):
+    if len(history) == 0 and not response_text.startswith("❌"):
         response_text = "⚠️ RAAHAT is not a substitute for professional mental health care.\n\n" + response_text
         
     return response_text
 
 def generate_search_keywords(user_input):
+    text_lower = user_input.lower().strip()
+    
+    # Bypass FAISS for simple greetings
+    greetings = ["hi", "hello", "hey", "good morning", "good evening", "how are you", "what's up"]
+    if text_lower in greetings or text_lower.strip('.,!?') in greetings:
+        return "SKIP"
+        
+    # Bypass FAISS for memory-recall queries
+    memory_phrases = [
+        "how have i", "do you remember", "what did i", 
+        "what is my", "what's my", "who am i", "my name"
+    ]
+    if any(phrase in text_lower for phrase in memory_phrases):
+        return "SKIP"
+
     prompt = (
         f"The user said: '{user_input}'. "
         "Extract the core clinical or psychological concept as a 2-3 word phrase. "

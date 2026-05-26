@@ -60,7 +60,13 @@ def main():
                 user_id = None
         else:
             hashed_password = security.get_password_hash(password)
-            user_id = memory.create_user(user_name, hashed_password)
+            # Auto-verify CLI-created accounts since there is no OTP flow
+            user_id = memory.create_user(
+                user_name, 
+                hashed_password, 
+                is_verified=True,
+                auth_provider="local"
+            )
 
         if user_id:
             print(
@@ -107,10 +113,12 @@ def main():
                 # --- NEW: SEARCH QUERY EXPANSION ---
                 # 1. Ask brain to generate clinical terms (e.g., "drowning" -> "Grounding")
                 search_query = brain.generate_search_keywords(user_input)
-                print(Fore.MAGENTA + f"🔍 Searching Knowledge Base for: {search_query}")
-
-                # 2. search_knowledge cleans the query internally via clean_query()
-                results = knowledge.search_knowledge(search_query, vector_db)
+                if search_query == "SKIP":
+                    results = []
+                else:
+                    print(Fore.MAGENTA + f"🔍 Searching Knowledge Base for: {search_query}")
+                    # 2. search_knowledge cleans the query internally via clean_query()
+                    results = knowledge.search_knowledge(search_query, vector_db)
                 context_text = "\n".join(results)
             except Exception as e:
                 print(Fore.RED + f"Search Error: {e}")
