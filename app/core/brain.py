@@ -56,9 +56,10 @@ def safety_check(text):
             return "I am concerned about your safety. Please reach out to these helplines: Kiran (14416), iCall (9152987821), or Vandrevala Foundation (1860-2662-345)."
     return None
 
-def _llm_call(text, history=[], context=""):
+def _llm_call(text, history=None, context=""):
     """Raw LLM call with no safety layer — internal use only."""
-    
+    history = history or []
+
     # If context exists, dynamically elevate the instruction hierarchy
     context_enforcement = ""
     if context:
@@ -84,6 +85,8 @@ Incorporate this knowledge naturally into your response strategy. Do not quote i
         role = "assistant" if msg["role"] == "ai" else msg["role"]
         messages.append({"role": role, "content": msg["content"]})
     messages.append({"role": "user", "content": text})
+    
+    DEBUG = os.getenv("DEBUG", "false").lower() == "true"
     try:
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -93,9 +96,12 @@ Incorporate this knowledge naturally into your response strategy. Do not quote i
         )
         return completion.choices[0].message.content
     except Exception as e:
-        return f"❌ Brain Error: {str(e)}"
+        if DEBUG:
+            return f"❌ Brain Error: {str(e)}"
+        return "I'm having trouble responding right now."
 
-def get_response(text, history=[], context=""):
+def get_response(text, history=None, context=""):
+    history = history or []
     safety_warning = safety_check(text)
     if safety_warning:
         return safety_warning
