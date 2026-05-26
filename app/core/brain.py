@@ -65,7 +65,15 @@ def safety_check(text):
 
 def _llm_call(text, history=[], context=""):
     """Raw LLM call with no safety layer — internal use only."""
-    dynamic_prompt = SYSTEM_PROMPT + f"\n\nHere is some verified reference material from the psychological first aid guide. Use it to inform your answer if relevant:\n---\n{context}\n---"
+    dynamic_prompt = SYSTEM_PROMPT + f"""
+
+### RETRIEVED CLINICAL CONTEXT (USE THIS):
+The following is verified material from psychological first aid manuals. 
+You MUST reference or draw from this when forming your response — do not ignore it:
+---
+{context}
+---
+Incorporate this knowledge naturally. Do not quote it directly."""
     messages = [{"role": "system", "content": dynamic_prompt}]
     for msg in history:
         role = "assistant" if msg["role"] == "ai" else msg["role"]
@@ -97,9 +105,10 @@ def get_response(text, history=[], context=""):
 def generate_search_keywords(user_input):
     prompt = (
         f"The user said: '{user_input}'. "
-        "Extract the core concept or clinical term they are asking about. "
-        "Include the exact term used by the user plus 2 synonyms. "
-        "Return ONLY the keywords separated by commas."
+        "Extract the core clinical or psychological concept as a 2-3 word phrase. "
+        "Then add 2 synonym phrases. "
+        "Example output: 'emotional exhaustion, mental fatigue, burnout' "
+        "Return ONLY the phrases separated by commas. No explanation."
     )
     return _llm_call(prompt)
 if __name__=="__main__":

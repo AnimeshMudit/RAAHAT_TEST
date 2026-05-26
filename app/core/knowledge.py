@@ -3,6 +3,7 @@ import re
 import pdfplumber
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
+import numpy as np
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 
@@ -53,52 +54,48 @@ FAISS_DB_PATH = "faiss_index"
 EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 
 def _get_embeddings():
-    """Returns a normalized embedding model for stable cosine scores."""
     return HuggingFaceEmbeddings(
         model_name=EMBEDDING_MODEL,
-        encode_kwargs={"normalize_embeddings": True}  # Keeps all scores between 0 and 1
+        show_progress=True,  # <-- Pass it directly here
+        encode_kwargs={"normalize_embeddings": True}
     )
 
-def create_vector_store(chunks):
-    """Creates FAISS index from plain text chunks (no metadata)."""
-    print("🧠 Converting text into math (Vectorizing)... this might take a minute.")
+def create_vector_store(documents):
     embeddings = _get_embeddings()
-    
-    vector_store = FAISS.from_texts(chunks, embeddings, distance_strategy="COSINE")
-    
-    vector_store.save_local(FAISS_DB_PATH)
-    print("✅ Vector Vault permanently saved to disk!")
-    
-    return vector_store
+    # Use default L2 — with normalized vectors, L2 and cosine rank identically
+    # Score range becomes 0.0 (identical) to 2.0 (opposite), NOT 0–1
+    vector_db = FAISS.from_documents(documents, embeddings)
+    vector_db.save_local(FAISS_DB_PATH)
+    return vector_db
 
 def load_vector_store(path=None):
     load_path = path or FAISS_DB_PATH
-    print("Loading existing Vector Vault from disk...")
     embeddings = _get_embeddings()
     return FAISS.load_local(
         load_path,
         embeddings,
-        allow_dangerous_deserialization=True,
-        distance_strategy="COSINE"
+        allow_dangerous_deserialization=True
+        # No distance_strategy — use default L2
     )
 
 def clean_query(query: str) -> str:
     """
     Strips redundant synonyms from a comma-separated keyword string.
-    Takes only the first keyword to keep FAISS search surgical and precise.
-    Example: 'grounding, anchoring, calming technique' -> 'grounding'
+    Takes only the first keyword phrase (up to 3 words) to keep FAISS search focused.
     """
     primary = query.split(',')[0].strip()
-    # Normalize whitespace and lowercase for consistent matching
-    return re.sub(r'\s+', ' ', primary).lower()
+    # Limit to 3 words max to keep it focused
+    words = primary.split()[:3]
+    return ' '.join(words).lower()
 
-def search_knowledge(query, vector_store, k=5, threshold=0.35):
+def search_knowledge(query, vector_store, k=5, threshold=1.0):
     """
-    Searches the FAISS index with a strict cosine similarity threshold.
-    With normalized embeddings, distance scores stay between 0 and 1:
-      - 0.00–0.15 → Near-exact match
-      - 0.15–0.35 → High-quality clinical match (VALID)
-      - 0.35+     → Weak/irrelevant match (REJECTED)
+    Searches the FAISS index with a strict similarity threshold.
+    With normalized vectors + L2, the score mapping is:
+      - 0.0 – 0.3  → Near-exact match
+      - 0.3 – 0.8  → Good clinical match  
+      - 0.8 – 1.0  → Weak but possibly relevant
+      - 1.0+       → Reject
     """
     cleaned = clean_query(query)
     print(f"🔍 Clean query sent to FAISS: '{cleaned}'")
@@ -106,8 +103,14 @@ def search_knowledge(query, vector_store, k=5, threshold=0.35):
     results = vector_store.similarity_search_with_score(cleaned, k=k)
     
     context_chunks = []
+    seen = set()
     
     for doc, score in results:
+        content = doc.page_content.strip()
+        if content in seen:
+            continue
+        seen.add(content)
+        
         # Preserve source filename from metadata for citation
         source = doc.metadata.get("source", "Unknown Manual")
         
@@ -175,11 +178,11 @@ def build_vector_store_from_folder(folder_path="data"):
     splitter = RecursiveCharacterTextSplitter(chunk_size=350, chunk_overlap=50)
     final_chunks = splitter.split_documents(all_documents)
     
-    # 2. Create the Vector Database with normalized embeddings + cosine similarity
+    # 2. Create the Vector Database with normalized embeddings + default L2
     print(f"🧠 Vectorizing {len(final_chunks)} chunks with all-mpnet-base-v2...")
     embeddings = _get_embeddings()
     print(f"Starting batch vectorization of {len(final_chunks)} chunks...")
-    vector_db = FAISS.from_documents(final_chunks, embeddings, distance_strategy="COSINE")
+    vector_db = FAISS.from_documents(final_chunks, embeddings)
     
     # 3. Save it
     vector_db.save_local(FAISS_DB_PATH)
