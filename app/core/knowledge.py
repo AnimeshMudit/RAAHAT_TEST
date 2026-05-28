@@ -74,7 +74,7 @@ def load_vector_store(path=None):
     return FAISS.load_local(
         load_path,
         embeddings,
-        allow_dangerous_deserialization=False
+        allow_dangerous_deserialization=True
         # No distance_strategy — use default L2
     )
 

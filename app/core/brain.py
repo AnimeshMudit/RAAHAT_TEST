@@ -50,7 +50,12 @@ def safety_check(text):
     for idiom in safe_idioms:
         text_lower = text_lower.replace(idiom, "")
 
-    danger_keywords=["suicide", "kill myself", "want to die", "end it all", "hopeless", "can't take it anymore", "better off without me"]
+    danger_keywords=[
+        "suicide", "kill myself", "want to die", "end it all", "hopeless", 
+        "can't take it anymore", "better off without me", "don't want to live",
+        "do not want to live", "wish i was dead", "life is not worth it",
+        "want to disappear", "i'm done with life"
+    ]
     for word in danger_keywords:
         if word in text_lower:
             return "I am concerned about your safety. Please reach out to these helplines: Kiran (14416), iCall (9152987821), or Vandrevala Foundation (1860-2662-345)."
@@ -134,6 +139,17 @@ def generate_search_keywords(user_input):
     # Keep your existing memory-recall array block...
     memory_phrases = ["how have i", "do you remember", "what did i", "what is my", "who am i"]
     if any(phrase in text_lower for phrase in memory_phrases):
+        return "SKIP"
+
+    casual_phrases = [
+        "assignment",
+        "homework",
+        "exam",
+        "college",
+        "deadline",
+        "project"
+    ]
+    if any(p in text_lower for p in casual_phrases):
         return "SKIP"
 
     # FIX: Run a clean utility call instead of overloading the emotional companion prompt
