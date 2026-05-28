@@ -152,6 +152,15 @@ def generate_search_keywords(user_input):
     if any(p in text_lower for p in casual_phrases):
         return "SKIP"
 
+    venting_phrases = [
+        "just wanted someone to listen",
+        "not looking for advice",
+        "just venting",
+        "just needed to say it out loud"
+    ]
+    if any(phrase in text_lower for phrase in venting_phrases):
+        return "SKIP"
+
     # FIX: Run a clean utility call instead of overloading the emotional companion prompt
     utility_prompt = (
         "You are a semantic search query generator. "
