@@ -62,6 +62,9 @@ Ensure you have your `.env` file populated with the following keys:
 GROQ_API_KEY=your_groq_api_key
 SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_key
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_REDIRECT_URI=http://127.0.0.1:8000/auth/callback
+ALLOWED_ORIGINS=http://127.0.0.1:8000
 ```
 
 ### 2. Launch the Backend (The Brain)

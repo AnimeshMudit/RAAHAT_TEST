@@ -1,11 +1,12 @@
 import os
 import sys
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from uuid import UUID
+from dotenv import load_dotenv
 
 # -------------------- PATH SETUP --------------------
 # This ensures Python can find your 'app' module regardless of where you run the script
@@ -13,6 +14,8 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
+
+load_dotenv()
 
 # -------------------- CORE IMPORTS --------------------
 from app.core import memory, brain, knowledge, security
@@ -29,11 +32,15 @@ FAISS_DIR = os.path.join(BASE_DIR, "faiss_index")
 if os.path.exists(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://127.0.0.1:8000")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in ALLOWED_ORIGINS.split(",")],
+    allow_origins=(
+        [origin.strip() for origin in ALLOWED_ORIGINS.split(",")]
+        if ALLOWED_ORIGINS
+        else []
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,42 +77,78 @@ def no_cache_html(content: str) -> HTMLResponse:
     )
 
 
-@app.get("/", response_class=HTMLResponse)
-async def serve_root():
-    """The main entry point: Serves the Landing Page."""
-    return await serve_landing()
-
-
-@app.get("/landing", response_class=HTMLResponse)
-async def serve_landing():
-    """Serves the Sanctuary Entry Portal (landing.html)."""
-    file_path = os.path.join(STATIC_DIR, "landing.html")
+def render_static_html(filename: str, replacements: dict | None = None) -> HTMLResponse:
+    file_path = os.path.join(STATIC_DIR, filename)
     if not os.path.exists(file_path):
-        raise HTTPException(
-            status_code=404, detail="landing.html not found in static folder"
-        )
+        raise HTTPException(status_code=404, detail=f"{filename} not found")
+
     with open(file_path, "r", encoding="utf-8") as file:
-        return no_cache_html(file.read())
+        content = file.read()
+
+    for placeholder, value in (replacements or {}).items():
+        content = content.replace(f"{{{{ {placeholder} }}}}", value)
+        content = content.replace(f"{{{{{placeholder}}}}}", value)
+
+    return no_cache_html(content)
+
+
+def get_required_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise HTTPException(status_code=500, detail=f"{name} is not configured")
+    return value
+
+
+def resolve_static_file(*filenames: str) -> str:
+    for filename in filenames:
+        file_path = os.path.join(STATIC_DIR, filename)
+        if os.path.exists(file_path):
+            return file_path
+    raise HTTPException(
+        status_code=404,
+        detail=f"None of these files were found: {', '.join(filenames)}",
+    )
+
+
+@app.get("/")
+async def serve_root():
+    """Main entry point for the current frontend."""
+    return await landing()
+
+
+@app.get("/landing")
+async def landing():
+    return FileResponse(resolve_static_file("landingpage.html", "landing.html"))
 
 
 @app.get("/login", response_class=HTMLResponse)
-async def serve_login():
-    """Serves the Login/Signup Page (formerly index.html)."""
-    file_path = os.path.join(STATIC_DIR, "index.html")
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="index.html not found")
-    with open(file_path, "r", encoding="utf-8") as file:
-        return no_cache_html(file.read())
+async def login_page():
+    file_name = "login.html"
+    return render_static_html(
+        file_name,
+        {
+            "SUPABASE_URL": get_required_env("SUPABASE_URL"),
+            "SUPABASE_KEY": get_required_env("SUPABASE_KEY"),
+        },
+    )
+
+
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_page():
+    file_name = "chat.html"
+    return render_static_html(
+        file_name,
+        {
+            "SUPABASE_URL": get_required_env("SUPABASE_URL"),
+            "SUPABASE_KEY": get_required_env("SUPABASE_KEY"),
+        },
+    )
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def serve_dashboard():
-    """Serves the main Wellness Dashboard."""
-    file_path = os.path.join(STATIC_DIR, "dashboard.html")
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="dashboard.html not found")
-    with open(file_path, "r", encoding="utf-8") as file:
-        return no_cache_html(file.read())
+async def dashboard_alias():
+    """Backward-compatible alias used by some frontend flows."""
+    return await chat_page()
 
 
 @app.get("/verify", response_class=HTMLResponse)
@@ -130,7 +173,7 @@ async def sync_user(request: SyncUserRequest):
                 email=request.email,
                 hashed_password=None,
                 is_verified=True,
-                auth_provider="google"
+                auth_provider="google",
             )
         else:
             user_id = user_record["id"]
@@ -140,10 +183,11 @@ async def sync_user(request: SyncUserRequest):
 
 
 @app.get("/api/auth/google")
-async def login_google():
+async def login_google(request: Request):
     try:
         # Redirect to /auth/callback so the browser can handle PKCE code exchange
-        url = get_google_auth_url(redirect_to="http://127.0.0.1:8000/auth/callback")
+        base_url = str(request.base_url).rstrip("/")
+        url = get_google_auth_url(redirect_to=f"{base_url}/auth/callback")
         return {"url": url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -155,21 +199,105 @@ async def auth_callback():
     Serves the frontend callback page.
     Supabase uses PKCE — the browser holds the code_verifier, so the token
     exchange MUST happen client-side via the Supabase JS SDK.
-    callback.html handles the exchange, syncs with /api/sync-user, then
-    redirects to /dashboard.
+    This inline page completes the exchange, syncs with /api/sync-user, then
+    redirects to /chat.
     """
-    file_path = os.path.join(STATIC_DIR, "callback.html")
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="callback.html not found")
-    with open(file_path, "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
+    supabase_url = get_required_env("SUPABASE_URL")
+    supabase_key = get_required_env("SUPABASE_KEY")
+    content = f"""<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Completing sign-in</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {{ font-family: Inter, Arial, sans-serif; margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f9f9ff; color: #151c27; }}
+        main {{ max-width: 28rem; padding: 2rem; text-align: center; }}
+    </style>
+</head>
+<body>
+    <main>
+        <p>Completing sign-in...</p>
+    </main>
+    <script>
+        const supabaseClient = supabase.createClient({supabase_url!r}, {supabase_key!r}, {{
+            auth: {{
+                detectSessionInUrl: false,
+                persistSession: true,
+                autoRefreshToken: true,
+            }},
+        }});
+
+        (async () => {{
+            try {{
+                const params = new URLSearchParams(window.location.search);
+                const code = params.get('code');
+
+                const {{ data: currentSession }} = await supabaseClient.auth.getSession();
+                if (currentSession?.session?.user?.email) {{
+                    const email = currentSession.session.user.email;
+                    const syncResponse = await fetch('/api/sync-user', {{
+                        method: 'POST',
+                        headers: {{ 'Content-Type': 'application/json' }},
+                        body: JSON.stringify({{ email }}),
+                    }});
+                    const syncData = await syncResponse.json().catch(() => null);
+                    if (syncData?.user_id) {{
+                        localStorage.setItem('raahat_user', JSON.stringify({{
+                            user_id: syncData.user_id,
+                            username: syncData.username || email,
+                        }}));
+                    }}
+                    window.location.replace('/chat');
+                    return;
+                }}
+
+                if (!code) {{
+                    window.location.replace('/login');
+                    return;
+                }}
+
+                const {{ data, error }} = await supabaseClient.auth.exchangeCodeForSession(code);
+                if (error) throw error;
+
+                const email = data?.session?.user?.email;
+                if (email) {{
+                    const syncResponse = await fetch('/api/sync-user', {{
+                        method: 'POST',
+                        headers: {{ 'Content-Type': 'application/json' }},
+                        body: JSON.stringify({{ email }}),
+                    }});
+
+                    const syncData = await syncResponse.json().catch(() => null);
+                    if (syncData?.user_id) {{
+                        localStorage.setItem('raahat_user', JSON.stringify({{
+                            user_id: syncData.user_id,
+                            username: syncData.username || email,
+                        }}));
+                    }}
+                }}
+
+                window.location.replace('/chat');
+            }} catch (error) {{
+                console.error('OAuth callback failed:', error);
+                window.location.replace('/login');
+            }}
+        }})();
+    </script>
+</body>
+</html>"""
+    return HTMLResponse(
+        content=content,
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+    )
 
 
 # -------------------- TRADITIONAL AUTH API --------------------
 
 
 @app.post("/api/signup")
-async def signup(request: AuthRequest):
+async def signup(request: AuthRequest, http_request: Request):
     try:
         is_real, normalized_email = verify_email_real(request.username)
         if not is_real:
@@ -177,10 +305,12 @@ async def signup(request: AuthRequest):
                 status_code=400, detail=f"Invalid Email: {normalized_email}"
             )
 
+        base_url = str(http_request.base_url).rstrip("/")
+
         memory.supabase.auth.sign_in_with_otp(
             {
                 "email": normalized_email,
-                "options": {"redirect_to": "http://127.0.0.1:8000/dashboard"},
+                "options": {"redirect_to": f"{base_url}/chat"},
             }
         )
 
@@ -192,10 +322,7 @@ async def signup(request: AuthRequest):
                 else None
             )
             memory.create_user(
-                normalized_email,
-                pwd,
-                is_verified=False,
-                auth_provider="local"
+                normalized_email, pwd, is_verified=False, auth_provider="local"
             )
         return {"message": "Verification code sent! Check your email."}
     except Exception as e:
@@ -243,22 +370,19 @@ async def login(request: AuthRequest):
             status_code=401, detail="Invalid credentials or unverified account"
         )
 
-    if (
-        user_record.get("auth_provider") == "telegram"
-        and not user_record.get("password_hash")
+    if user_record.get("auth_provider") == "telegram" and not user_record.get(
+        "password_hash"
     ):
         raise HTTPException(
-            status_code=401,
-            detail="This account uses Telegram sign-in."
+            status_code=401, detail="This account uses Telegram sign-in."
         )
 
-    if (
-        user_record.get("auth_provider") == "google"
-        and not user_record.get("password_hash")
+    if user_record.get("auth_provider") == "google" and not user_record.get(
+        "password_hash"
     ):
         raise HTTPException(
             status_code=401,
-            detail="This account uses Google sign-in. Please set a password first."
+            detail="This account uses Google sign-in. Please set a password first.",
         )
 
     try:
@@ -309,7 +433,11 @@ async def chat(request: ChatRequest):
         print(f"Vector search failed: {e}")
 
     chat_history = memory.fetch_history(str(request.user_id))
-    display_name = user_record.data[0].get("display_name") or user_record.data[0].get("username") or "friend"
+    display_name = (
+        user_record.data[0].get("display_name")
+        or user_record.data[0].get("username")
+        or "friend"
+    )
     context_text += f"\n\nSystem Note: The user is '{display_name}'."
 
     response_text = brain.get_response(request.message, chat_history, context_text)
