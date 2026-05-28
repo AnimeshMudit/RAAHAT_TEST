@@ -121,19 +121,6 @@
         }
     </script>
     <style>
-        html,
-        body {
-            width: 100%;
-            min-height: 100%;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            min-height: 100svh;
-            min-height: 100dvh;
-        }
-
         .fade-in-up {
             animation: fadeInUp 0.5s ease-out forwards;
             opacity: 0;
@@ -160,12 +147,11 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 
-<body
-    class="bg-linen-bg text-on-surface min-h-screen w-full overflow-x-hidden overflow-y-auto flex flex-col font-body-md">
+<body class="bg-linen-bg text-on-surface h-screen overflow-hidden flex flex-col font-body-md">
     <!-- TopNavBar (Shared Component) -->
     <nav
         class="bg-linen-bg/70 dark:bg-inverse-surface/70 backdrop-blur-md shadow-sm fixed top-0 w-full z-50 transition-all duration-300">
-        <div class="flex justify-between items-center px-margin-desktop h-20 w-full">
+        <div class="flex justify-between items-center px-margin-desktop h-20 max-w-container-max mx-auto">
             <div class="font-display-lg text-headline-md tracking-tight text-sage-deep dark:text-primary-fixed-dim">
                 RAAHAT
             </div>
@@ -186,7 +172,7 @@
         </div>
     </nav>
     <!-- Main Layout -->
-    <div class="flex flex-1 min-h-0 pt-20 w-full px-margin-desktop gap-gutter pb-margin-desktop">
+    <div class="flex h-full pt-20 max-w-container-max mx-auto w-full px-margin-desktop gap-gutter pb-margin-desktop">
         <!-- Left Sidebar: Recent Threads -->
         <aside
             class="hidden md:flex flex-col w-1/4 bg-white/40 backdrop-blur-md rounded-3xl p-stack-md border border-white/50 shadow-[0_4px_20px_rgba(45,90,84,0.05)] overflow-hidden">
@@ -239,7 +225,7 @@
         </aside>
         <!-- Central Chat Area -->
         <main
-            class="flex-1 min-h-0 flex flex-col bg-white rounded-[32px] shadow-[0_8px_30px_rgba(45,90,84,0.08)] border border-white/60 overflow-hidden relative">
+            class="flex-1 flex flex-col bg-white rounded-[32px] shadow-[0_8px_30px_rgba(45,90,84,0.08)] border border-white/60 overflow-hidden relative">
             <!-- Chat Header -->
             <div
                 class="flex justify-between items-center px-stack-lg py-stack-md border-b border-surface-container-low bg-white/80 backdrop-blur-sm z-10 absolute top-0 w-full">
@@ -275,7 +261,7 @@
             </div>
             <!-- Messages Area -->
             <div id="messages"
-                class="flex-1 min-h-0 overflow-y-auto overscroll-contain px-stack-lg py-stack-lg space-y-stack-lg no-scrollbar bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-linen-bg/50 to-white">
+                class="flex-1 overflow-y-auto px-stack-lg py-stack-lg space-y-stack-lg no-scrollbar bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-linen-bg/50 to-white">
                 <!-- Time separator -->
                 <div class="flex justify-center fade-in-up">
                     <span

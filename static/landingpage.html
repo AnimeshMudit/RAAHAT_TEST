@@ -119,17 +119,7 @@
         }
     </script>
     <style>
-        html,
         body {
-            width: 100%;
-            min-height: 100%;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            min-height: 100svh;
-            min-height: 100dvh;
             background-color: theme('colors.linen-bg');
             color: theme('colors.on-background');
         }
@@ -161,11 +151,12 @@
     </style>
 </head>
 
-<body class="antialiased min-h-screen w-full overflow-x-hidden overflow-y-auto flex flex-col relative">
+<body class="antialiased min-h-screen flex flex-col relative">
     <div class="hero-bg"></div>
     <!-- TopNavBar -->
     <nav class="bg-linen-bg/70 dark:bg-inverse-surface/70 backdrop-blur-md shadow-sm fixed top-0 w-full z-50">
-        <div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-20 w-full">
+        <div
+            class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-20 max-w-container-max mx-auto">
             <div class="font-display-lg text-headline-md tracking-tight text-sage-deep dark:text-primary-fixed-dim">
                 RAAHAT
             </div>
@@ -192,7 +183,8 @@
         </div>
     </nav>
     <!-- Main Content Canvas -->
-    <main class="flex-grow pt-[120px] px-margin-mobile md:px-margin-desktop w-full pb-section-gap">
+    <main
+        class="flex-grow pt-[120px] px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto w-full pb-section-gap">
         <!-- Hero Section -->
         <section class="flex flex-col lg:flex-row items-center gap-section-gap py-section-gap">
             <div class="flex-1 space-y-stack-lg max-w-2xl">
@@ -329,7 +321,7 @@
     </main>
     <!-- Footer -->
     <footer
-        class="bg-surface-container-low dark:bg-surface-dim w-full mt-section-gap grid grid-cols-1 md:grid-cols-3 gap-gutter px-margin-mobile md:px-margin-desktop py-stack-lg border-t border-outline-variant">
+        class="bg-surface-container-low dark:bg-surface-dim w-full mt-section-gap grid grid-cols-1 md:grid-cols-3 gap-gutter px-margin-mobile md:px-margin-desktop py-stack-lg max-w-container-max mx-auto border-t border-outline-variant">
         <div class="flex flex-col gap-4">
             <span class="font-display-lg text-headline-md text-sage-deep dark:text-primary-fixed-dim">RAAHAT</span>
             <span class="font-label-sm text-label-sm text-secondary dark:text-on-surface-variant">© 2024 RAAHAT. Your
