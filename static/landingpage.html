@@ -1,374 +1,1040 @@
 <!DOCTYPE html>
-
-<html class="light" lang="en">
+<html lang="en">
 
 <head>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>RAAHAT - A space that listens first</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAAHAT — Your Mental Health Companion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Literata:wght@500;600;700&amp;display=swap"
-        rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "lavender-dark": "#7C73A7",
-                        "surface-container-highest": "#dce2f3",
-                        "surface-variant": "#dce2f3",
-                        "on-primary-container": "#a1cfc8",
-                        "outline-variant": "#c0c8c6",
-                        "primary-container": "#2d5a54",
-                        "mood-venting": "#F2D7D7",
-                        "on-error-container": "#93000a",
-                        "on-secondary": "#ffffff",
-                        "outline": "#707977",
-                        "on-primary-fixed-variant": "#204e48",
-                        "on-tertiary-fixed-variant": "#484744",
-                        "on-surface-variant": "#404847",
-                        "on-tertiary-container": "#c9c5c2",
-                        "inverse-on-surface": "#ebf1ff",
-                        "background": "#f9f9ff",
-                        "surface-container-low": "#f0f3ff",
-                        "surface-dim": "#d3daea",
-                        "mood-exploring": "#D7EAF2",
-                        "on-error": "#ffffff",
-                        "tertiary-container": "#54524f",
-                        "on-secondary-container": "#636171",
-                        "surface-container-high": "#e2e8f8",
-                        "error": "#ba1a1a",
-                        "secondary-fixed": "#e4e0f3",
-                        "on-secondary-fixed-variant": "#474554",
-                        "primary-fixed-dim": "#a1d0c8",
-                        "primary": "#13423d",
-                        "secondary-fixed-dim": "#c8c4d7",
-                        "surface-container-lowest": "#ffffff",
-                        "tertiary-fixed": "#e6e2de",
-                        "error-container": "#ffdad6",
-                        "surface-bright": "#f9f9ff",
-                        "secondary": "#5e5d6c",
-                        "mood-advice": "#D7F2E2",
-                        "on-primary": "#ffffff",
-                        "on-surface": "#151c27",
-                        "surface": "#f9f9ff",
-                        "on-primary-fixed": "#00201d",
-                        "inverse-primary": "#a1d0c8",
-                        "primary-fixed": "#bcece4",
-                        "tertiary-fixed-dim": "#c9c6c2",
-                        "surface-container": "#e7eefe",
-                        "sage-muted": "#5E827D",
-                        "sage-deep": "#2D5A54",
-                        "secondary-container": "#e1ddf0",
-                        "on-secondary-fixed": "#1b1a27",
-                        "inverse-surface": "#2a313d",
-                        "linen-bg": "#FAF9F6",
-                        "on-background": "#151c27",
-                        "on-tertiary": "#ffffff",
-                        "tertiary": "#3c3b39",
-                        "surface-tint": "#396660",
-                        "on-tertiary-fixed": "#1c1c19",
-                        "lavender-soft": "#E3DFF2"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                    "spacing": {
-                        "margin-desktop": "40px",
-                        "gutter": "24px",
-                        "container-max": "1200px",
-                        "stack-lg": "32px",
-                        "stack-md": "16px",
-                        "section-gap": "64px",
-                        "stack-sm": "8px",
-                        "margin-mobile": "20px"
-                    },
-                    "fontFamily": {
-                        "body-lg": ["Inter"],
-                        "label-md": ["Inter"],
-                        "display-lg": ["Literata"],
-                        "headline-md": ["Literata"],
-                        "headline-lg": ["Literata"],
-                        "label-sm": ["Inter"],
-                        "headline-lg-mobile": ["Literata"],
-                        "body-md": ["Inter"]
-                    },
-                    "fontSize": {
-                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
-                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
-                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
-                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
-                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
-                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
-                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
-                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
-                    }
-                }
-            }
-        }
-    </script>
+        href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+        rel="stylesheet">
     <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --sage: #4a7c59;
+            --sage-light: #7aab8a;
+            --sage-pale: #e8f0eb;
+            --sage-mid: #c5d9ca;
+            --sand: #f5f0e8;
+            --sand-dark: #e8e0d0;
+            --text-deep: #1a2018;
+            --text-mid: #3d4a3a;
+            --text-soft: #6b7a68;
+            --text-faint: #9aaa97;
+            --warm-white: #fdfcf9;
+            --accent: #c17f3e;
+            --accent-pale: #f5e8d5;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            background-color: theme('colors.linen-bg');
-            color: theme('colors.on-background');
+            font-family: 'DM Sans', sans-serif;
+            background: var(--warm-white);
+            color: var(--text-deep);
+            font-size: 16px;
+            line-height: 1.6;
+            overflow-x: hidden;
         }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 4px 20px rgba(45, 90, 84, 0.05);
-        }
-
-        .soft-shadow {
-            box-shadow: 0 4px 20px rgba(45, 90, 84, 0.08);
-        }
-
-        .hero-bg {
-            background: radial-gradient(circle at 80% 20%, theme('colors.lavender-soft') 0%, transparent 40%),
-                radial-gradient(circle at 20% 80%, theme('colors.mood-exploring') 0%, transparent 40%);
-            opacity: 0.6;
-            z-index: -1;
-            position: absolute;
+        /* NAV */
+        nav {
+            position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            bottom: 0;
-            pointer-events: none;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 3rem;
+            background: rgba(253, 252, 249, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(74, 124, 89, 0.1);
+        }
+
+        .nav-logo {
+            font-family: 'Lora', serif;
+            font-size: 1.4rem;
+            color: var(--sage);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-logo span {
+            font-size: 0.75rem;
+            display: block;
+            color: var(--text-faint);
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 300;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-top: -2px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            align-items: center;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-mid);
+            font-size: 0.875rem;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--sage);
+        }
+
+        .nav-cta {
+            background: var(--sage) !important;
+            color: white !important;
+            padding: 0.5rem 1.25rem;
+            border-radius: 100px;
+            font-weight: 500 !important;
+            transition: background 0.2s !important;
+        }
+
+        .nav-cta:hover {
+            background: var(--sage-light) !important;
+        }
+
+        /* HERO */
+        .hero {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            padding: 8rem 3rem 4rem;
+            gap: 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero-left {
+            animation: fadeUp 0.9s ease both;
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--sage-pale);
+            color: var(--sage);
+            font-size: 0.78rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            padding: 0.4rem 1rem;
+            border-radius: 100px;
+            margin-bottom: 1.75rem;
+        }
+
+        .hero-tag::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--sage);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(1.3);
+            }
+        }
+
+        .hero h1 {
+            font-family: 'Lora', serif;
+            font-size: clamp(2.6rem, 4.5vw, 4rem);
+            line-height: 1.15;
+            color: var(--text-deep);
+            font-weight: 500;
+            letter-spacing: -0.03em;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero h1 em {
+            font-style: italic;
+            color: var(--sage);
+        }
+
+        .hero-sub {
+            font-size: 1.05rem;
+            color: var(--text-soft);
+            font-weight: 300;
+            line-height: 1.75;
+            max-width: 480px;
+            margin-bottom: 2.5rem;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--sage);
+            color: white;
+            padding: 0.85rem 2rem;
+            border-radius: 100px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.25s;
+            letter-spacing: 0.01em;
+        }
+
+        .btn-primary:hover {
+            background: var(--text-deep);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--text-mid);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 400;
+            padding: 0.85rem 1.5rem;
+            border: 1px solid var(--sand-dark);
+            border-radius: 100px;
+            transition: all 0.25s;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--sage-mid);
+            color: var(--sage);
+        }
+
+        /* HERO RIGHT — Chat preview */
+        .hero-right {
+            animation: fadeUp 0.9s 0.2s ease both;
+        }
+
+        .chat-card {
+            background: white;
+            border-radius: 24px;
+            padding: 1.5rem;
+            border: 1px solid var(--sand-dark);
+            box-shadow: 0 20px 60px rgba(74, 124, 89, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04);
+            max-width: 440px;
+            margin-left: auto;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--sand-dark);
+            margin-bottom: 1.25rem;
+        }
+
+        .chat-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--sage-pale), var(--sage-mid));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Lora', serif;
+            font-size: 1rem;
+            color: var(--sage);
+            font-weight: 500;
+        }
+
+        .chat-name {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .chat-status {
+            font-size: 0.78rem;
+            color: var(--sage);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .chat-status::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--sage);
+        }
+
+        .messages {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .msg {
+            display: flex;
+            flex-direction: column;
+            max-width: 82%;
+            animation: msgIn 0.4s ease both;
+        }
+
+        .msg-raahat {
+            align-self: flex-start;
+        }
+
+        .msg-user {
+            align-self: flex-end;
+        }
+
+        .msg-bubble {
+            padding: 0.7rem 1rem;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            line-height: 1.55;
+        }
+
+        .msg-raahat .msg-bubble {
+            background: var(--sage-pale);
+            color: var(--text-deep);
+            border-bottom-left-radius: 4px;
+        }
+
+        .msg-user .msg-bubble {
+            background: var(--sage);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg-time {
+            font-size: 0.7rem;
+            color: var(--text-faint);
+            margin-top: 0.2rem;
+        }
+
+        .msg-raahat .msg-time {
+            padding-left: 0.25rem;
+        }
+
+        .msg-user .msg-time {
+            text-align: right;
+            padding-right: 0.25rem;
+        }
+
+        .chat-input-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.25rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--sand-dark);
+        }
+
+        .chat-input-fake {
+            flex: 1;
+            background: var(--sand);
+            border-radius: 100px;
+            padding: 0.6rem 1rem;
+            font-size: 0.83rem;
+            color: var(--text-faint);
+            border: none;
+            cursor: text;
+        }
+
+        .chat-send {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--sage);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .chat-send svg {
+            width: 15px;
+            height: 15px;
+            stroke: white;
+            fill: none;
+        }
+
+        /* STATS STRIP */
+        .stats-strip {
+            background: var(--sand);
+            border-top: 1px solid var(--sand-dark);
+            border-bottom: 1px solid var(--sand-dark);
+            padding: 2.5rem 3rem;
+        }
+
+        .stats-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-num {
+            font-family: 'Lora', serif;
+            font-size: 2.2rem;
+            color: var(--sage);
+            font-weight: 500;
+            letter-spacing: -0.03em;
+            line-height: 1;
+            margin-bottom: 0.35rem;
+        }
+
+        .stat-label {
+            font-size: 0.82rem;
+            color: var(--text-soft);
+            font-weight: 300;
+        }
+
+        /* HOW IT WORKS */
+        .section {
+            padding: 6rem 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-tag {
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--sage);
+            margin-bottom: 0.75rem;
+        }
+
+        .section-title {
+            font-family: 'Lora', serif;
+            font-size: clamp(1.8rem, 3vw, 2.6rem);
+            font-weight: 500;
+            color: var(--text-deep);
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+
+        .section-sub {
+            color: var(--text-soft);
+            font-size: 1rem;
+            font-weight: 300;
+            max-width: 560px;
+            line-height: 1.8;
+            margin-bottom: 3.5rem;
+        }
+
+        /* STEPS */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .step-card {
+            padding: 2rem;
+            border: 1px solid var(--sand-dark);
+            border-radius: 20px;
+            background: white;
+            position: relative;
+            transition: border-color 0.3s, transform 0.3s;
+        }
+
+        .step-card:hover {
+            border-color: var(--sage-mid);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(74, 124, 89, 0.08);
+        }
+
+        .step-num {
+            font-family: 'Lora', serif;
+            font-size: 3.5rem;
+            font-weight: 400;
+            color: var(--sage-pale);
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+
+        .step-title {
+            font-weight: 500;
+            font-size: 1.05rem;
+            margin-bottom: 0.6rem;
+            color: var(--text-deep);
+        }
+
+        .step-desc {
+            font-size: 0.88rem;
+            color: var(--text-soft);
+            line-height: 1.7;
+        }
+
+        /* FEATURES */
+        .features-bg {
+            background: var(--sand);
+            border-top: 1px solid var(--sand-dark);
+            border-bottom: 1px solid var(--sand-dark);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--sand-dark);
+            transition: border-color 0.2s;
+        }
+
+        .feature:hover {
+            border-color: var(--sage-mid);
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            background: var(--sage-pale);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feature-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--sage);
+            fill: none;
+            stroke-width: 1.5;
+        }
+
+        .feature-title {
+            font-weight: 500;
+            font-size: 0.95rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .feature-desc {
+            font-size: 0.85rem;
+            color: var(--text-soft);
+            line-height: 1.65;
+        }
+
+        /* SAFETY NOTE */
+        .safety-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 6rem 3rem;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 5rem;
+            align-items: center;
+        }
+
+        .safety-left {}
+
+        .safety-card {
+            background: var(--sage);
+            color: white;
+            border-radius: 24px;
+            padding: 2.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .safety-card::before {
+            content: '🤍';
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            font-size: 8rem;
+            opacity: 0.08;
+            line-height: 1;
+        }
+
+        .safety-card-title {
+            font-family: 'Lora', serif;
+            font-size: 1.5rem;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+            line-height: 1.25;
+        }
+
+        .safety-card p {
+            font-size: 0.9rem;
+            opacity: 0.85;
+            line-height: 1.75;
+            margin-bottom: 1.25rem;
+            font-weight: 300;
+        }
+
+        .crisis-numbers {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .crisis-num {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .crisis-num strong {
+            font-weight: 500;
+        }
+
+        /* FOOTER */
+        footer {
+            background: var(--text-deep);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 3rem;
+        }
+
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-logo {
+            font-family: 'Lora', serif;
+            font-size: 1.2rem;
+            color: white;
+            font-weight: 500;
+        }
+
+        .footer-note {
+            font-size: 0.8rem;
+            line-height: 1.6;
+            max-width: 400px;
+            text-align: right;
+        }
+
+        .footer-note strong {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* ANIMATIONS */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes msgIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .msg:nth-child(1) {
+            animation-delay: 0.6s;
+        }
+
+        .msg:nth-child(2) {
+            animation-delay: 1.0s;
+        }
+
+        .msg:nth-child(3) {
+            animation-delay: 1.5s;
+        }
+
+        .msg:nth-child(4) {
+            animation-delay: 2.0s;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            .hero {
+                grid-template-columns: 1fr;
+                padding: 7rem 1.5rem 3rem;
+            }
+
+            .hero-right {
+                display: none;
+            }
+
+            .stats-inner {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .steps {
+                grid-template-columns: 1fr;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .safety-section {
+                grid-template-columns: 1fr;
+            }
+
+            nav {
+                padding: 1rem 1.5rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .section {
+                padding: 4rem 1.5rem;
+            }
+
+            .footer-inner {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .footer-note {
+                text-align: center;
+            }
         }
     </style>
 </head>
 
-<body class="antialiased min-h-screen flex flex-col relative">
-    <div class="hero-bg"></div>
-    <!-- TopNavBar -->
-    <nav class="bg-linen-bg/70 dark:bg-inverse-surface/70 backdrop-blur-md shadow-sm fixed top-0 w-full z-50">
-        <div
-            class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-20 max-w-container-max mx-auto">
-            <div class="font-display-lg text-headline-md tracking-tight text-sage-deep dark:text-primary-fixed-dim">
-                RAAHAT
-            </div>
-            <div class="hidden md:flex gap-gutter items-center">
-                <a class="text-sage-deep dark:text-primary-fixed-dim border-b-2 border-sage-deep font-bold pb-1 font-label-md hover:text-sage-muted dark:hover:text-primary-fixed transition-colors duration-200 opacity-80 scale-95 transition-all"
-                    href="#">Home</a>
-                <a class="text-secondary dark:text-secondary-fixed-dim font-label-md hover:text-sage-muted dark:hover:text-primary-fixed transition-colors duration-200"
-                    href="#">Insights</a>
-                <a class="text-secondary dark:text-secondary-fixed-dim font-label-md hover:text-sage-muted dark:hover:text-primary-fixed transition-colors duration-200"
-                    href="#">Resources</a>
-            </div>
-            <div class="hidden md:flex items-center gap-4">
-                <button
-                    class="font-label-md text-label-md text-secondary hover:text-sage-deep transition-colors">Profile</button>
-                <button id="landing-start-venting"
-                    class="bg-sage-deep text-white px-6 py-2 rounded-full font-label-md text-label-md hover:bg-sage-muted transition-colors shadow-sm hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200">
-                    Start Venting
-                </button>
-            </div>
-            <!-- Mobile Menu Placeholder -->
-            <button class="md:hidden text-sage-deep">
-                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">menu</span>
-            </button>
+<body>
+
+    <!-- NAV -->
+    <nav>
+        <div class="nav-logo">
+            RAAHAT <span>राहत · AI Mental Health Companion</span>
         </div>
+        <ul class="nav-links">
+            <li><a href="#how">How it works</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#safety">Safety</a></li>
+            <li><a href="/login" class="nav-cta">Start talking</a></li>
+        </ul>
     </nav>
-    <!-- Main Content Canvas -->
-    <main
-        class="flex-grow pt-[120px] px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto w-full pb-section-gap">
-        <!-- Hero Section -->
-        <section class="flex flex-col lg:flex-row items-center gap-section-gap py-section-gap">
-            <div class="flex-1 space-y-stack-lg max-w-2xl">
-                <h1 class="font-display-lg text-display-lg text-sage-deep leading-tight">
-                    A space that <br /><span class="text-lavender-dark italic">listens first.</span>
-                </h1>
-                <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
-                    Venting shouldn't feel clinical. RAAHAT uses AI-driven empathy to hold space for you, backed by
-                    clinical research from WHO, CBT, and DBT manuals.
+
+    <!-- HERO -->
+    <section style="background: var(--warm-white);">
+        <div class="hero">
+            <div class="hero-left">
+                <div class="hero-tag">Free · Private · Available now</div>
+                <h1>A quiet place to <em>feel</em> heard, not just helped</h1>
+                <p class="hero-sub">
+                    RAAHAT is an AI companion trained on clinical mental health frameworks — built to listen without
+                    judgement, and support without replacing real care.
                 </p>
-                <div class="flex flex-col sm:flex-row gap-4 pt-4">
-                    <button id="landing-hero-start"
-                        class="bg-sage-deep text-white px-8 py-4 rounded-full font-label-md text-label-md hover:bg-sage-muted transition-colors shadow-sm hover:shadow-md transform hover:-translate-y-0.5 transition-all duration-200 text-center">
-                        Start Your First Session
-                    </button>
-                    <button id="landing-how-it-works"
-                        class="bg-lavender-soft text-lavender-dark px-8 py-4 rounded-full font-label-md text-label-md hover:bg-surface-variant transition-colors text-center">
-                        How it Works
-                    </button>
-                </div>
-                <!-- Clinical Disclaimer Badge -->
-                <div
-                    class="inline-flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-lg border border-outline-variant/30 mt-8">
-                    <span class="material-symbols-outlined text-outline text-[18px]"
-                        style="font-variation-settings: 'FILL' 1;">warning</span>
-                    <span class="font-label-sm text-label-sm text-on-surface-variant">
-                        RAAHAT is not a substitute for professional mental health care.
-                    </span>
+                <div class="hero-actions">
+                    <a href="/login" class="btn-primary">
+                        Start a conversation
+                        <svg viewBox="0 0 16 16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 8h10M9 4l4 4-4 4" />
+                        </svg>
+                    </a>
+                    <a href="#how" class="btn-ghost">See how it works</a>
                 </div>
             </div>
-            <div class="flex-1 w-full relative">
-                <div
-                    class="aspect-square max-w-[500px] mx-auto rounded-full overflow-hidden soft-shadow border-4 border-white/50 relative">
-                    <img alt="Calm natural scenery" class="w-full h-full object-cover"
-                        data-alt="A serene, wide-angle photograph of a calm lake surrounded by soft, mist-covered mountains at dawn. The color palette is composed of gentle pastel blues, soft lavenders, and muted sage greens, reflecting the UI's 'Digital Sanctuary' aesthetic. The lighting is diffused and even, creating a sense of deep tranquility and safe space. There are no harsh shadows, emphasizing a modern, breathable, and empathetic visual style."
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEuUVcog3gXMzITcaV1sf1-ONLPxcEHmU5KLoqI2XAs1tgxXqVDbTDmMdpW3sY3FQP8XBF5BlN4sfIql6QW_17Y82szQDPEpeAy0ar5l63fjudWkhufaqt6-06o4G9-hvPhkB9PSDO24VXbsQtovgmzW3AUs82tvEVipL62AId5IN-BQ3XK35LvUxTKoZHMNsUlR2Y2_CKRcqsy6ypaXRIi6m0SzNPIvpXQoqKVSeXvrfACtAnVX2vFChE2canJVRkAsf0kYJKSw" />
-                </div>
-                <!-- Floating Elements -->
-                <div
-                    class="absolute top-[10%] -left-[10%] glass-card p-4 rounded-2xl flex items-center gap-3 animate-[pulse_4s_ease-in-out_infinite]">
-                    <span class="material-symbols-outlined text-sage-deep"
-                        style="font-variation-settings: 'FILL' 1;">spa</span>
-                    <span class="font-label-md text-label-md text-sage-deep">Deep Breaths</span>
-                </div>
-                <div
-                    class="absolute bottom-[20%] -right-[5%] glass-card p-4 rounded-2xl flex items-center gap-3 animate-[pulse_5s_ease-in-out_infinite_0.5s]">
-                    <div class="w-2 h-2 rounded-full bg-mood-exploring"></div>
-                    <span class="font-label-md text-label-md text-secondary">Exploring thoughts...</span>
-                </div>
-            </div>
-        </section>
-        <!-- Features Bento Grid -->
-        <section id="landing-features" class="py-section-gap">
-            <h2 class="font-headline-lg text-headline-lg text-center text-sage-deep mb-stack-lg">How RAAHAT Holds Space
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-                <!-- Feature 1 -->
-                <div
-                    class="bg-white rounded-[24px] p-stack-lg soft-shadow flex flex-col justify-between hover:shadow-lg transition-shadow duration-300">
-                    <div>
-                        <div
-                            class="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
-                            <span class="material-symbols-outlined text-sage-deep text-[24px]">science</span>
-                        </div>
-                        <h3 class="font-headline-md text-headline-md text-sage-deep mb-3">Grounded in Science</h3>
-                        <p class="font-body-md text-body-md text-on-surface-variant">
-                            Our AI references established clinical frameworks including WHO guidelines, CBT, and DBT
-                            manuals to ensure the support you receive is grounded in evidence.
-                        </p>
-                    </div>
-                </div>
-                <!-- Feature 2 -->
-                <div
-                    class="bg-lavender-soft/30 rounded-[24px] p-stack-lg soft-shadow flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 md:col-span-2">
-                    <div class="flex flex-col md:flex-row gap-6 items-center">
-                        <div class="flex-1">
-                            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center mb-6">
-                                <span class="material-symbols-outlined text-lavender-dark text-[24px]">forum</span>
-                            </div>
-                            <h3 class="font-headline-md text-headline-md text-sage-deep mb-3">Empathy, Not Just Advice
-                            </h3>
-                            <p class="font-body-md text-body-md text-on-surface-variant mb-4">
-                                RAAHAT uses conversational stage detection to understand if you just need to vent, want
-                                to explore your feelings, or are actively seeking advice. We match our tone to your
-                                needs.
-                            </p>
-                            <div class="flex gap-2">
-                                <span
-                                    class="bg-mood-venting text-on-surface-variant font-label-sm px-3 py-1 rounded-full">Venting</span>
-                                <span
-                                    class="bg-mood-exploring text-on-surface-variant font-label-sm px-3 py-1 rounded-full">Exploring</span>
-                            </div>
-                        </div>
-                        <div class="flex-1 w-full bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-white">
-                            <div class="flex flex-col gap-3">
-                                <div
-                                    class="self-end bg-sage-deep text-white px-4 py-2 rounded-2xl rounded-br-sm max-w-[80%] font-body-md text-sm">
-                                    I just feel completely overwhelmed today.
-                                </div>
-                                <div
-                                    class="self-start bg-lavender-soft text-on-surface-variant px-4 py-2 rounded-2xl rounded-bl-sm max-w-[80%] font-body-md text-sm">
-                                    I hear you. It sounds like a lot to carry all at once. I'm here to listen.
-                                </div>
-                            </div>
+            <div class="hero-right">
+                <div class="chat-card">
+                    <div class="chat-header">
+                        <div class="chat-avatar">र</div>
+                        <div>
+                            <div class="chat-name">RAAHAT</div>
+                            <div class="chat-status">Active · Safe space</div>
                         </div>
                     </div>
-                </div>
-                <!-- Feature 3 -->
-                <div
-                    class="bg-white rounded-[24px] p-stack-lg soft-shadow flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 md:col-span-3">
-                    <div class="flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div class="flex-1">
-                            <div
-                                class="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center mb-6">
-                                <span class="material-symbols-outlined text-sage-deep text-[24px]">lock</span>
-                            </div>
-                            <h3 class="font-headline-md text-headline-md text-sage-deep mb-3">Safe &amp; Private</h3>
-                            <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
-                                Your digital sanctuary is secure. We prioritize your privacy above all else, ensuring
-                                that your reflections, venting sessions, and explorations remain completely
-                                confidential.
-                            </p>
+                    <div class="messages">
+                        <div class="msg msg-user">
+                            <div class="msg-bubble">I don't really know why I'm messaging. I think I just needed
+                                somewhere to vent.</div>
+                            <div class="msg-time">Just now</div>
                         </div>
-                        <div class="flex-shrink-0">
-                            <button id="landing-privacy"
-                                class="bg-surface-container-low text-sage-deep border border-outline-variant px-6 py-3 rounded-full font-label-md text-label-md hover:bg-surface-variant transition-colors">
-                                Read Privacy Policy
-                            </button>
+                        <div class="msg msg-raahat">
+                            <div class="msg-bubble">I'm right here with you 🤍 Sometimes just sharing your thoughts can
+                                bring a sense of relief.</div>
+                            <div class="msg-time">RAAHAT</div>
+                        </div>
+                        <div class="msg msg-user">
+                            <div class="msg-bubble">The last few months have just felt really heavy. Mentally heavy.
+                            </div>
+                            <div class="msg-time">Just now</div>
+                        </div>
+                        <div class="msg msg-raahat">
+                            <div class="msg-bubble">It can be tough when everything feels overwhelming. Let's try to
+                                ground ourselves in the present moment.</div>
+                            <div class="msg-time">RAAHAT</div>
+                        </div>
+                    </div>
+                    <div class="chat-input-row">
+                        <div class="chat-input-fake">Share what's on your mind…</div>
+                        <div class="chat-send">
+                            <svg viewBox="0 0 16 16" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 8h12M9 4l4 4-4 4" />
+                            </svg>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
-    </main>
-    <!-- Footer -->
-    <footer
-        class="bg-surface-container-low dark:bg-surface-dim w-full mt-section-gap grid grid-cols-1 md:grid-cols-3 gap-gutter px-margin-mobile md:px-margin-desktop py-stack-lg max-w-container-max mx-auto border-t border-outline-variant">
-        <div class="flex flex-col gap-4">
-            <span class="font-display-lg text-headline-md text-sage-deep dark:text-primary-fixed-dim">RAAHAT</span>
-            <span class="font-label-sm text-label-sm text-secondary dark:text-on-surface-variant">© 2024 RAAHAT. Your
-                Digital Sanctuary.</span>
         </div>
-        <div class="flex flex-col gap-2 md:col-span-2 md:items-end justify-center">
-            <div class="flex flex-wrap gap-4 md:justify-end">
-                <a class="font-label-sm text-label-sm text-secondary dark:text-on-surface-variant hover:text-sage-deep underline transition-all"
-                    href="#">Safety Resources</a>
-                <a class="font-label-sm text-label-sm text-secondary dark:text-on-surface-variant hover:text-sage-deep underline transition-all"
-                    href="#">Clinical Disclaimer</a>
-                <a class="font-label-sm text-label-sm text-secondary dark:text-on-surface-variant hover:text-sage-deep underline transition-all"
-                    href="#">WHO Guidelines</a>
-                <a class="font-label-sm text-label-sm text-secondary dark:text-on-surface-variant hover:text-sage-deep underline transition-all"
-                    href="#">CBT/DBT Sources</a>
-                <a class="font-label-sm text-label-sm text-secondary dark:text-on-surface-variant hover:text-sage-deep underline transition-all"
-                    href="#">Privacy Policy</a>
+    </section>
+
+    <!-- STATS -->
+    <div class="stats-strip">
+        <div class="stats-inner">
+            <div class="stat">
+                <div class="stat-num">5+</div>
+                <div class="stat-label">Clinical PDFs in knowledge base</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">3</div>
+                <div class="stat-label">Interfaces: Web, CLI, Telegram</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">CBT · DBT · ACT · PFA</div>
+                <div class="stat-label">Clinical frameworks powering RAG</div>
+            </div>
+            <div class="stat">
+                <div class="stat-num">0</div>
+                <div class="stat-label">Data ever sold or shared</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <section id="how">
+        <div class="section">
+            <p class="section-tag">The process</p>
+            <h2 class="section-title">More than a chatbot.<br>A structured listener.</h2>
+            <p class="section-sub">Every message goes through a three-step pipeline — emotion-aware, evidence-grounded,
+                and always safe.</p>
+            <div class="steps">
+                <div class="step-card">
+                    <div class="step-num">01</div>
+                    <div class="step-title">You talk. RAAHAT listens.</div>
+                    <div class="step-desc">Before replying, RAAHAT runs a safety check. Crisis signals trigger immediate
+                        helpline resources. Casual language is never false-flagged — we understand the difference
+                        between "I'm dying of laughter" and genuine distress.</div>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">02</div>
+                    <div class="step-title">Context is retrieved.</div>
+                    <div class="step-desc">Your message generates semantic search keywords, which are matched against a
+                        FAISS vector store of WHO, CBT, DBT, ACT, and PFA clinical manuals. Only high-confidence matches
+                        inform the response.</div>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">03</div>
+                    <div class="step-title">A grounded response, not a guess.</div>
+                    <div class="step-desc">Llama 3.3-70B is guided by your conversation history and clinical context. It
+                        responds like a knowledgeable, warm friend — not a distant medical voice. Your history stays
+                        private, stored securely in Supabase.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <div class="features-bg" id="features">
+        <div class="section">
+            <p class="section-tag">What we built</p>
+            <h2 class="section-title">Designed with care<br>at every layer.</h2>
+            <p class="section-sub">From crisis detection to hyperbole filtering — the thoughtful details behind RAAHAT.
+            </p>
+            <div class="features-grid">
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="feature-title">Real crisis detection with nuance</div>
+                        <div class="feature-desc">A deterministic safety layer scans for genuine distress signals —
+                            while a hyperbole filter prevents false alarms for idioms like "killing it" or "I'm dead."
+                        </div>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="feature-title">Evidence-based RAG pipeline</div>
+                        <div class="feature-desc">WHO stress workbooks, CBT group programs, DBT crisis skills, ACT
+                            workbooks, and PFA manuals — embedded and searched semantically for every conversation.
+                        </div>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="feature-title">Persistent memory, no cold starts</div>
+                        <div class="feature-desc">Each session builds on the last. RAAHAT remembers your name, your
+                            history, and your context — so you never have to start from zero.</div>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="feature-title">Three interfaces, one companion</div>
+                        <div class="feature-desc">Talk via the web UI, through a CLI for developers, or on Telegram —
+                            the same RAAHAT everywhere, fitting into how you naturally reach for support.</div>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="feature-title">Privacy-first architecture</div>
+                        <div class="feature-desc">Passwords are bcrypt-hashed. All API keys are server-side only. Google
+                            OAuth support built in. No data ever leaves your session unencrypted.</div>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="feature-title">Emotional energy matching</div>
+                        <div class="feature-desc">High energy response when you celebrate wins. Soft, steady presence
+                            when you're low. RAAHAT reads your vibe and meets you there — not with a template.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SAFETY -->
+    <section id="safety">
+        <div class="safety-section">
+            <div class="safety-left">
+                <p class="section-tag">Not a replacement</p>
+                <h2 class="section-title">We're a bridge,<br>not a destination.</h2>
+                <p class="section-sub" style="max-width: 420px;">
+                    RAAHAT is a first layer of support — available at 2am, on a rough Tuesday, between therapy sessions.
+                    It won't tell you everything is fine. It will tell you you're not alone.
+                </p>
+                <p
+                    style="font-size: 0.85rem; color: var(--text-faint); font-weight: 300; line-height: 1.8; max-width: 400px;">
+                    If you're in crisis, the safety system will always surface the right resources immediately — no
+                    matter what. This is not optional, and it never will be.
+                </p>
+            </div>
+            <div class="safety-card">
+                <div class="safety-card-title">Need immediate support?</div>
+                <p>RAAHAT automatically provides crisis resources when it detects genuine distress. These lines are
+                    always available:</p>
+                <div class="crisis-numbers">
+                    <div class="crisis-num"><span>Kiran Mental Health Helpline</span><strong>14416</strong></div>
+                    <div class="crisis-num"><span>iCall (TISS)</span><strong>9152987821</strong></div>
+                    <div class="crisis-num"><span>Vandrevala Foundation</span><strong>1860-266-2345</strong></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-inner">
+            <div>
+                <div class="footer-logo">RAAHAT · राहत</div>
+                <div style="font-size: 0.78rem; margin-top: 0.4rem;">Built by Animesh Mudit &amp; Anshuman Awasthi</div>
+            </div>
+            <div class="footer-note">
+                <strong>RAAHAT is not a licensed medical service.</strong> It is an AI companion tool and does not
+                replace professional therapy, psychiatry, or emergency services. If you are in immediate danger, please
+                call emergency services.
             </div>
         </div>
     </footer>
-    <!-- BottomNavBar (Mobile Only) -->
-    <nav
-        class="bg-white/80 dark:bg-inverse-surface/80 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)] fixed bottom-0 left-0 w-full flex justify-around items-center p-stack-sm pb-safe md:hidden z-50">
-        <a class="flex flex-col items-center justify-center bg-sage-deep text-white rounded-xl px-4 py-1 scale-95 transition-transform active:bg-surface-variant"
-            href="#">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
-            <span class="font-label-sm text-[10px]">Home</span>
-        </a>
-        <a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim px-4 py-1 active:bg-surface-variant"
-            href="#">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">insights</span>
-            <span class="font-label-sm text-[10px]">Insights</span>
-        </a>
-        <a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim px-4 py-1 active:bg-surface-variant"
-            href="#">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">library_books</span>
-            <span class="font-label-sm text-[10px]">Resources</span>
-        </a>
-        <a class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim px-4 py-1 active:bg-surface-variant"
-            href="#">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">emergency</span>
-            <span class="font-label-sm text-[10px]">Crisis</span>
-        </a>
-    </nav>
-    <!-- Safe area spacing for mobile bottom nav -->
-    <div class="h-20 md:hidden"></div>
-    <script src="/static/app.js"></script>
+
 </body>
 
 </html>

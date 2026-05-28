@@ -1,4 +1,5 @@
 import os
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv # this is to load the .env file
 from supabase import create_client #this helps in executing supabase commands
 from colorama import Fore

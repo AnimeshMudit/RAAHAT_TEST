@@ -1,365 +1,1365 @@
 <!DOCTYPE html>
-
-<html class="light" lang="en">
+<html lang="en">
 
 <head>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>RAAHAT - Chat</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAAHAT — Your Safe Space</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,200..900;1,7..72,200..900&amp;family=Inter:wght@300..700&amp;display=swap"
-        rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "sage-muted": "#5E827D",
-                        "tertiary-fixed": "#e6e2de",
-                        "on-secondary-fixed-variant": "#474554",
-                        "surface": "#f9f9ff",
-                        "primary-fixed": "#bcece4",
-                        "mood-venting": "#F2D7D7",
-                        "inverse-primary": "#a1d0c8",
-                        "secondary-fixed": "#e4e0f3",
-                        "surface-dim": "#d3daea",
-                        "surface-container": "#e7eefe",
-                        "linen-bg": "#FAF9F6",
-                        "surface-container-highest": "#dce2f3",
-                        "surface-container-lowest": "#ffffff",
-                        "lavender-soft": "#E3DFF2",
-                        "surface-bright": "#f9f9ff",
-                        "on-primary-fixed": "#00201d",
-                        "on-surface-variant": "#404847",
-                        "on-primary-fixed-variant": "#204e48",
-                        "surface-container-high": "#e2e8f8",
-                        "primary-container": "#2d5a54",
-                        "on-error-container": "#93000a",
-                        "tertiary-container": "#54524f",
-                        "on-background": "#151c27",
-                        "mood-advice": "#D7F2E2",
-                        "background": "#f9f9ff",
-                        "on-primary": "#ffffff",
-                        "secondary-container": "#e1ddf0",
-                        "on-tertiary-fixed-variant": "#484744",
-                        "primary": "#13423d",
-                        "on-secondary-container": "#636171",
-                        "outline": "#707977",
-                        "on-primary-container": "#a1cfc8",
-                        "surface-container-low": "#f0f3ff",
-                        "tertiary-fixed-dim": "#c9c6c2",
-                        "secondary": "#5e5d6c",
-                        "on-secondary-fixed": "#1b1a27",
-                        "on-surface": "#151c27",
-                        "inverse-surface": "#2a313d",
-                        "inverse-on-surface": "#ebf1ff",
-                        "mood-exploring": "#D7EAF2",
-                        "error": "#ba1a1a",
-                        "primary-fixed-dim": "#a1d0c8",
-                        "lavender-dark": "#7C73A7",
-                        "on-tertiary-container": "#c9c5c2",
-                        "sage-deep": "#2D5A54",
-                        "surface-variant": "#dce2f3",
-                        "error-container": "#ffdad6",
-                        "on-error": "#ffffff",
-                        "on-tertiary": "#ffffff",
-                        "on-tertiary-fixed": "#1c1c19",
-                        "tertiary": "#3c3b39",
-                        "secondary-fixed-dim": "#c8c4d7",
-                        "surface-tint": "#396660",
-                        "outline-variant": "#c0c8c6",
-                        "on-secondary": "#ffffff"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "2xl": "1.5rem",
-                        "3xl": "2rem",
-                        "full": "9999px"
-                    },
-                    "spacing": {
-                        "stack-sm": "8px",
-                        "gutter": "24px",
-                        "stack-md": "16px",
-                        "stack-lg": "32px",
-                        "section-gap": "64px",
-                        "margin-desktop": "40px",
-                        "margin-mobile": "20px",
-                        "container-max": "1200px"
-                    },
-                    "fontFamily": {
-                        "headline-md": ["Literata"],
-                        "headline-lg": ["Literata"],
-                        "label-md": ["Inter"],
-                        "headline-lg-mobile": ["Literata"],
-                        "body-lg": ["Inter"],
-                        "label-sm": ["Inter"],
-                        "display-lg": ["Literata"],
-                        "body-md": ["Inter"]
-                    },
-                    "fontSize": {
-                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
-                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
-                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
-                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
-                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
-                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
-                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
-                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
-                    }
-                }
-            }
-        }
-    </script>
+        href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+        rel="stylesheet">
     <style>
-        .fade-in-up {
-            animation: fadeInUp 0.5s ease-out forwards;
-            opacity: 0;
-            transform: translateY(10px);
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        @keyframes fadeInUp {
+        :root {
+            --sage: #4a7c59;
+            --sage-light: #7aab8a;
+            --sage-pale: #e8f0eb;
+            --sage-mid: #c5d9ca;
+            --sand: #f5f0e8;
+            --sand-dark: #e8e0d0;
+            --text-deep: #1a2018;
+            --text-mid: #3d4a3a;
+            --text-soft: #6b7a68;
+            --text-faint: #9aaa97;
+            --warm-white: #fdfcf9;
+            --accent: #c17f3e;
+            --accent-pale: #f5e8d5;
+            --danger: #d85a30;
+            --danger-pale: #faece7;
+            --sidebar-w: 300px;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--warm-white);
+            color: var(--text-deep);
+            font-size: 15px;
+            display: flex;
+        }
+
+        /* ─── SIDEBAR ─── */
+        .sidebar {
+            width: var(--sidebar-w);
+            height: 100vh;
+            background: var(--sand);
+            border-right: 1px solid var(--sand-dark);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem 1.25rem 1rem;
+            border-bottom: 1px solid var(--sand-dark);
+        }
+
+        .brand {
+            font-family: 'Lora', serif;
+            font-size: 1.3rem;
+            color: var(--sage);
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.2rem;
+        }
+
+        .brand-sub {
+            font-size: 0.7rem;
+            color: var(--text-faint);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 300;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--sage);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0.65rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background: var(--text-deep);
+        }
+
+        .new-chat-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: white;
+            fill: none;
+            flex-shrink: 0;
+        }
+
+        /* session history */
+        .history-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0.75rem;
+        }
+
+        .history-label {
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+            padding: 0 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.55rem 0.75rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.15s;
+            margin-bottom: 0.15rem;
+        }
+
+        .history-item:hover {
+            background: var(--sand-dark);
+        }
+
+        .history-item.active {
+            background: var(--sage-pale);
+        }
+
+        .history-item svg {
+            width: 14px;
+            height: 14px;
+            stroke: var(--text-faint);
+            fill: none;
+            flex-shrink: 0;
+        }
+
+        .history-item.active svg {
+            stroke: var(--sage);
+        }
+
+        .history-text {
+            font-size: 0.82rem;
+            color: var(--text-mid);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .history-item.active .history-text {
+            color: var(--sage);
+        }
+
+        /* sidebar footer */
+        .sidebar-footer {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--sand-dark);
+        }
+
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .user-pill:hover {
+            background: var(--sand-dark);
+        }
+
+        .user-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--sage-mid);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--sage);
+            font-family: 'Lora', serif;
+            flex-shrink: 0;
+        }
+
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .user-email {
+            font-size: 0.72rem;
+            color: var(--text-faint);
+        }
+
+        .sidebar-footer-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .footer-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            background: none;
+            border: 1px solid var(--sand-dark);
+            border-radius: 8px;
+            padding: 0.45rem;
+            font-size: 0.75rem;
+            color: var(--text-soft);
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.15s;
+        }
+
+        .footer-btn:hover {
+            border-color: var(--sage-mid);
+            color: var(--sage);
+            background: var(--sage-pale);
+        }
+
+        .footer-btn svg {
+            width: 13px;
+            height: 13px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        /* ─── MAIN CHAT ─── */
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* top bar */
+        .chat-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.75rem;
+            border-bottom: 1px solid var(--sand-dark);
+            background: var(--warm-white);
+            flex-shrink: 0;
+        }
+
+        .chat-topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .raahat-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--sage-pale);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Lora', serif;
+            font-size: 1.1rem;
+            color: var(--sage);
+        }
+
+        .raahat-name {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .raahat-status {
+            font-size: 0.75rem;
+            color: var(--sage);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--sage);
+            animation: pulse-dot 2.5s infinite;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .topbar-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .topbar-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid var(--sand-dark);
+            background: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            color: var(--text-soft);
+        }
+
+        .topbar-btn:hover {
+            background: var(--sage-pale);
+            border-color: var(--sage-mid);
+            color: var(--sage);
+        }
+
+        .topbar-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        /* disclaimer banner */
+        .disclaimer-banner {
+            background: var(--accent-pale);
+            border-bottom: 1px solid #e8d5ba;
+            padding: 0.55rem 1.75rem;
+            font-size: 0.78rem;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .disclaimer-banner svg {
+            width: 14px;
+            height: 14px;
+            stroke: var(--accent);
+            fill: none;
+            flex-shrink: 0;
+        }
+
+        .disclaimer-close {
+            margin-left: auto;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--accent);
+            font-size: 1.1rem;
+            line-height: 1;
+            padding: 0;
+            opacity: 0.6;
+            transition: opacity 0.15s;
+        }
+
+        .disclaimer-close:hover {
+            opacity: 1;
+        }
+
+        /* messages area */
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            scroll-behavior: smooth;
+        }
+
+        /* welcome state */
+        .welcome-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            text-align: center;
+            gap: 1rem;
+            padding: 3rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        /* Hide scrollbar for clean UI but keep functionality */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
+        .welcome-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--sage-pale);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Lora', serif;
+            font-size: 1.8rem;
+            color: var(--sage);
+            margin-bottom: 0.5rem;
         }
 
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        .welcome-title {
+            font-family: 'Lora', serif;
+            font-size: 1.6rem;
+            font-weight: 500;
+            color: var(--text-deep);
+            letter-spacing: -0.02em;
+        }
+
+        .welcome-sub {
+            color: var(--text-soft);
+            font-size: 0.9rem;
+            font-weight: 300;
+            max-width: 360px;
+            line-height: 1.75;
+        }
+
+        .prompt-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            max-width: 480px;
+            margin-top: 0.5rem;
+        }
+
+        .prompt-chip {
+            background: white;
+            border: 1px solid var(--sand-dark);
+            border-radius: 100px;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            color: var(--text-mid);
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .prompt-chip:hover {
+            border-color: var(--sage-mid);
+            background: var(--sage-pale);
+            color: var(--sage);
+        }
+
+        /* message rows */
+        .msg-row {
+            display: flex;
+            gap: 0.75rem;
+            animation: msgSlide 0.3s ease both;
+        }
+
+        @keyframes msgSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .msg-row.user-row {
+            flex-direction: row-reverse;
+        }
+
+        .msg-row-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-family: 'Lora', serif;
+        }
+
+        .msg-row-avatar.raahat {
+            background: var(--sage-pale);
+            color: var(--sage);
+        }
+
+        .msg-row-avatar.user {
+            background: var(--sand-dark);
+            color: var(--text-mid);
+        }
+
+        .msg-body {
+            display: flex;
+            flex-direction: column;
+            max-width: 65%;
+            gap: 0.25rem;
+        }
+
+        .user-row .msg-body {
+            align-items: flex-end;
+        }
+
+        .msg-bubble {
+            padding: 0.75rem 1rem;
+            border-radius: 16px;
+            font-size: 0.88rem;
+            line-height: 1.65;
+        }
+
+        .raahat-bubble {
+            background: white;
+            border: 1px solid var(--sand-dark);
+            border-bottom-left-radius: 4px;
+            color: var(--text-deep);
+        }
+
+        .user-bubble {
+            background: var(--sage);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg-meta {
+            font-size: 0.7rem;
+            color: var(--text-faint);
+            padding: 0 0.25rem;
+        }
+
+        /* crisis bubble */
+        .crisis-bubble {
+            background: var(--danger-pale);
+            border: 1px solid #f0b8a0;
+            border-radius: 16px;
+            padding: 0.85rem 1rem;
+            font-size: 0.85rem;
+            color: var(--danger);
+            line-height: 1.65;
+            border-bottom-left-radius: 4px;
+        }
+
+        .crisis-bubble strong {
+            font-weight: 500;
+        }
+
+        /* typing indicator */
+        .typing-row {
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+        }
+
+        .typing-bubble {
+            background: white;
+            border: 1px solid var(--sand-dark);
+            border-radius: 16px;
+            border-bottom-left-radius: 4px;
+            padding: 0.9rem 1rem;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .typing-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--sage-mid);
+            animation: typingBounce 1.2s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingBounce {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                background: var(--sage-mid);
+            }
+
+            30% {
+                transform: translateY(-6px);
+                background: var(--sage);
+            }
+        }
+
+        /* ─── CRISIS BANNER (context-aware) ─── */
+        .crisis-resource-bar {
+            background: var(--danger-pale);
+            border-top: 1px solid #f0b8a0;
+            padding: 0.6rem 1.75rem;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+
+        .crisis-resource-bar.visible {
+            display: flex;
+        }
+
+        .crisis-resource-bar p {
+            font-size: 0.78rem;
+            color: var(--danger);
+            font-weight: 400;
+        }
+
+        .crisis-resource-bar strong {
+            font-weight: 500;
+        }
+
+        .crisis-resource-bar button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--danger);
+            font-size: 1.1rem;
+            line-height: 1;
+            margin-left: auto;
+            padding: 0;
+        }
+
+        /* ─── INPUT ROW ─── */
+        .input-area {
+            padding: 1rem 1.75rem 1.25rem;
+            border-top: 1px solid var(--sand-dark);
+            background: var(--warm-white);
+            flex-shrink: 0;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.75rem;
+            background: white;
+            border: 1.5px solid var(--sand-dark);
+            border-radius: 16px;
+            padding: 0.65rem 0.75rem 0.65rem 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .input-row:focus-within {
+            border-color: var(--sage-mid);
+        }
+
+        #msg-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            color: var(--text-deep);
+            resize: none;
+            max-height: 140px;
+            line-height: 1.55;
+            padding: 0;
+        }
+
+        #msg-input::placeholder {
+            color: var(--text-faint);
+        }
+
+        .input-send {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--sage);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .input-send:hover {
+            background: var(--text-deep);
+        }
+
+        .input-send:disabled {
+            background: var(--sage-mid);
+            cursor: not-allowed;
+        }
+
+        .input-send svg {
+            width: 17px;
+            height: 17px;
+            stroke: white;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .input-hint {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-faint);
+            margin-top: 0.5rem;
+            font-weight: 300;
+        }
+
+        /* ─── MOBILE ─── */
+        @media (max-width: 760px) {
+            .sidebar {
+                display: none;
+            }
+
+            .messages-area {
+                padding: 1.25rem 1rem;
+            }
+
+            .input-area {
+                padding: 0.75rem 1rem 1rem;
+            }
+
+            .chat-topbar {
+                padding: 0.75rem 1rem;
+            }
+
+            .msg-body {
+                max-width: 82%;
+            }
+        }
+
+        /* ─── SCROLLBAR ─── */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--sand-dark);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--sage-mid);
+        }
+
+        /* ─── INFO PANEL (slide-in) ─── */
+        .info-panel {
+            position: fixed;
+            top: 0;
+            right: -360px;
+            width: 340px;
+            height: 100vh;
+            background: var(--warm-white);
+            border-left: 1px solid var(--sand-dark);
+            z-index: 100;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            gap: 1.25rem;
+            overflow-y: auto;
+        }
+
+        .info-panel.open {
+            right: 0;
+        }
+
+        .info-panel-title {
+            font-family: 'Lora', serif;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-deep);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .info-panel-title button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-faint);
+            font-size: 1.3rem;
+            line-height: 1;
+        }
+
+        .info-section-title {
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+            margin-bottom: 0.6rem;
+        }
+
+        .info-card {
+            background: white;
+            border: 1px solid var(--sand-dark);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .info-card p {
+            font-size: 0.83rem;
+            color: var(--text-soft);
+            line-height: 1.7;
+        }
+
+        .crisis-line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.55rem 0;
+            border-bottom: 1px solid var(--sand-dark);
+            font-size: 0.82rem;
+        }
+
+        .crisis-line:last-child {
+            border-bottom: none;
+        }
+
+        .crisis-line span {
+            color: var(--text-soft);
+        }
+
+        .crisis-line strong {
+            color: var(--text-deep);
+            font-weight: 500;
         }
     </style>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 
-<body class="bg-linen-bg text-on-surface h-screen overflow-hidden flex flex-col font-body-md">
-    <!-- TopNavBar (Shared Component) -->
-    <nav
-        class="bg-linen-bg/70 dark:bg-inverse-surface/70 backdrop-blur-md shadow-sm fixed top-0 w-full z-50 transition-all duration-300">
-        <div class="flex justify-between items-center px-margin-desktop h-20 max-w-container-max mx-auto">
-            <div class="font-display-lg text-headline-md tracking-tight text-sage-deep dark:text-primary-fixed-dim">
-                RAAHAT
-            </div>
-            <div class="hidden md:flex space-x-8">
-                <a class="text-secondary dark:text-secondary-fixed-dim font-label-md hover:text-sage-muted dark:hover:text-primary-fixed transition-colors duration-200"
-                    href="#">Home</a>
-                <a class="text-sage-deep dark:text-primary-fixed-dim border-b-2 border-sage-deep font-bold pb-1 opacity-80 scale-95 transition-all"
-                    href="#">Start Venting</a>
-                <a class="text-secondary dark:text-secondary-fixed-dim font-label-md hover:text-sage-muted dark:hover:text-primary-fixed transition-colors duration-200"
-                    href="#">Insights</a>
-                <a class="text-secondary dark:text-secondary-fixed-dim font-label-md hover:text-sage-muted dark:hover:text-primary-fixed transition-colors duration-200"
-                    href="#">Resources</a>
-            </div>
-            <div class="flex items-center space-x-4">
-                <button
-                    class="bg-sage-deep text-white font-label-md text-label-md px-6 py-2 rounded-full hover:shadow-lg transition-all hover:-translate-y-0.5">Profile</button>
-            </div>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand">RAAHAT</div>
+            <div class="brand-sub">राहत · Your safe space</div>
+            <button class="new-chat-btn" onclick="startNewChat()">
+                <svg viewBox="0 0 16 16" stroke-width="2" stroke-linecap="round">
+                    <line x1="8" y1="2" x2="8" y2="14" />
+                    <line x1="2" y1="8" x2="14" y2="8" />
+                </svg>
+                New conversation
+            </button>
         </div>
-    </nav>
-    <!-- Main Layout -->
-    <div class="flex h-full pt-20 max-w-container-max mx-auto w-full px-margin-desktop gap-gutter pb-margin-desktop">
-        <!-- Left Sidebar: Recent Threads -->
-        <aside
-            class="hidden md:flex flex-col w-1/4 bg-white/40 backdrop-blur-md rounded-3xl p-stack-md border border-white/50 shadow-[0_4px_20px_rgba(45,90,84,0.05)] overflow-hidden">
-            <div class="flex justify-between items-center mb-stack-lg">
-                <h2 class="font-headline-md text-headline-md text-sage-deep">Recent Journeys</h2>
-                <button class="text-sage-muted hover:text-sage-deep transition-colors">
-                    <span class="material-symbols-outlined" data-icon="edit_square">edit_square</span>
+
+        <div class="history-section">
+            <div class="history-label">Recent</div>
+            <div id="history-list"></div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="user-pill">
+                <div class="user-avatar" id="user-initials">?</div>
+                <div>
+                    <div class="user-name" id="sidebar-username">Loading…</div>
+                    <div class="user-email" id="sidebar-email">—</div>
+                </div>
+            </div>
+            <div class="sidebar-footer-actions">
+                <button class="footer-btn" onclick="toggleInfoPanel()">
+                    <svg viewBox="0 0 16 16" stroke-width="1.5" stroke-linecap="round">
+                        <circle cx="8" cy="8" r="6" />
+                        <line x1="8" y1="7" x2="8" y2="11" />
+                        <circle cx="8" cy="5" r="0.5" fill="currentColor" />
+                    </svg>
+                    About
+                </button>
+                <button class="footer-btn" onclick="logout()">
+                    <svg viewBox="0 0 16 16" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10 3h3a1 1 0 011 1v8a1 1 0 01-1 1h-3M6 11l-3-3 3-3M2 8h8" />
+                    </svg>
+                    Sign out
                 </button>
             </div>
-            <div class="flex-1 overflow-y-auto no-scrollbar space-y-stack-sm pr-2">
-                <!-- Thread Card 1 (Active) -->
-                <div
-                    class="bg-white rounded-2xl p-stack-md shadow-[0_2px_10px_rgba(45,90,84,0.08)] border-l-4 border-sage-deep cursor-pointer">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span
-                            class="bg-mood-venting text-on-error-container font-label-sm text-label-sm px-2 py-0.5 rounded-full">Venting</span>
-                        <span class="text-outline font-label-sm text-label-sm">Today</span>
-                    </div>
-                    <p class="font-label-md text-label-md text-on-surface line-clamp-2">Feeling overwhelmed with work
-                        deadlines and everything piling up.</p>
-                </div>
-                <!-- Thread Card 2 -->
-                <div
-                    class="bg-surface-container-low/50 hover:bg-white rounded-2xl p-stack-md transition-all cursor-pointer">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span
-                            class="bg-mood-exploring text-primary-container font-label-sm text-label-sm px-2 py-0.5 rounded-full">Exploring</span>
-                        <span class="text-outline font-label-sm text-label-sm">Yesterday</span>
-                    </div>
-                    <p class="font-label-md text-label-md text-secondary line-clamp-2">Trying to figure out why I always
-                        feel anxious on Sunday evenings.</p>
-                </div>
-                <!-- Thread Card 3 -->
-                <div
-                    class="bg-surface-container-low/50 hover:bg-white rounded-2xl p-stack-md transition-all cursor-pointer">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span
-                            class="bg-mood-advice text-on-primary-fixed-variant font-label-sm text-label-sm px-2 py-0.5 rounded-full">Advice</span>
-                        <span class="text-outline font-label-sm text-label-sm">Oct 12</span>
-                    </div>
-                    <p class="font-label-md text-label-md text-secondary line-clamp-2">Tips for grounding myself when I
-                        feel a panic attack coming.</p>
-                </div>
-            </div>
-            <div class="mt-stack-lg pt-stack-md border-t border-surface-variant">
-                <p class="font-label-sm text-label-sm text-outline text-center flex items-center justify-center gap-1">
-                    <span class="material-symbols-outlined text-[14px]">lock</span> End-to-end encrypted
-                </p>
-            </div>
-        </aside>
-        <!-- Central Chat Area -->
-        <main
-            class="flex-1 flex flex-col bg-white rounded-[32px] shadow-[0_8px_30px_rgba(45,90,84,0.08)] border border-white/60 overflow-hidden relative">
-            <!-- Chat Header -->
-            <div
-                class="flex justify-between items-center px-stack-lg py-stack-md border-b border-surface-container-low bg-white/80 backdrop-blur-sm z-10 absolute top-0 w-full">
-                <div class="flex items-center gap-3">
-                    <div
-                        class="w-10 h-10 rounded-full bg-lavender-soft flex items-center justify-center text-lavender-dark">
-                        <span class="material-symbols-outlined" data-icon="psychiatry">psychiatry</span>
-                    </div>
-                    <div>
-                        <h1 class="font-headline-md text-headline-md text-sage-deep m-0">Raahat Companion</h1>
-                        <p class="font-label-sm text-label-sm text-sage-muted">Here to listen, safely.</p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button id="logout-btn"
-                        class="flex items-center gap-2 bg-surface-container-low text-sage-deep px-4 py-2 rounded-full font-label-md text-label-md hover:bg-surface-variant transition-colors shadow-sm">
-                        Logout
-                    </button>
-                    <button id="crisis-btn"
-                        class="flex items-center gap-2 bg-error-container text-on-error-container px-4 py-2 rounded-full font-label-md text-label-md hover:bg-[#ffc6c1] transition-colors shadow-sm">
-                        <span class="material-symbols-outlined text-[18px]" data-icon="emergency">emergency</span>
-                        Crisis
-                    </button>
-                </div>
-            </div>
-            <!-- Safety Banner -->
-            <div
-                class="bg-surface-container w-full mt-20 px-stack-lg py-2 flex items-center justify-center gap-2 border-b border-surface-variant z-0">
-                <span class="material-symbols-outlined text-sage-muted text-[16px]" data-icon="info">info</span>
-                <p class="font-label-sm text-label-sm text-sage-muted text-center">
-                    RAAHAT is an AI companion for emotional support, not a clinical tool or replacement for therapy.
-                </p>
-            </div>
-            <!-- Messages Area -->
-            <div id="messages"
-                class="flex-1 overflow-y-auto px-stack-lg py-stack-lg space-y-stack-lg no-scrollbar bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-linen-bg/50 to-white">
-                <!-- Time separator -->
-                <div class="flex justify-center fade-in-up">
-                    <span
-                        class="font-label-sm text-label-sm text-outline bg-surface-container-low px-4 py-1 rounded-full">Today,
-                        2:15 PM</span>
-                </div>
-                <!-- User Message -->
-                <div class="flex justify-end fade-in-up" style="animation-delay: 0.1s;">
-                    <div
-                        class="max-w-[70%] bg-sage-deep text-white p-stack-md rounded-2xl rounded-br-sm shadow-[0_4px_15px_rgba(45,90,84,0.15)]">
-                        <p class="font-body-md text-body-md">I'm just feeling so overwhelmed today. It feels like
-                            everything is piling up at work and I can't catch my breath. I don't even know where to
-                            start.</p>
-                    </div>
-                </div>
-                <!-- AI Message -->
-                <div class="flex justify-start fade-in-up" style="animation-delay: 0.3s;">
-                    <div class="flex gap-3 max-w-[80%]">
-                        <div
-                            class="w-8 h-8 rounded-full bg-lavender-soft flex-shrink-0 flex items-center justify-center text-lavender-dark mt-1">
-                            <span class="material-symbols-outlined text-[16px]" data-icon="psychiatry">psychiatry</span>
-                        </div>
-                        <div
-                            class="bg-lavender-soft/40 p-stack-md rounded-2xl rounded-bl-sm shadow-sm border border-lavender-soft/50">
-                            <p class="font-body-md text-body-md text-on-surface mb-3">It sounds like you're carrying a
-                                really heavy load right now. Feeling like you can't catch your breath when
-                                responsibilities pile up is a very natural response to being overwhelmed.</p>
-                            <p class="font-body-md text-body-md text-on-surface">I'm here with you. If you'd like, we
-                                can just sit with this feeling for a moment, or we can try to gently untangle what feels
-                                most pressing. What feels right for you right now?</p>
-                            <!-- Suggested Actions -->
-                            <div class="mt-4 flex flex-wrap gap-2">
-                                <button
-                                    class="bg-white border border-sage-muted text-sage-deep font-label-sm text-label-sm px-3 py-1.5 rounded-full hover:bg-sage-deep hover:text-white transition-colors">Just
-                                    sit with it</button>
-                                <button
-                                    class="bg-white border border-sage-muted text-sage-deep font-label-sm text-label-sm px-3 py-1.5 rounded-full hover:bg-sage-deep hover:text-white transition-colors">Untangle
-                                    thoughts</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- User Message -->
-                <div class="flex justify-end fade-in-up" style="animation-delay: 0.5s;">
-                    <div
-                        class="max-w-[70%] bg-sage-deep text-white p-stack-md rounded-2xl rounded-br-sm shadow-[0_4px_15px_rgba(45,90,84,0.15)]">
-                        <p class="font-body-md text-body-md">Maybe just sit with it for a bit. I don't want to solve
-                            anything right now, I just want to stop feeling this tight knot in my chest.</p>
-                    </div>
-                </div>
-                <!-- AI Typing Indicator -->
-                <div class="flex justify-start fade-in-up" style="animation-delay: 0.7s;">
-                    <div class="flex gap-3 max-w-[80%]">
-                        <div
-                            class="w-8 h-8 rounded-full bg-lavender-soft flex-shrink-0 flex items-center justify-center text-lavender-dark mt-1">
-                            <span class="material-symbols-outlined text-[16px]" data-icon="psychiatry">psychiatry</span>
-                        </div>
-                        <div class="bg-lavender-soft/40 p-4 rounded-2xl rounded-bl-sm flex gap-1 items-center">
-                            <div class="w-2 h-2 bg-lavender-dark/50 rounded-full animate-bounce"
-                                style="animation-delay: 0ms"></div>
-                            <div class="w-2 h-2 bg-lavender-dark/50 rounded-full animate-bounce"
-                                style="animation-delay: 150ms"></div>
-                            <div class="w-2 h-2 bg-lavender-dark/50 rounded-full animate-bounce"
-                                style="animation-delay: 300ms"></div>
-                        </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CHAT -->
+    <main class="chat-main">
+
+        <!-- Top bar -->
+        <div class="chat-topbar">
+            <div class="chat-topbar-left">
+                <div class="raahat-avatar">र</div>
+                <div>
+                    <div class="raahat-name">RAAHAT</div>
+                    <div class="raahat-status">
+                        <div class="status-dot"></div>
+                        <span id="raahat-status-text">Ready to listen</span>
                     </div>
                 </div>
             </div>
-            <!-- Input Area -->
-            <div class="p-stack-lg bg-white/90 backdrop-blur-md border-t border-surface-container-low">
-                <div class="relative flex items-center">
-                    <button
-                        class="absolute left-4 text-sage-muted hover:text-sage-deep transition-colors p-2 rounded-full hover:bg-surface-variant">
-                        <span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
-                    </button>
-                    <input id="chat-input"
-                        class="w-full bg-surface-container-low border-surface-variant rounded-full py-4 pl-14 pr-24 font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-lavender-soft focus:border-lavender-soft shadow-inner transition-all placeholder:text-outline"
-                        placeholder="Share what's on your mind..." type="text" />
-                    <div class="absolute right-2 flex items-center gap-1">
-                        <button
-                            class="text-sage-muted hover:text-sage-deep transition-colors p-2 rounded-full hover:bg-surface-variant"
-                            title="Voice Input">
-                            <span class="material-symbols-outlined" data-icon="mic">mic</span>
-                        </button>
-                        <button id="send-btn"
-                            class="bg-sage-deep text-white p-2 rounded-full hover:shadow-md transition-all hover:scale-105 flex items-center justify-center w-10 h-10">
-                            <span class="material-symbols-outlined" data-icon="arrow_upward">arrow_upward</span>
-                        </button>
-                    </div>
+            <div class="topbar-actions">
+                <button class="topbar-btn" title="Session info" onclick="toggleInfoPanel()">
+                    <svg viewBox="0 0 16 16" stroke-width="1.5" stroke-linecap="round">
+                        <circle cx="8" cy="8" r="6" />
+                        <line x1="8" y1="7" x2="8" y2="11" />
+                        <circle cx="8" cy="5" r="0.5" fill="currentColor" />
+                    </svg>
+                </button>
+                <button class="topbar-btn" title="New chat" onclick="startNewChat()">
+                    <svg viewBox="0 0 16 16" stroke-width="1.5" stroke-linecap="round">
+                        <path d="M12 2l2 2-8 8H4v-2L12 2z" />
+                        <path d="M2 14h12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Disclaimer banner (one-time) -->
+        <div class="disclaimer-banner" id="disclaimer-banner">
+            <svg viewBox="0 0 16 16" stroke-width="1.5" stroke-linecap="round">
+                <circle cx="8" cy="8" r="6" />
+                <line x1="8" y1="7" x2="8" y2="11" />
+                <circle cx="8" cy="5" r="0.5" fill="currentColor" />
+            </svg>
+            RAAHAT is a supportive companion, not a licensed therapist. In a crisis, please reach out to Kiran (14416)
+            or iCall (9152987821).
+            <button class="disclaimer-close" onclick="closeBanner()" title="Dismiss">×</button>
+        </div>
+
+        <!-- Messages -->
+        <div class="messages-area" id="messages-area">
+
+            <!-- Welcome state (hidden once chats start) -->
+            <div class="welcome-state" id="welcome-state">
+                <div class="welcome-icon">र</div>
+                <div class="welcome-title">Hello, <span id="welcome-name">friend</span></div>
+                <p class="welcome-sub">This is your safe space. You can share anything — I won't judge. What's on your
+                    mind today?</p>
+                <div class="prompt-chips">
+                    <button class="prompt-chip" onclick="usePrompt(this)">I've been feeling really low lately</button>
+                    <button class="prompt-chip" onclick="usePrompt(this)">I just needed somewhere to vent</button>
+                    <button class="prompt-chip" onclick="usePrompt(this)">I'm overthinking everything</button>
+                    <button class="prompt-chip" onclick="usePrompt(this)">I feel exhausted all the time</button>
+                    <button class="prompt-chip" onclick="usePrompt(this)">I can't sleep because of racing
+                        thoughts</button>
                 </div>
             </div>
-        </main>
+
+        </div>
+
+        <!-- Crisis resource bar (appears when triggered) -->
+        <div class="crisis-resource-bar" id="crisis-bar">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#d85a30" stroke-width="1.5"
+                stroke-linecap="round">
+                <path d="M8 2l5.5 10H2.5L8 2z" />
+                <line x1="8" y1="7" x2="8" y2="9.5" />
+                <circle cx="8" cy="11.5" r="0.5" fill="#d85a30" />
+            </svg>
+            <p>If you're in crisis right now: <strong>Kiran 14416</strong> · <strong>iCall 9152987821</strong> ·
+                <strong>Vandrevala 1860-266-2345</strong>
+            </p>
+            <button onclick="document.getElementById('crisis-bar').classList.remove('visible')">×</button>
+        </div>
+
+        <!-- Input area -->
+        <div class="input-area">
+            <div class="input-row">
+                <textarea id="msg-input" rows="1" placeholder="Share what's on your mind…" onkeydown="handleKey(event)"
+                    oninput="autoResize(this)"></textarea>
+                <button class="input-send" id="send-btn" onclick="sendMessage()" title="Send">
+                    <svg viewBox="0 0 17 17" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.5 8.5L2 3l2.5 5.5L2 14l12.5-5.5z" />
+                    </svg>
+                </button>
+            </div>
+            <p class="input-hint">RAAHAT listens without judgement · Not a substitute for professional care</p>
+        </div>
+
+    </main>
+
+    <!-- INFO PANEL -->
+    <div class="info-panel" id="info-panel">
+        <div class="info-panel-title">
+            About RAAHAT
+            <button onclick="toggleInfoPanel()">×</button>
+        </div>
+
+        <div>
+            <div class="info-section-title">How RAAHAT works</div>
+            <div class="info-card">
+                <p>Your messages are matched against clinical mental health resources (WHO stress workbooks, CBT, DBT,
+                    ACT, PFA manuals) to give you grounded, evidence-informed responses — not just generic advice.</p>
+            </div>
+        </div>
+
+        <div>
+            <div class="info-section-title">Safety</div>
+            <div class="info-card">
+                <p>RAAHAT has a built-in crisis detection layer. If your message contains signs of genuine distress, it
+                    will immediately surface helpline numbers. This cannot be turned off.</p>
+            </div>
+        </div>
+
+        <div>
+            <div class="info-section-title">Emergency helplines</div>
+            <div class="info-card">
+                <div class="crisis-line"><span>Kiran Mental Health</span><strong>14416</strong></div>
+                <div class="crisis-line"><span>iCall (TISS)</span><strong>9152987821</strong></div>
+                <div class="crisis-line"><span>Vandrevala Foundation</span><strong>1860-266-2345</strong></div>
+            </div>
+        </div>
+
+        <div>
+            <div class="info-section-title">Privacy</div>
+            <div class="info-card">
+                <p>Conversations are stored securely in Supabase to provide continuity. Passwords are bcrypt-hashed. No
+                    data is ever sold or shared with third parties.</p>
+            </div>
+        </div>
     </div>
+
     <script>
-        window.SUPABASE_URL = "{{ SUPABASE_URL }}";
-        window.SUPABASE_KEY = "{{ SUPABASE_KEY }}";
+        const API_BASE = 'http://127.0.0.1:8000';
+
+        // ─── SESSION STATE ───
+        let sessionObj = {};
+        try {
+            sessionObj = JSON.parse(localStorage.getItem('raahat_user') || '{}');
+        } catch(e) {}
+        let userId = sessionObj.user_id;
+        let username = sessionObj.username || 'friend';
+        let isFirstMessage = true;
+        let isTyping = false;
+        let sessionHistory = [];
+
+        // ─── INIT ───
+        window.onload = () => {
+            if (!userId) {
+                window.location.href = '/login';
+                return;
+            }
+
+            setUserUI();
+            loadHistory();
+
+            const banner = localStorage.getItem('raahat_banner_dismissed');
+            if (banner) document.getElementById('disclaimer-banner').style.display = 'none';
+
+            document.getElementById('msg-input').focus();
+        };
+
+        function setUserUI() {
+            const display = username.includes('@') ? username.split('@')[0] : username;
+            const initials = display.slice(0, 2).toUpperCase();
+
+            document.getElementById('user-initials').textContent = initials;
+            document.getElementById('sidebar-username').textContent = display;
+            document.getElementById('sidebar-email').textContent = username.includes('@') ? username : '';
+            document.getElementById('welcome-name').textContent = display;
+        }
+
+        // ─── HISTORY ───
+        async function loadHistory() {
+            try {
+                const res = await fetch(`${API_BASE}/api/history?user_id=${userId}`);
+                const data = await res.json();
+                const msgs = data.history || [];
+
+                if (msgs.length > 0) {
+                    hideWelcome();
+                    isFirstMessage = false;
+                    msgs.forEach(m => appendMessage(m.role === 'ai' ? 'raahat' : 'user', m.content, false));
+                    scrollToBottom();
+                    populateSidebarHistory(msgs);
+                }
+            } catch (e) {
+                console.warn('History load failed:', e);
+            }
+        }
+
+        function populateSidebarHistory(msgs) {
+            const list = document.getElementById('history-list');
+            const userMsgs = msgs.filter(m => m.role === 'user');
+            if (!userMsgs.length) return;
+
+            const previews = [userMsgs[userMsgs.length - 1]];
+            if (userMsgs.length > 1) previews.unshift(userMsgs[0]);
+
+            list.innerHTML = '';
+
+            const item = document.createElement('div');
+            item.className = 'history-item active';
+            item.innerHTML = `
+    <svg viewBox="0 0 16 16" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 9.5A5.5 5.5 0 118.5 4H14v5.5z"/>
+    </svg>
+    <span class="history-text">${escHtml(userMsgs[0].content)}</span>
+  `;
+            list.appendChild(item);
+        }
+
+        // ─── SEND ───
+        async function sendMessage() {
+            const input = document.getElementById('msg-input');
+            const text = input.value.trim();
+            if (!text || isTyping) return;
+
+            input.value = '';
+            autoResize(input);
+
+            hideWelcome();
+            appendMessage('user', text, true);
+
+            isTyping = true;
+            updateStatus('Thinking…');
+            setSendBtn(false);
+            showTyping();
+
+            try {
+                const res = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, message: text })
+                });
+
+                const data = await res.json();
+                hideTyping();
+                isTyping = false;
+
+                const reply = data.response || 'I had trouble responding. Please try again.';
+                const isCrisis = isCrisisResponse(reply);
+
+                appendMessage('raahat', reply, true, isCrisis);
+
+                if (isCrisis) {
+                    document.getElementById('crisis-bar').classList.add('visible');
+                }
+
+                updateStatus('Ready to listen');
+            } catch (e) {
+                hideTyping();
+                isTyping = false;
+                appendMessage('raahat', 'I seem to be having trouble connecting right now. Please check if the server is running.', true);
+                updateStatus('Connection issue');
+            }
+
+            setSendBtn(true);
+            isFirstMessage = false;
+        }
+
+        // ─── DETECT CRISIS RESPONSE ───
+        function isCrisisResponse(text) {
+            const lower = text.toLowerCase();
+            return lower.includes('14416') || lower.includes('icall') || lower.includes('vandrevala') || lower.includes('helpline');
+        }
+
+        // ─── APPEND MESSAGE ───
+        function appendMessage(role, text, animate, isCrisis = false) {
+            const area = document.getElementById('messages-area');
+
+            const initials = role === 'raahat'
+                ? 'र'
+                : (username.slice(0, 2).toUpperCase());
+
+            const row = document.createElement('div');
+            row.className = `msg-row ${role === 'user' ? 'user-row' : ''}`;
+            if (!animate) row.style.animation = 'none';
+
+            const now = new Date();
+            const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            let bubbleHTML;
+            if (isCrisis) {
+                bubbleHTML = `<div class="crisis-bubble">${formatText(text)}</div>`;
+            } else if (role === 'raahat') {
+                bubbleHTML = `<div class="msg-bubble raahat-bubble">${formatText(text)}</div>`;
+            } else {
+                bubbleHTML = `<div class="msg-bubble user-bubble">${escHtml(text)}</div>`;
+            }
+
+            row.innerHTML = `
+    <div class="msg-row-avatar ${role}">${initials}</div>
+    <div class="msg-body">
+      ${bubbleHTML}
+      <div class="msg-meta">${role === 'raahat' ? 'RAAHAT' : 'You'} · ${time}</div>
+    </div>
+  `;
+
+            area.appendChild(row);
+            scrollToBottom();
+        }
+
+        // ─── FORMAT TEXT (strip disclaimer prefix, markdown-ish) ───
+        function formatText(text) {
+            let t = escHtml(text);
+
+            // Remove the ⚠️ first-message disclaimer — already shown in banner
+            t = t.replace(/^⚠️ RAAHAT is not a substitute for professional mental health care\.\n\n/, '');
+
+            // Basic emoji + line break formatting
+            t = t.replace(/\n/g, '<br>');
+            return t;
+        }
+
+        function escHtml(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // ─── TYPING INDICATOR ───
+        function showTyping() {
+            const area = document.getElementById('messages-area');
+            const row = document.createElement('div');
+            row.className = 'typing-row';
+            row.id = 'typing-row';
+            row.innerHTML = `
+    <div class="msg-row-avatar raahat">र</div>
+    <div class="typing-bubble">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+  `;
+            area.appendChild(row);
+            scrollToBottom();
+        }
+
+        function hideTyping() {
+            const row = document.getElementById('typing-row');
+            if (row) row.remove();
+        }
+
+        // ─── UTILS ───
+        function scrollToBottom() {
+            const area = document.getElementById('messages-area');
+            area.scrollTop = area.scrollHeight;
+        }
+
+        function hideWelcome() {
+            const w = document.getElementById('welcome-state');
+            if (w) w.remove();
+        }
+
+        function setSendBtn(enabled) {
+            document.getElementById('send-btn').disabled = !enabled;
+        }
+
+        function updateStatus(text) {
+            document.getElementById('raahat-status-text').textContent = text;
+        }
+
+        function handleKey(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function autoResize(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+        }
+
+        function usePrompt(btn) {
+            const input = document.getElementById('msg-input');
+            input.value = btn.textContent;
+            autoResize(input);
+            input.focus();
+        }
+
+        function startNewChat() {
+            // Clear messages and show welcome
+            const area = document.getElementById('messages-area');
+            area.innerHTML = `
+    <div class="welcome-state" id="welcome-state">
+      <div class="welcome-icon">र</div>
+      <div class="welcome-title">Start fresh</div>
+      <p class="welcome-sub">A new conversation. Whatever you're feeling, this is a safe space.</p>
+      <div class="prompt-chips">
+        <button class="prompt-chip" onclick="usePrompt(this)">I've been feeling really low lately</button>
+        <button class="prompt-chip" onclick="usePrompt(this)">I just needed somewhere to vent</button>
+        <button class="prompt-chip" onclick="usePrompt(this)">I'm overthinking everything</button>
+        <button class="prompt-chip" onclick="usePrompt(this)">I feel exhausted all the time</button>
+      </div>
+    </div>
+  `;
+            isFirstMessage = true;
+            document.getElementById('msg-input').focus();
+        }
+
+        function closeBanner() {
+            document.getElementById('disclaimer-banner').style.display = 'none';
+            localStorage.setItem('raahat_banner_dismissed', '1');
+        }
+
+        function toggleInfoPanel() {
+            document.getElementById('info-panel').classList.toggle('open');
+        }
+
+        function logout() {
+            localStorage.removeItem('raahat_user');
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('sb-')) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+            window.location.href = '/login';
+        }
     </script>
-    <script src="/static/app.js"></script>
 </body>
 
 </html>
