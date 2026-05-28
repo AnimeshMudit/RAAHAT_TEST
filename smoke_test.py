@@ -91,6 +91,43 @@ def run_test():
         print(f"❌ Chat failed: {res.text}")
         sys.exit(1)
 
+    # 6. Zero-Result RAG Regression Tests
+    # These queries are deliberately off-topic. With the new threshold of 0.8,
+    # FAISS should return no valid chunks. The bot should still respond (from
+    # its base LLM knowledge), but the *server logs* must show 0 VALID MATCHes.
+    print("\n[6] Zero-Result RAG Regression Tests (threshold=0.8)")
+    ZERO_RESULT_QUERIES = [
+        "How do I bake a sourdough bread at home?",
+        "What is the capital of France?",
+        "Explain the rules of cricket to me.",
+        "What are the best programming languages for machine learning?",
+        "How do stock market futures work?",
+        "Give me a recipe for mango lassi.",
+    ]
+
+    passed = 0
+    failed = 0
+    for query in ZERO_RESULT_QUERIES:
+        print(f"\n  ↳ Sending off-topic query: '{query}'")
+        res = requests.post(
+            f"{BASE_URL}/api/chat", json={"user_id": user_id, "message": query}
+        )
+        if res.status_code == 200:
+            print(f"  ✅ Server responded (200 OK). Check server logs for 0 VALID MATCHes.")
+            passed += 1
+        else:
+            print(f"  ❌ Request failed ({res.status_code}): {res.text}")
+            failed += 1
+
+    print(f"\n  Results: {passed}/{len(ZERO_RESULT_QUERIES)} requests succeeded.")
+    print("  ⚠️  Manually verify server terminal output shows only '❌ REJECTED' lines for these queries.")
+    if failed > 0:
+        print(f"\n❌ {failed} zero-result test(s) failed at the HTTP level.")
+        sys.exit(1)
+    else:
+        print("\n✅ Zero-result RAG regression tests completed — check server logs to confirm no false positives.")
+
+
 
 if __name__ == "__main__":
     try:

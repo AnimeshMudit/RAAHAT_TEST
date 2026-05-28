@@ -78,48 +78,51 @@ def load_vector_store(path=None):
         # No distance_strategy — use default L2
     )
 
-def clean_query(query: str) -> str:
+def clean_query(query: str) -> list[str]:
     """
-    Strips redundant synonyms from a comma-separated keyword string.
-    Takes only the first keyword phrase (up to 3 words) to keep FAISS search focused.
+    Splits a comma-separated keyword string into individual search phrases.
+    Returns a list of up to 3 cleaned phrase strings (no word truncation).
+    Each phrase is lowercased and stripped. Empty phrases are discarded.
     """
-    primary = query.split(',')[0].strip()
-    # Limit to 3 words max to keep it focused
-    words = primary.split()[:3]
-    return ' '.join(words).lower()
+    phrases = [p.strip().lower() for p in query.split(',') if p.strip()]
+    return phrases[:3]  # Cap at 3 phrases to avoid over-querying
 
-def search_knowledge(query, vector_store, k=5, threshold=1.0):
+def search_knowledge(query, vector_store, k=5, threshold=0.8):
     """
-    Searches the FAISS index with a strict similarity threshold.
+    Searches the FAISS index using multi-phrase FAISS calls and unions results.
+    Runs each phrase from clean_query() as a separate FAISS search, then
+    deduplicates by content to produce a single ranked result list.
+
     With normalized vectors + L2, the score mapping is:
       - 0.0 – 0.3  → Near-exact match
-      - 0.3 – 0.8  → Good clinical match  
-      - 0.8 – 1.0  → Weak but possibly relevant
-      - 1.0+       → Reject
+      - 0.3 – 0.8  → Good clinical match (threshold boundary)
+      - 0.8+       → Reject (too weak)
     """
-    cleaned = clean_query(query)
-    print(f"🔍 Clean query sent to FAISS: '{cleaned}'")
-    
-    results = vector_store.similarity_search_with_score(cleaned, k=k)
-    
+    phrases = clean_query(query)
+    print(f"🔍 Phrases sent to FAISS: {phrases}")
+
     context_chunks = []
-    seen = set()
-    
-    for doc, score in results:
-        content = doc.page_content.strip()
-        if content in seen:
-            continue
-        seen.add(content)
-        
-        # Preserve source filename from metadata for citation
-        source = doc.metadata.get("source", "Unknown Manual")
-        
-        if score <= threshold:
-            formatted_chunk = f"[Source: {source}]\n{doc.page_content}"
-            context_chunks.append(formatted_chunk)
-            print(f"✅ VALID MATCH: {source} (Score: {score:.4f})")
-        else:
-            print(f"❌ REJECTED: {source} (Score: {score:.4f} — too weak)")
+    seen = set()  # Deduplicate by raw content across all phrase queries
+
+    for phrase in phrases:
+        print(f"  ↳ Querying FAISS for phrase: '{phrase}'")
+        results = vector_store.similarity_search_with_score(phrase, k=k)
+
+        for doc, score in results:
+            content = doc.page_content.strip()
+            if content in seen:
+                continue  # Already included from a previous phrase query
+            seen.add(content)
+
+            # Preserve source filename from metadata for citation
+            source = doc.metadata.get("source", "Unknown Manual")
+
+            if score <= threshold:
+                formatted_chunk = f"[Source: {source}]\n{doc.page_content}"
+                context_chunks.append(formatted_chunk)
+                print(f"  ✅ VALID MATCH: {source} (Score: {score:.4f})")
+            else:
+                print(f"  ❌ REJECTED: {source} (Score: {score:.4f} — too weak)")
 
     return context_chunks
 

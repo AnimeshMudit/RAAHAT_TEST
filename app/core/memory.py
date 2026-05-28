@@ -68,6 +68,68 @@ def fetch_history(user_id):
     return list(reversed(response.data))
 
 
+# ── Emotion theme keyword mapping ──────────────────────────────────────────────
+_THEME_KEYWORDS: dict[str, list[str]] = {
+    "anxiety":      ["anxious", "anxiety", "panic", "nervous", "worry", "worrying", "restless", "on edge"],
+    "depression":   ["depressed", "depression", "hopeless", "sad", "empty", "numb", "worthless", "meaningless"],
+    "overwhelm":    ["overwhelmed", "overwhelm", "too much", "can't cope", "cannot cope", "drowning", "exhausted", "burnout"],
+    "isolation":    ["alone", "lonely", "loneliness", "isolated", "no one", "nobody", "disconnected"],
+    "anger":        ["angry", "anger", "furious", "rage", "frustrated", "frustration", "irritated", "irritable"],
+    "grief":        ["grief", "grieving", "loss", "lost", "miss", "missing", "mourn", "mourning"],
+    "guilt":        ["guilty", "guilt", "blame", "my fault", "ashamed", "shame", "regret"],
+    "self_harm":    ["hurt myself", "self harm", "cut myself", "cutting", "suicidal", "end it all", "kill myself"],
+}
+
+
+def get_session_summary(user_id: str) -> dict | None:
+    """
+    Queries the Supabase messages table for the given user's recent history and
+    extracts the top emotional themes present in their messages.
+
+    Returns a dict of shape:
+        {
+            "user_id": str,
+            "themes": list[str],          # Up to 3 dominant emotion categories
+            "dominant_emotion": str | None,  # Single top emotion, or None
+            "message_count": int
+        }
+    Returns None if the user has no messages.
+    """
+    history = fetch_history(user_id)
+    if not history:
+        return None
+
+    # Build a single lowercase corpus from user-side messages only
+    user_messages = [m["content"].lower() for m in history if m.get("role") == "user"]
+    if not user_messages:
+        return None
+
+    corpus = " ".join(user_messages)
+
+    # Count how many keyword hits each theme gets
+    theme_scores: dict[str, int] = {}
+    for theme, keywords in _THEME_KEYWORDS.items():
+        hits = sum(corpus.count(kw) for kw in keywords)
+        if hits > 0:
+            theme_scores[theme] = hits
+
+    if not theme_scores:
+        dominant = None
+        top_themes = []
+    else:
+        sorted_themes = sorted(theme_scores.items(), key=lambda x: x[1], reverse=True)
+        dominant = sorted_themes[0][0]
+        top_themes = [t for t, _ in sorted_themes[:3]]
+
+    return {
+        "user_id": user_id,
+        "themes": top_themes,
+        "dominant_emotion": dominant,
+        "message_count": len(history),
+    }
+
+
+
 
 if __name__ == "__main__":
     print(f"\n{Fore.CYAN}🚀 Starting Unified Database Test (Web + Telegram)...{Fore.RESET}")
