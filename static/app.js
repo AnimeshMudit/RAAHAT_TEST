@@ -471,7 +471,8 @@ function bindGoogleAuth() {
                     provider: 'google',
                     options: {
                         redirectTo:
-                            `${window.location.origin}/chat`                    }
+                            `${window.location.origin}/chat`
+                    }
                 });
 
             if (error) throw error;
@@ -583,6 +584,7 @@ async function bindChatPage() {
     const sendBtn = document.getElementById('send-btn');
     const logoutBtn = document.getElementById('logout-btn');
     const crisisBtn = document.getElementById('crisis-btn');
+    const welcomeBackBanner = document.getElementById('welcome-back-banner');
 
     if (!messagesEl || !inputEl || !sendBtn) return;
 
@@ -632,6 +634,7 @@ async function bindChatPage() {
     let historyLoaded = false;
     let sending = false;
     let typingIndicator = null;
+    let welcomeBackShown = false;
 
     const scrollToBottom = () => {
         messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -664,20 +667,40 @@ async function bindChatPage() {
         }
     };
 
+    const showWelcomeBackBanner = () => {
+        if (!welcomeBackBanner || welcomeBackShown) return;
+        welcomeBackBanner.textContent = "Welcome back. I'm glad to see you again.";
+        welcomeBackBanner.style.display = 'flex';
+        welcomeBackShown = true;
+    };
+
+    const hideWelcomeBackBanner = () => {
+        if (!welcomeBackBanner) return;
+        welcomeBackBanner.textContent = '';
+        welcomeBackBanner.style.display = 'none';
+    };
+
     const loadHistory = async () => {
         try {
             const result = await apiFetch('/api/history?user_id=' + encodeURIComponent(session.user_id), { timeout: 20000 });
             messagesEl.innerHTML = '';
-            (result?.history || []).forEach((item) => {
+            const history = result?.history || [];
+            history.forEach((item) => {
                 const role = item.role === 'ai' ? 'ai' : 'user';
                 const text = item.content || item.message || '';
                 messagesEl.appendChild(createMessageBubble(role, text));
             });
+            if (history.length > 0) {
+                showWelcomeBackBanner();
+            } else {
+                hideWelcomeBackBanner();
+            }
             historyLoaded = true;
             scrollToBottom();
         } catch (error) {
             console.error('History load failed:', error);
             if (!historyLoaded) {
+                hideWelcomeBackBanner();
                 const note = document.createElement('div');
                 note.className = 'flex justify-center';
                 note.innerHTML = '<div class="bg-surface-container-low px-4 py-2 rounded-full text-sage-deep font-label-sm text-label-sm">History is unavailable right now. You can still send a new message.</div>';

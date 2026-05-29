@@ -402,6 +402,18 @@
             opacity: 1;
         }
 
+        #welcome-back-banner {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.7rem 1.75rem;
+            background: var(--sage-pale);
+            border-bottom: 1px solid var(--sage-mid);
+            color: var(--text-mid);
+            font-size: 0.82rem;
+            flex-shrink: 0;
+        }
+
         /* messages area */
         .messages-area {
             flex: 1;
@@ -966,17 +978,18 @@
             </div>
         </div>
 
-        <!-- Disclaimer banner (one-time) -->
+        <!-- Disclaimer banner (static UI note) -->
         <div class="disclaimer-banner" id="disclaimer-banner">
             <svg viewBox="0 0 16 16" stroke-width="1.5" stroke-linecap="round">
                 <circle cx="8" cy="8" r="6" />
                 <line x1="8" y1="7" x2="8" y2="11" />
                 <circle cx="8" cy="5" r="0.5" fill="currentColor" />
             </svg>
-            RAAHAT is a supportive companion, not a licensed therapist. In a crisis, please reach out to Kiran (14416)
-            or iCall (9152987821).
-            <button class="disclaimer-close" onclick="closeBanner()" title="Dismiss">×</button>
+            RAAHAT provides emotional support and reflection tools. It is not a substitute for professional mental
+            health care.
         </div>
+
+        <div id="welcome-back-banner"></div>
 
         <!-- Messages -->
         <div class="messages-area" id="messages-area">
@@ -1077,7 +1090,7 @@
         let sessionObj = {};
         try {
             sessionObj = JSON.parse(localStorage.getItem('raahat_user') || '{}');
-        } catch(e) {}
+        } catch (e) { }
         let userId = sessionObj.user_id;
         let username = sessionObj.username || 'friend';
         let isFirstMessage = true;
@@ -1093,9 +1106,6 @@
 
             setUserUI();
             loadHistory();
-
-            const banner = localStorage.getItem('raahat_banner_dismissed');
-            if (banner) document.getElementById('disclaimer-banner').style.display = 'none';
 
             document.getElementById('msg-input').focus();
         };
@@ -1116,6 +1126,12 @@
                 const res = await fetch(`${API_BASE}/api/history?user_id=${userId}`);
                 const data = await res.json();
                 const msgs = data.history || [];
+
+                const welcomeBackBanner = document.getElementById('welcome-back-banner');
+                if (msgs.length > 0 && welcomeBackBanner) {
+                    welcomeBackBanner.textContent = "Welcome back. I'm glad to see you again.";
+                    welcomeBackBanner.style.display = 'flex';
+                }
 
                 if (msgs.length > 0) {
                     hideWelcome();
@@ -1241,12 +1257,9 @@
             scrollToBottom();
         }
 
-        // ─── FORMAT TEXT (strip disclaimer prefix, markdown-ish) ───
+        // ─── FORMAT TEXT (markdown-ish) ───
         function formatText(text) {
             let t = escHtml(text);
-
-            // Remove the ⚠️ first-message disclaimer — already shown in banner
-            t = t.replace(/^⚠️ RAAHAT is not a substitute for professional mental health care\.\n\n/, '');
 
             // Basic emoji + line break formatting
             t = t.replace(/\n/g, '<br>');
@@ -1336,11 +1349,6 @@
   `;
             isFirstMessage = true;
             document.getElementById('msg-input').focus();
-        }
-
-        function closeBanner() {
-            document.getElementById('disclaimer-banner').style.display = 'none';
-            localStorage.setItem('raahat_banner_dismissed', '1');
         }
 
         function toggleInfoPanel() {

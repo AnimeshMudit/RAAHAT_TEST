@@ -3,14 +3,14 @@ from dotenv import load_dotenv
 from groq import Groq
 
 load_dotenv()
-api_key=os.getenv("GROQ_API_KEY")
+api_key = os.getenv("GROQ_API_KEY")
 
 if not api_key:
     raise ValueError("GROQ_API_KEY not found.")
 
-client=Groq(api_key=api_key)
+client = Groq(api_key=api_key)
 
-SYSTEM_PROMPT="""
+SYSTEM_PROMPT = """
 You are RAAHAT, a compassionate "Safe House" companion and creative collaborator. 
 You are a trusted keeper of secrets, not a doctor. Act like a supportive, grounded friend.
 
@@ -40,9 +40,11 @@ Sometimes the user needs presence, reflection, or understanding more than soluti
 
 Prioritize emotionally natural conversation flow over constant intervention.
 """
+
+
 def safety_check(text):
     text_lower = text.lower()
-    
+
     # Exclude known safe idioms so they don't trigger false positives
     safe_idioms = [
         "dying of laughter",
@@ -50,59 +52,125 @@ def safety_check(text):
         "i'm dead",
         "this is killer",
         "kill for",
-        "killing it"
+        "killing it",
     ]
     for idiom in safe_idioms:
         text_lower = text_lower.replace(idiom, "")
 
-    danger_keywords=[
-        "suicide", "kill myself", "want to die", "end it all", "hopeless", 
-        "can't take it anymore", "better off without me", "don't want to live",
-        "do not want to live", "wish i was dead", "life is not worth it",
-        "want to disappear", "i'm done with life"
+    danger_keywords = [
+        "suicide",
+        "kill myself",
+        "want to die",
+        "end it all",
+        "hopeless",
+        "can't take it anymore",
+        "better off without me",
+        "don't want to live",
+        "do not want to live",
+        "wish i was dead",
+        "life is not worth it",
+        "want to disappear",
+        "i'm done with life",
     ]
     for word in danger_keywords:
         if word in text_lower:
             return "I am concerned about your safety. Please reach out to these helplines: Kiran (14416), iCall (9152987821), or Vandrevala Foundation (1860-2662-345)."
     return None
 
-def _llm_call(text, history=None, context=""):
+
+def _format_prompt_context(value):
+    if value is None:
+        return ""
+    if isinstance(value, dict):
+        ordered_keys = [
+            "pattern",
+            "count",
+            "dominant_emotion",
+            "themes",
+            "message_count",
+        ]
+        lines = []
+        for key in ordered_keys:
+            if key not in value or value[key] in (None, "", []):
+                continue
+            item = value[key]
+            if isinstance(item, (list, tuple, set)):
+                item = ", ".join(str(entry) for entry in item)
+            lines.append(f"- {key.replace('_', ' ').title()}: {item}")
+        for key, item in value.items():
+            if key in ordered_keys or item in (None, "", []):
+                continue
+            if isinstance(item, (list, tuple, set)):
+                item = ", ".join(str(entry) for entry in item)
+            lines.append(f"- {key.replace('_', ' ').title()}: {item}")
+        return "\n".join(lines) if lines else str(value)
+    if isinstance(value, (list, tuple, set)):
+        return "\n".join(f"- {entry}" for entry in value)
+    return str(value)
+
+
+def _llm_call(
+    user_message, history=None, context="", pattern_signal=None, session_summary=None
+):
     """Raw LLM call with no safety layer — internal use only."""
     history = history or []
 
-    # If context exists, dynamically elevate the instruction hierarchy
-    context_enforcement = ""
-    if context:
-        context_enforcement = """
-### CRITICAL DIRECTION ON CLINICAL RAG CONTEXT:
-You have been provided verified psychological manual excerpts below. 
-You are strictly FORBIDDEN from relying entirely on generic empathy or casual reassurance. 
-You MUST weave the specific structural advice, frameworks, or protocols given in the context box into your short response. 
-Frame it naturally as a suggestion from a grounded friend, but ensure the core methodology matches the context data.
-"""
+    prompt_sections = [SYSTEM_PROMPT.rstrip()]
 
-    dynamic_prompt = SYSTEM_PROMPT + f"\n{context_enforcement}\n" + f"""
-### RETRIEVED CLINICAL CONTEXT (USE THIS):
-The following is verified material from psychological first aid manuals. 
-You MUST reference or draw from this when forming your response — do not ignore it:
----
-{context}
----
-Incorporate this knowledge naturally into your response strategy. Do not quote it directly."""
+    if session_summary:
+        prompt_sections.append(
+            "### RETURNING USER CONTEXT\n\n"
+            "Summary of prior sessions:\n\n"
+            f"{_format_prompt_context(session_summary)}\n\n"
+            "Use this context naturally.\n"
+            "Do not quote it verbatim.\n"
+            "Do not reveal internal memory mechanisms."
+        )
+
+    if pattern_signal:
+        prompt_sections.append(
+            "### PATTERN AWARENESS\n\n"
+            "The user has shown recurring themes across previous conversations:\n\n"
+            f"{_format_prompt_context(pattern_signal)}\n\n"
+            "Use this only as supporting context.\n"
+            "Do not mention that patterns were detected.\n"
+            "Do not sound repetitive or deterministic.\n"
+            "Treat the user as an individual in the current moment."
+        )
+
+    if context:
+        prompt_sections.append(
+            "### CRITICAL DIRECTION ON CLINICAL RAG CONTEXT:\n"
+            "You have been provided verified psychological manual excerpts below. \n"
+            "You are strictly FORBIDDEN from relying entirely on generic empathy or casual reassurance. \n"
+            "You MUST weave the specific structural advice, frameworks, or protocols given in the context box into your short response. \n"
+            "Frame it naturally as a suggestion from a grounded friend, but ensure the core methodology matches the context data."
+        )
+        prompt_sections.append(
+            "### RETRIEVED CLINICAL CONTEXT (USE THIS):\n"
+            "The following is verified material from psychological first aid manuals. \n"
+            "You MUST reference or draw from this when forming your response — do not ignore it:\n"
+            "---\n"
+            f"{context}\n"
+            "---\n"
+            "Incorporate this knowledge naturally into your response strategy. Do not quote it directly."
+        )
+
+    dynamic_prompt = "\n\n".join(prompt_sections)
 
     messages = [{"role": "system", "content": dynamic_prompt}]
     for msg in history:
         role = "assistant" if msg["role"] == "ai" else msg["role"]
         messages.append({"role": role, "content": msg["content"]})
-    messages.append({"role": "user", "content": text})
-    
+    messages.append({"role": "user", "content": user_message})
+
     DEBUG = os.getenv("DEBUG", "false").lower() == "true"
     try:
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
             temperature=0.4,
-            max_tokens=800
+            max_tokens=800,
         )
         return completion.choices[0].message.content
     except Exception as e:
@@ -110,39 +178,63 @@ Incorporate this knowledge naturally into your response strategy. Do not quote i
             return f"❌ Brain Error: {str(e)}"
         return "I'm having trouble responding right now."
 
-def get_response(text, history=None, context=""):
+
+def get_response(
+    user_message, history=None, context="", pattern_signal=None, session_summary=None
+):
     history = history or []
-    safety_warning = safety_check(text)
+    safety_warning = safety_check(user_message)
     if safety_warning:
         return safety_warning
-    
-    response_text = _llm_call(text, history, context)
-    
-    if len(history) == 0 and not response_text.startswith("❌"):
-        response_text = "⚠️ RAAHAT is not a substitute for professional mental health care.\n\n" + response_text
-        
-    return response_text
+
+    return _llm_call(
+        user_message,
+        history,
+        context,
+        pattern_signal=pattern_signal,
+        session_summary=session_summary,
+    )
+
 
 def generate_search_keywords(user_input):
     text_lower = user_input.lower().strip()
-    
+
     # Core greeting structural tokens
-    greetings = ["hi", "hello", "hey", "good morning", "good evening", "what's up", "howdy"]
-    
+    greetings = [
+        "hi",
+        "hello",
+        "hey",
+        "good morning",
+        "good evening",
+        "what's up",
+        "howdy",
+    ]
+
     # FIX: Check if the text *starts with* a greeting, or matches single word variations
     starts_with_greeting = any(text_lower.startswith(g) for g in greetings)
-    is_pure_greeting = text_lower in greetings or text_lower.strip('.,!?') in greetings
-    
+    is_pure_greeting = text_lower in greetings or text_lower.strip(".,!?") in greetings
+
     # Catch casual checking-in filler phrases that carry no clinical value
-    casual_filler = ["just checking in", "wanted to say hi", "say hello", "just saying hello"]
+    casual_filler = [
+        "just checking in",
+        "wanted to say hi",
+        "say hello",
+        "just saying hello",
+    ]
     contains_filler = any(filler in text_lower for filler in casual_filler)
 
     # Tight conditional trigger for the SKIP path
     if is_pure_greeting or (starts_with_greeting and contains_filler):
         return "SKIP"
-        
+
     # Keep your existing memory-recall array block...
-    memory_phrases = ["how have i", "do you remember", "what did i", "what is my", "who am i"]
+    memory_phrases = [
+        "how have i",
+        "do you remember",
+        "what did i",
+        "what is my",
+        "who am i",
+    ]
     if any(phrase in text_lower for phrase in memory_phrases):
         return "SKIP"
 
@@ -152,7 +244,7 @@ def generate_search_keywords(user_input):
         "exam",
         "college",
         "deadline",
-        "project"
+        "project",
     ]
     if any(p in text_lower for p in casual_phrases):
         return "SKIP"
@@ -161,7 +253,7 @@ def generate_search_keywords(user_input):
         "just wanted someone to listen",
         "not looking for advice",
         "just venting",
-        "just needed to say it out loud"
+        "just needed to say it out loud",
     ]
     if any(phrase in text_lower for phrase in venting_phrases):
         return "SKIP"
@@ -175,20 +267,23 @@ def generate_search_keywords(user_input):
         "Example output: 'feeling emotionally drained, overwhelmed by stress, mentally exhausted' "
         "Return ONLY comma-separated phrases. NO EXPLANATIONS. NO QUOTES. NO REPETITIONS."
     )
-    
+
     try:
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": utility_prompt}],
             temperature=0.1,  # Low temperature for precise keyword tokens
-            max_tokens=50
+            max_tokens=50,
         )
         return completion.choices[0].message.content.strip()
     except Exception as e:
         return f"ERROR_KEYWORD_FAIL: {str(e)}"
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     import colorama
-    from colorama import Fore,Style
+    from colorama import Fore, Style
+
     colorama.init(autoreset=True)
 
     print(Fore.CYAN + "Raahat brain diagnostics\n")
@@ -199,32 +294,38 @@ if __name__=="__main__":
     # Test 2: Safety Check
     msg2 = "I want to kill myself."
     print(Fore.YELLOW + f"User: {msg2}")
-    print(Fore.RED + f"Bot:  {get_response(msg2)}")      
+    print(Fore.RED + f"Bot:  {get_response(msg2)}")
 
     # Test 3: The Memory Test
     print(Fore.CYAN + "--- Testing Memory ---")
-    
+
     # We pretend Anshuman's database sent us this history
     mock_db_history = [
         {"role": "user", "content": "Hi, my name is Animesh."},
-        {"role": "assistant", "content": "Hi Animesh, I am Raahat. How are you feeling today?"}
+        {
+            "role": "assistant",
+            "content": "Hi Animesh, I am Raahat. How are you feeling today?",
+        },
     ]
-    
+
     msg3 = "Do you remember my name?"
     print(Fore.YELLOW + f"User: {msg3}")
-    
+
     # We pass BOTH the new message AND the history
-    print(Fore.GREEN + f"Bot:  {get_response(msg3, mock_db_history)}\n")  
-    
+    print(Fore.GREEN + f"Bot:  {get_response(msg3, mock_db_history)}\n")
+
     # Test 4: The RAG / Context Verification Test
     print(Fore.CYAN + "\n--- Testing Vector Context (RAG) ---")
-    
+
     # We pretend knowledge.py fetched this highly specific paragraph from your PDF.
     # (I added a fake "Code Blue-Indigo" protocol to prove it reads THIS text, not the internet).
     mock_retrieved_context = "The core actions of Psychological First Aid (PFA) involve linking survivors to services. If you encounter a Level 3 severe panic response, you must immediately initiate the 'Code Blue-Indigo' grounding protocol before doing anything else."
-    
+
     msg4 = "What should I do if a survivor has a Level 3 severe panic response?"
     print(Fore.YELLOW + f"User: {msg4}")
-    
+
     # We pass the message, empty history, and our mock CONTEXT
-    print(Fore.GREEN + f"Bot:  {get_response(msg4, history=[], context=mock_retrieved_context)}\n")
+    print(
+        Fore.GREEN
+        + f"Bot:  {get_response(msg4, history=[], context=mock_retrieved_context)}\n"
+    )

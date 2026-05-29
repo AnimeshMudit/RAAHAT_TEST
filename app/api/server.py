@@ -18,7 +18,7 @@ if BASE_DIR not in sys.path:
 load_dotenv()
 
 # -------------------- CORE IMPORTS --------------------
-from app.core import memory, brain, knowledge, security
+from app.core import memory, brain, knowledge, security, session
 from app.core.security import verify_email_real
 from app.core.google_auth import get_google_auth_url
 
@@ -433,6 +433,8 @@ async def chat(request: ChatRequest):
         print(f"Vector search failed: {e}")
 
     chat_history = memory.fetch_history(str(request.user_id))
+    pattern_signal = session.get_pattern_signal(chat_history)
+    session_summary = memory.get_session_summary(str(request.user_id))
     display_name = (
         user_record.data[0].get("display_name")
         or user_record.data[0].get("username")
@@ -440,7 +442,13 @@ async def chat(request: ChatRequest):
     )
     context_text += f"\n\nSystem Note: The user is '{display_name}'."
 
-    response_text = brain.get_response(request.message, chat_history, context_text)
+    response_text = brain.get_response(
+        user_message=request.message,
+        history=chat_history,
+        context=context_text,
+        pattern_signal=pattern_signal,
+        session_summary=session_summary,
+    )
     memory.save_message(str(request.user_id), "ai", response_text)
 
     return {"response": response_text}
