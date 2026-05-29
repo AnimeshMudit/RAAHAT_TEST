@@ -1,4 +1,6 @@
 import os
+import json
+import random
 from dotenv import load_dotenv
 from groq import Groq
 
@@ -10,9 +12,35 @@ if not api_key:
 
 client = Groq(api_key=api_key)
 
+def load_behavior_examples(num_examples=3):
+    try:
+        with open("app/core/behaviour_examples.json", "r", encoding="utf-8") as f:
+            examples = json.load(f)
+
+        selected = random.sample(
+            examples,
+            min(num_examples, len(examples))
+        )
+
+        formatted = []
+
+        for ex in selected:
+            formatted.append(
+                f"User: {ex['user']}\n"
+                f"GOOD Response: {ex['good_response']}\n"
+            )
+
+        return "\n\n".join(formatted)
+
+    except Exception as e:
+        print(f"[Behavior Examples Error] {e}")
+        return ""
+
 SYSTEM_PROMPT = """
-You are RAAHAT, a compassionate "Safe House" companion and creative collaborator. 
-You are a trusted keeper of secrets, not a doctor. Act like a supportive, grounded friend.
+You are RAAHAT, a calm emotionally intelligent conversational companion.
+
+You speak naturally, warmly, and concisely.
+You are supportive without sounding clinical, robotic, or overly therapeutic.
 
 ### 1. CORE CONSTRAINTS
 - Keep responses concise (under 3 sentences).
@@ -34,9 +62,11 @@ You are a trusted keeper of secrets, not a doctor. Act like a supportive, ground
 - A separate deterministic system handles all safety interventions.
 - DO NOT trigger helplines or append safety warnings to your responses under any circumstances.
 - If a user expresses distress or asks hopeful questions (e.g., "do people recover from this?"), respond naturally and compassionately without adding hotline numbers.
-Do not immediately jump into coping strategies, grounding techniques, or advice after every emotional message.
+Avoid sounding like a therapist, motivational speaker, or self-help article.
 
-Sometimes the user needs presence, reflection, or understanding more than solutions.
+Do not immediately jump into coping strategies or solutions after every emotional message.
+
+Sometimes simply noticing, reflecting, or sitting with the user's emotions is more helpful than trying to fix them.
 
 Prioritize emotionally natural conversation flow over constant intervention.
 """
@@ -78,6 +108,28 @@ def safety_check(text):
     return None
 
 
+def detect_emotional_presence_mode(user_message):
+    text = user_message.lower()
+
+    emotional_presence_phrases = [
+        "just wanted someone to listen",
+        "not looking for advice",
+        "just venting",
+        "just needed to say it out loud",
+        "don't really need solutions",
+        "i'm not asking for help",
+        "needed to get this off my chest",
+        "i just needed to talk to someone",
+        "i don't even know why i'm saying this",
+        "just feels heavy lately",
+    ]
+
+    return any(
+        phrase in text
+        for phrase in emotional_presence_phrases
+    )
+
+
 def _format_prompt_context(value):
     if value is None:
         return ""
@@ -110,12 +162,33 @@ def _format_prompt_context(value):
 
 
 def _llm_call(
-    user_message, history=None, context="", pattern_signal=None, session_summary=None
+    user_message,
+    history=None,
+    context="",
+    pattern_signal=None,
+    session_summary=None,
+    emotional_presence_mode=False,
 ):
     """Raw LLM call with no safety layer — internal use only."""
     history = history or []
 
     prompt_sections = [SYSTEM_PROMPT.rstrip()]
+
+    if emotional_presence_mode:
+        prompt_sections.append(
+            "### EMOTIONAL PRESENCE MODE\n\n"
+            "The user is emotionally venting or seeking presence rather than solutions.\n"
+            "Prioritize listening, emotional reflection, warmth, and conversational calmness.\n"
+            "Avoid coping strategies, structured advice, self-help style suggestions, or problem-solving unless explicitly requested.\n"
+            "Keep responses gentle, human, and emotionally present."
+        )
+
+    behavior_examples = load_behavior_examples()
+    if behavior_examples:
+        prompt_sections.append(
+            "### Examples of emotionally natural conversational behavior:\n\n"
+            f"{behavior_examples}"
+        )
 
     if session_summary:
         prompt_sections.append(
@@ -142,14 +215,15 @@ def _llm_call(
         prompt_sections.append(
             "### CRITICAL DIRECTION ON CLINICAL RAG CONTEXT:\n"
             "You have been provided verified psychological manual excerpts below. \n"
-            "You are strictly FORBIDDEN from relying entirely on generic empathy or casual reassurance. \n"
-            "You MUST weave the specific structural advice, frameworks, or protocols given in the context box into your short response. \n"
-            "Frame it naturally as a suggestion from a grounded friend, but ensure the core methodology matches the context data."
+            "Use retrieved psychological context only if it feels naturally relevant to the emotional flow of the conversation.\n"
+            "Do not force coping strategies, frameworks, or interventions into every response.\n"
+            "Sometimes emotional presence and understanding are more important than advice."
         )
         prompt_sections.append(
             "### RETRIEVED CLINICAL CONTEXT (USE THIS):\n"
             "The following is verified material from psychological first aid manuals. \n"
-            "You MUST reference or draw from this when forming your response — do not ignore it:\n"
+            "Use this context only if it naturally supports the emotional flow of the conversation.\n"
+            "Do not force psychological frameworks or coping strategies into every reply:\n"
             "---\n"
             f"{context}\n"
             "---\n"
@@ -169,7 +243,7 @@ def _llm_call(
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
-            temperature=0.4,
+            temperature=0.65,
             max_tokens=800,
         )
         return completion.choices[0].message.content
@@ -183,6 +257,8 @@ def get_response(
     user_message, history=None, context="", pattern_signal=None, session_summary=None
 ):
     history = history or []
+    emotional_presence_mode = detect_emotional_presence_mode(user_message)
+
     safety_warning = safety_check(user_message)
     if safety_warning:
         return safety_warning
@@ -193,6 +269,7 @@ def get_response(
         context,
         pattern_signal=pattern_signal,
         session_summary=session_summary,
+        emotional_presence_mode=emotional_presence_mode,
     )
 
 
