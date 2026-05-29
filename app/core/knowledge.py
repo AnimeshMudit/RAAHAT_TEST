@@ -219,7 +219,7 @@ def build_vector_store_from_folder(folder_path="data"):
     print(f"✅ Full Vector Vault created and saved to '{FAISS_DB_PATH}'!")
     return vector_db
 
-
+#Execute this block in case of recreation of Faiss index
 # if __name__ == "__main__":
 #     folder = "data" 
     

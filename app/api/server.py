@@ -367,7 +367,14 @@ async def chat(request: ChatRequest):
 
     chat_history = memory.fetch_history(str(request.user_id))
     pattern_signal = session.get_pattern_signal(chat_history)
-    session_summary = memory.get_session_summary(str(request.user_id))
+
+    session_summary = memory.get_session_summary(
+        str(request.user_id)
+    )
+
+    recurring_themes = memory.get_recurring_themes(
+        str(request.user_id)
+    )
     display_name = (
         user_record.data[0].get("display_name")
         or user_record.data[0].get("username")
@@ -381,6 +388,7 @@ async def chat(request: ChatRequest):
         context=context_text,
         pattern_signal=pattern_signal,
         session_summary=session_summary,
+        recurring_themes=recurring_themes,
     )
     memory.save_message(str(request.user_id), "ai", response_text)
 

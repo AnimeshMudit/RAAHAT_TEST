@@ -167,6 +167,7 @@ def _llm_call(
     context="",
     pattern_signal=None,
     session_summary=None,
+    recurring_themes=None,
     emotional_presence_mode=False,
 ):
     """Raw LLM call with no safety layer — internal use only."""
@@ -190,6 +191,16 @@ def _llm_call(
             f"{behavior_examples}"
         )
 
+    if recurring_themes:
+        prompt_sections.append(
+            "### LONG-TERM EMOTIONAL THEMES\n\n"
+            "The following themes have appeared repeatedly across the user's history:\n\n"
+            f"{_format_prompt_context(recurring_themes)}\n\n"
+            "Use this only as soft contextual awareness.\n"
+            "Do not mention memory, tracking, or recurring themes explicitly.\n"
+            "Do not assume the user currently feels these emotions."
+        )
+        
     if session_summary:
         prompt_sections.append(
             "### RETURNING USER CONTEXT\n\n"
@@ -254,7 +265,12 @@ def _llm_call(
 
 
 def get_response(
-    user_message, history=None, context="", pattern_signal=None, session_summary=None
+    user_message,
+    history=None,
+    context="",
+    pattern_signal=None,
+    session_summary=None,
+    recurring_themes=None
 ):
     history = history or []
     emotional_presence_mode = detect_emotional_presence_mode(user_message)
@@ -269,6 +285,7 @@ def get_response(
         context,
         pattern_signal=pattern_signal,
         session_summary=session_summary,
+        recurring_themes=recurring_themes,
         emotional_presence_mode=emotional_presence_mode,
     )
 
