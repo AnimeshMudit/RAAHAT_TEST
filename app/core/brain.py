@@ -3,6 +3,9 @@ import json
 import random
 from dotenv import load_dotenv
 from groq import Groq
+import logging
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 api_key = os.getenv("GROQ_API_KEY")
@@ -32,8 +35,8 @@ def load_behavior_examples(num_examples=3):
 
         return "\n\n".join(formatted)
 
-    except Exception as e:
-        print(f"[Behavior Examples Error] {e}")
+    except Exception:
+        logger.exception("Failed to load behaviour examples")
         return ""
 
 SYSTEM_PROMPT = """

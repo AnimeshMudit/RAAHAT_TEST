@@ -7,6 +7,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from uuid import UUID
 from dotenv import load_dotenv
+import logging
+
+logger = logging.getLogger(__name__)
 
 # -------------------- PATH SETUP --------------------
 # This ensures Python can find your 'app' module regardless of where you run the script
@@ -336,60 +339,85 @@ async def login(request: AuthRequest):
 async def get_history(user_id: str):
     try:
         return {"history": memory.fetch_history(user_id)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+    except Exception:
+        logger.exception("History fetch failed")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to fetch history."
+        )
 
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
-    user_record = (
-        memory.supabase.table("users")
-        .select("*")
-        .eq("id", str(request.user_id))
-        .execute()
-    )
-    if not user_record.data:
-        raise HTTPException(status_code=400, detail="User not found.")
-
-    memory.save_message(str(request.user_id), "user", request.message)
-
-    context_text = ""
     try:
-        vector_db = knowledge.load_vector_store(FAISS_DIR)
-        search_query = brain.generate_search_keywords(request.message)
-        if search_query == "SKIP":
-            results = []
-        else:
-            results = knowledge.search_knowledge(search_query, vector_db)
-        context_text = "\n".join(results) if results else ""
+        user_record = (
+            memory.supabase.table("users")
+            .select("*")
+            .eq("id", str(request.user_id))
+            .execute()
+        )
+        if not user_record.data:
+            raise HTTPException(status_code=400, detail="User not found.")
+
+        memory.save_message(str(request.user_id), "user", request.message)
+
+        context_text = ""
+        try:
+            vector_db = knowledge.load_vector_store(FAISS_DIR)
+            search_query = brain.generate_search_keywords(request.message)
+            if search_query == "SKIP":
+                results = []
+            else:
+                results = knowledge.search_knowledge(search_query, vector_db)
+            context_text = "\n".join(results) if results else ""
+        except Exception as e:
+            logger.exception("Vector search failed")
+            
+            
+        chat_history = memory.fetch_history(str(request.user_id))
+        pattern_signal = session.get_pattern_signal(chat_history)
+
+        session_summary = memory.get_session_summary(
+            str(request.user_id)
+        )
+
+        recurring_themes = memory.get_recurring_themes(
+            str(request.user_id)
+        )
+        display_name = (
+            user_record.data[0].get("display_name")
+            or user_record.data[0].get("username")
+            or "friend"
+        )
+        context_text += f"\n\nSystem Note: The user is '{display_name}'."
+
+        try:
+            response_text = brain.get_response(
+                user_message=request.message,
+                history=chat_history,
+                context=context_text,
+                pattern_signal=pattern_signal,
+                session_summary=session_summary,
+                recurring_themes=recurring_themes,
+            )
+        except Exception as e:
+            logger.exception("Response generation failed")
+
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to generate response."
+            )
+        memory.save_message(str(request.user_id), "ai", response_text)
+
+        return {"response": response_text}
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Vector search failed: {e}")
+        logger.exception("Chat endpoint failed")
 
-    chat_history = memory.fetch_history(str(request.user_id))
-    pattern_signal = session.get_pattern_signal(chat_history)
-
-    session_summary = memory.get_session_summary(
-        str(request.user_id)
-    )
-
-    recurring_themes = memory.get_recurring_themes(
-        str(request.user_id)
-    )
-    display_name = (
-        user_record.data[0].get("display_name")
-        or user_record.data[0].get("username")
-        or "friend"
-    )
-    context_text += f"\n\nSystem Note: The user is '{display_name}'."
-
-    response_text = brain.get_response(
-        user_message=request.message,
-        history=chat_history,
-        context=context_text,
-        pattern_signal=pattern_signal,
-        session_summary=session_summary,
-        recurring_themes=recurring_themes,
-    )
-    memory.save_message(str(request.user_id), "ai", response_text)
-
-    return {"response": response_text}
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error"
+        )
