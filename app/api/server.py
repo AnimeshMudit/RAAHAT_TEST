@@ -197,20 +197,15 @@ async def login_google(request: Request):
 async def auth_callback():
     """
     Serves the frontend callback page.
-    Supabase uses PKCE — the browser holds the code_verifier, so the token
-    exchange MUST happen client-side via the Supabase JS SDK.
-    This inline page completes the exchange, syncs with /api/sync-user, then
-    redirects to /chat.
+    Supabase uses PKCE, so this page simply forwards the browser back to the
+    login page where the frontend can complete the exchange and local sync.
     """
-    supabase_url = get_required_env("SUPABASE_URL")
-    supabase_key = get_required_env("SUPABASE_KEY")
-    content = f"""<!doctype html>
+    content = """<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Completing sign-in</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body {{ font-family: Inter, Arial, sans-serif; margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f9f9ff; color: #151c27; }}
         main {{ max-width: 28rem; padding: 2rem; text-align: center; }}
@@ -221,69 +216,7 @@ async def auth_callback():
         <p>Completing sign-in...</p>
     </main>
     <script>
-        const supabaseClient = supabase.createClient({supabase_url!r}, {supabase_key!r}, {{
-            auth: {{
-                detectSessionInUrl: false,
-                persistSession: true,
-                autoRefreshToken: true,
-            }},
-        }});
-
-        (async () => {{
-            try {{
-                const params = new URLSearchParams(window.location.search);
-                const code = params.get('code');
-
-                const {{ data: currentSession }} = await supabaseClient.auth.getSession();
-                if (currentSession?.session?.user?.email) {{
-                    const email = currentSession.session.user.email;
-                    const syncResponse = await fetch('/api/sync-user', {{
-                        method: 'POST',
-                        headers: {{ 'Content-Type': 'application/json' }},
-                        body: JSON.stringify({{ email }}),
-                    }});
-                    const syncData = await syncResponse.json().catch(() => null);
-                    if (syncData?.user_id) {{
-                        localStorage.setItem('raahat_user', JSON.stringify({{
-                            user_id: syncData.user_id,
-                            username: syncData.username || email,
-                        }}));
-                    }}
-                    window.location.replace('/chat');
-                    return;
-                }}
-
-                if (!code) {{
-                    window.location.replace('/login');
-                    return;
-                }}
-
-                const {{ data, error }} = await supabaseClient.auth.exchangeCodeForSession(code);
-                if (error) throw error;
-
-                const email = data?.session?.user?.email;
-                if (email) {{
-                    const syncResponse = await fetch('/api/sync-user', {{
-                        method: 'POST',
-                        headers: {{ 'Content-Type': 'application/json' }},
-                        body: JSON.stringify({{ email }}),
-                    }});
-
-                    const syncData = await syncResponse.json().catch(() => null);
-                    if (syncData?.user_id) {{
-                        localStorage.setItem('raahat_user', JSON.stringify({{
-                            user_id: syncData.user_id,
-                            username: syncData.username || email,
-                        }}));
-                    }}
-                }}
-
-                window.location.replace('/chat');
-            }} catch (error) {{
-                console.error('OAuth callback failed:', error);
-                window.location.replace('/login');
-            }}
-        }})();
+        window.location.replace('/login' + window.location.search + window.location.hash);
     </script>
 </body>
 </html>"""

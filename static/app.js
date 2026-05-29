@@ -64,40 +64,98 @@ function clearSession() {
     localStorage.removeItem(SESSION_KEY);
 }
 
-async function restoreSessionFromSupabase() {
-    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
-        return null;
+async function completeOAuthLogin() {
+    if (window.location.pathname !== '/login') {
+        return false;
     }
 
-    if (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function') {
-        return null;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const errorDescription = params.get('error_description') || params.get('error');
+
+    if (!code && !errorDescription) {
+        return false;
     }
 
-    const client = getSupabaseClient();
-    const { data, error } = await client.auth.getSession();
-    const email = data?.session?.user?.email;
-
-    if (error || !email) {
-        return null;
+    if (errorDescription) {
+        showStatus(errorDescription, 'error');
+        return true;
     }
 
     try {
+        const client = getSupabaseClient();
+        const { data, error } = await client.auth.exchangeCodeForSession(code);
+        if (error) throw error;
+
+        const email = data?.session?.user?.email || data?.session?.user?.user_metadata?.email;
+        if (!email) {
+            throw new Error('Google sign-in did not return an email address.');
+        }
+
         const syncResult = await apiFetch('/api/sync-user', {
             method: 'POST',
             body: { email },
             timeout: 20000,
         });
 
-        if (syncResult?.user_id) {
-            const sessionRecord = {
-                user_id: syncResult.user_id,
-                username: syncResult.username || email,
-            };
-            saveSession(sessionRecord);
-            return sessionRecord;
+        if (!syncResult?.user_id) {
+            throw new Error('Unable to create a local session.');
         }
+
+        saveSession({
+            user_id: syncResult.user_id,
+            username: syncResult.username || email,
+        });
+
+        navigate('/chat');
+        return true;
+    } catch (error) {
+        console.error('OAuth completion failed:', error);
+        showStatus(error.message || 'Google sign-in failed.', 'error');
+        return true;
+    }
+}
+
+async function restoreSessionFromSupabase() {
+    try {
+        if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
+            return null;
+        }
+
+        if (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function') {
+            return null;
+        }
+
+        const client = getSupabaseClient();
+        const { data, error } = await client.auth.getSession();
+        const email = data?.session?.user?.email;
+
+        if (error || !email) {
+            return null;
+        }
+
+        try {
+            const syncResult = await apiFetch('/api/sync-user', {
+                method: 'POST',
+                body: { email },
+                timeout: 20000,
+            });
+
+            if (syncResult?.user_id) {
+                const sessionRecord = {
+                    user_id: syncResult.user_id,
+                    username: syncResult.username || email,
+                };
+                saveSession(sessionRecord);
+                return sessionRecord;
+            }
+        } catch (syncError) {
+            console.error('Supabase session sync failed:', syncError);
+        }
+
+        return null;
     } catch (syncError) {
-        console.error('Supabase session sync failed:', syncError);
+        console.error('Supabase restore failed:', syncError);
     }
 
     return null;
@@ -470,8 +528,8 @@ function bindGoogleAuth() {
                 await client.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo:
-                            `${window.location.origin}/chat`
+                        // Keep Google on the existing callback URL; the callback forwards into the login flow.
+                        redirectTo: `${window.location.origin}/auth/callback`
                     }
                 });
 
@@ -759,31 +817,41 @@ async function bindChatPage() {
 
 async function bindGeneralRouting() {
     const session = loadSession();
-
-    if (window.location.pathname === '/login') {
-        if (session && session.user_id) {
-            navigate('/chat');
-            return;
-        }
-
-        const restoredSession = await restoreSessionFromSupabase();
-        if (restoredSession && restoredSession.user_id) {
-            navigate('/chat');
-            return;
-        }
-    }
-
     const loginForm = document.getElementById('login-form');
+
     if (loginForm) {
         ensureAuthViews();
         bindLoginForm();
         bindSignupForm();
         bindOtpForm();
         bindGoogleAuth();
+    }
+
+    if (window.location.pathname === '/login') {
+        const oauthHandled = await completeOAuthLogin();
+        if (oauthHandled) {
+            return;
+        }
+
         if (session && session.user_id) {
             navigate('/chat');
             return;
         }
+
+        try {
+            const restoredSession = await restoreSessionFromSupabase();
+            if (restoredSession && restoredSession.user_id) {
+                navigate('/chat');
+                return;
+            }
+        } catch (error) {
+            console.warn('Login session restore skipped:', error);
+        }
+    }
+
+    if (loginForm && session && session.user_id) {
+        navigate('/chat');
+        return;
     }
 
     if (document.getElementById('landing-hero-start') || document.getElementById('landing-start-venting')) {
