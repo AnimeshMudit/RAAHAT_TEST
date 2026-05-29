@@ -87,7 +87,7 @@ def clean_query(query: str) -> list[str]:
     phrases = [p.strip().lower() for p in query.split(',') if p.strip()]
     return phrases[:3]  # Cap at 3 phrases to avoid over-querying
 
-def search_knowledge(query, vector_store, k=5, threshold=0.8):
+def search_knowledge(query, vector_store, k=5, threshold=1.05):
     """
     Searches the FAISS index using multi-phrase FAISS calls and unions results.
     Runs each phrase from clean_query() as a separate FAISS search, then
