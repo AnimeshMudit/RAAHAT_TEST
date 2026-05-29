@@ -40,8 +40,8 @@ def split_chunks(raw):
     """Splits plain text into micro-chunks for surgical clinical retrieval."""
     print("Chopping text into micro-chunks...")
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=350,
-        chunk_overlap=50,
+        chunk_size=500,
+        chunk_overlap=80,
         length_function=len
     )
     
@@ -87,7 +87,7 @@ def clean_query(query: str) -> list[str]:
     phrases = [p.strip().lower() for p in query.split(',') if p.strip()]
     return phrases[:3]  # Cap at 3 phrases to avoid over-querying
 
-def search_knowledge(query, vector_store, k=5, threshold=1.05):
+def search_knowledge(query, vector_store, k=5, threshold=1.15):
     """
     Searches the FAISS index using multi-phrase FAISS calls and unions results.
     Runs each phrase from clean_query() as a separate FAISS search, then
@@ -108,21 +108,48 @@ def search_knowledge(query, vector_store, k=5, threshold=1.05):
         print(f"  ↳ Querying FAISS for phrase: '{phrase}'")
         results = vector_store.similarity_search_with_score(phrase, k=k)
 
-        for doc, score in results:
+        for rank, (doc, score) in enumerate(results, start=1):
+
             content = doc.page_content.strip()
+
             if content in seen:
-                continue  # Already included from a previous phrase query
+                continue
+
             seen.add(content)
 
-            # Preserve source filename from metadata for citation
             source = doc.metadata.get("source", "Unknown Manual")
 
+            print("\n-----------------------------------")
+            print(f"Rank      : {rank}")
+            print(f"Source    : {source}")
+            print(f"Score     : {score:.4f}")
+            print(f"Threshold : {threshold}")
+
+            preview = content[:200].replace("\n", " ")
+            print(f"Preview   : {preview}")
+
             if score <= threshold:
-                formatted_chunk = f"[Source: {source}]\n{doc.page_content}"
+
+                formatted_chunk = (
+                    f"[Source: {source}]\n"
+                    f"{doc.page_content}"
+                )
+
                 context_chunks.append(formatted_chunk)
-                print(f"  ✅ VALID MATCH: {source} (Score: {score:.4f})")
+
+                print("Result    : ACCEPTED")
+
             else:
-                print(f"  ❌ REJECTED: {source} (Score: {score:.4f} — too weak)")
+
+                print("Result    : REJECTED")
+
+            print("-----------------------------------")
+            
+    print("\n========== Retrieval Summary ==========")
+    print(f"Original Query : {query}")
+    print(f"Phrases Used   : {phrases}")
+    print(f"Chunks Returned: {len(context_chunks)}")
+    print("========================================\n")
 
     return context_chunks
 
@@ -178,7 +205,7 @@ def build_vector_store_from_folder(folder_path="data"):
         
     # 1. Split documents — micro-chunks preserve metadata automatically
     print(f"Chopping {len(all_documents)} documents into micro-chunks...")
-    splitter = RecursiveCharacterTextSplitter(chunk_size=350, chunk_overlap=50)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=80)
     final_chunks = splitter.split_documents(all_documents)
     
     # 2. Create the Vector Database with normalized embeddings + default L2
@@ -193,17 +220,36 @@ def build_vector_store_from_folder(folder_path="data"):
     return vector_db
 
 
-if __name__ == "__main__":
-    folder = "data" 
+# if __name__ == "__main__":
+#     folder = "data" 
     
-    vector_db = build_vector_store_from_folder(folder)
+#     vector_db = build_vector_store_from_folder(folder)
     
-    if vector_db:
-        # 4. Test Query
-        user_question = "What are cognitive distortions?"
-        results = search_knowledge(user_question, vector_db)
+#     if vector_db:
+#         # 4. Test Query
+#         user_question = "I don't really feel anything anymore"
+#         results = search_knowledge(user_question, vector_db)
         
-        print("\n--- 🎯 TOP SEARCH RESULT ---")
-        if results:
-            print(results[0])
-        print("---------------------------")
+#         print("\n--- 🎯 TOP SEARCH RESULT ---")
+#         if results:
+#             print(results[0])
+#         print("---------------------------")
+if __name__ == "__main__":
+
+    print("Loading existing FAISS index...")
+
+    vector_db = load_vector_store()
+
+    user_question = input("\nEnter test query: ")
+
+    results = search_knowledge(
+        user_question,
+        vector_db
+    )
+
+    print("\n--- 🎯 TOP SEARCH RESULT ---")
+
+    if results:
+        print(results[0])
+
+    print("---------------------------")
