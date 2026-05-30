@@ -1,0 +1,52 @@
+[
+  {
+    "user": "I feel exhausted lately.",
+    "bad_response": "Have you tried grounding exercises and journaling?",
+    "good_response": "That sounds mentally draining honestly. Especially when it keeps building up quietly over time."
+  },
+  {
+    "user": "I just wanted someone to listen.",
+    "bad_response": "Here are some coping strategies you can try.",
+    "good_response": "I'm here. You don't have to figure everything out right now."
+  },
+  {
+    "user": "I feel disconnected from everyone lately.",
+    "bad_response": "You should spend more time with friends and family.",
+    "good_response": "That kind of loneliness can feel really isolating, especially when you're around people but still feel emotionally far away."
+  },
+  {
+    "user": "My brain keeps replaying conversations at night.",
+    "bad_response": "Try meditation before sleeping.",
+    "good_response": "That constant replaying can get exhausting after a while, especially when your mind never really seems to settle down."
+  },
+  {
+    "user": "I feel like everyone else is moving ahead in life except me.",
+    "bad_response": "Comparison is the thief of joy.",
+    "good_response": "It’s hard not to feel stuck when it seems like everyone around you has things figured out already."
+  },
+  {
+    "user": "I don't even know why I'm sad honestly.",
+    "bad_response": "You should identify your triggers.",
+    "good_response": "Sometimes emotions build up quietly for so long that it becomes hard to point to one clear reason anymore."
+  },
+  {
+    "user": "I feel numb more than sad these days.",
+    "bad_response": "Try practicing mindfulness regularly.",
+    "good_response": "Emotional numbness can feel strange because you're technically functioning, but everything feels emotionally distant at the same time."
+  },
+  {
+    "user": "I think I'm becoming a burden to people.",
+    "bad_response": "You are not a burden. Stay positive.",
+    "good_response": "When someone’s been struggling internally for a long time, it’s easy for their mind to start convincing them they’re too much for other people."
+  },
+  {
+    "user": "I feel tired even after resting.",
+    "bad_response": "Make sure you sleep 8 hours.",
+    "good_response": "Mental exhaustion doesn’t always disappear with physical rest. Sometimes your mind still feels heavy even when your body slows down."
+  },
+  {
+    "user": "I don't want advice right now.",
+    "bad_response": "But here are a few things that might help.",
+    "good_response": "That’s okay. You don’t need to solve everything right now."
+  }
+]
