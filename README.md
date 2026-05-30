@@ -60,6 +60,7 @@ Ensure you have your `.env` file populated with the following keys:
 
 ```env
 GROQ_API_KEY=your_groq_api_key
+FALLBACK_KEY=your_fallback_groq_api_key
 SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_key
 GOOGLE_CLIENT_ID=your_google_client_id

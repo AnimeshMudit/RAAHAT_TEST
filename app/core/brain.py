@@ -8,29 +8,50 @@ import logging
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-api_key = os.getenv("GROQ_API_KEY")
+api_keys = []
+for env_name in ("GROQ_API_KEY", "FALLBACK_KEY"):
+    value = os.getenv(env_name)
+    if value and value not in api_keys:
+        api_keys.append(value)
 
-if not api_key:
-    raise ValueError("GROQ_API_KEY not found.")
+if not api_keys:
+    raise ValueError("GROQ_API_KEY or FALLBACK_KEY not found.")
 
-client = Groq(api_key=api_key)
+clients = [Groq(api_key=value) for value in api_keys]
+
+
+def _is_rate_limit_error(error):
+    status_code = getattr(error, "status_code", None) or getattr(error, "status", None)
+    if status_code == 429:
+        return True
+
+    error_text = str(error).lower()
+    return (
+        "429" in error_text or "rate limit" in error_text or "rate_limit" in error_text
+    )
+
+
+def _create_completion(client, messages, temperature=0.65, max_tokens=800):
+    return client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=messages,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
+
 
 def load_behavior_examples(num_examples=3):
     try:
         with open("app/core/behaviour_examples.json", "r", encoding="utf-8") as f:
             examples = json.load(f)
 
-        selected = random.sample(
-            examples,
-            min(num_examples, len(examples))
-        )
+        selected = random.sample(examples, min(num_examples, len(examples)))
 
         formatted = []
 
         for ex in selected:
             formatted.append(
-                f"User: {ex['user']}\n"
-                f"GOOD Response: {ex['good_response']}\n"
+                f"User: {ex['user']}\n" f"GOOD Response: {ex['good_response']}\n"
             )
 
         return "\n\n".join(formatted)
@@ -38,6 +59,7 @@ def load_behavior_examples(num_examples=3):
     except Exception:
         logger.exception("Failed to load behaviour examples")
         return ""
+
 
 SYSTEM_PROMPT = """
 You are RAAHAT, a calm emotionally intelligent conversational companion.
@@ -127,10 +149,7 @@ def detect_emotional_presence_mode(user_message):
         "just feels heavy lately",
     ]
 
-    return any(
-        phrase in text
-        for phrase in emotional_presence_phrases
-    )
+    return any(phrase in text for phrase in emotional_presence_phrases)
 
 
 def _format_prompt_context(value):
@@ -203,7 +222,7 @@ def _llm_call(
             "Do not mention memory, tracking, or recurring themes explicitly.\n"
             "Do not assume the user currently feels these emotions."
         )
-        
+
     if session_summary:
         prompt_sections.append(
             "### RETURNING USER CONTEXT\n\n"
@@ -253,18 +272,23 @@ def _llm_call(
     messages.append({"role": "user", "content": user_message})
 
     DEBUG = os.getenv("DEBUG", "false").lower() == "true"
-    try:
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages,
-            temperature=0.65,
-            max_tokens=800,
-        )
-        return completion.choices[0].message.content
-    except Exception as e:
-        if DEBUG:
-            return f"❌ Brain Error: {str(e)}"
-        return "I'm having trouble responding right now."
+
+    last_error = None
+    for index, client in enumerate(clients):
+        try:
+            completion = _create_completion(client, messages)
+            if index > 0:
+                logger.warning("Groq fallback key used after rate limit on primary key")
+            return completion.choices[0].message.content
+        except Exception as e:
+            last_error = e
+            if index < len(clients) - 1 and _is_rate_limit_error(e):
+                continue
+            break
+
+    if DEBUG and last_error is not None:
+        return f"❌ Brain Error: {str(last_error)}"
+    return "I'm having trouble responding right now."
 
 
 def get_response(
@@ -273,7 +297,7 @@ def get_response(
     context="",
     pattern_signal=None,
     session_summary=None,
-    recurring_themes=None
+    recurring_themes=None,
 ):
     history = history or []
     emotional_presence_mode = detect_emotional_presence_mode(user_message)
@@ -365,16 +389,27 @@ def generate_search_keywords(user_input):
         "Return ONLY comma-separated phrases. NO EXPLANATIONS. NO QUOTES. NO REPETITIONS."
     )
 
-    try:
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": utility_prompt}],
-            temperature=0.1,  # Low temperature for precise keyword tokens
-            max_tokens=50,
-        )
-        return completion.choices[0].message.content.strip()
-    except Exception as e:
-        return f"ERROR_KEYWORD_FAIL: {str(e)}"
+    last_error = None
+    for index, client in enumerate(clients):
+        try:
+            completion = _create_completion(
+                client,
+                [{"role": "user", "content": utility_prompt}],
+                temperature=0.1,
+                max_tokens=50,
+            )
+            if index > 0:
+                logger.warning(
+                    "Groq fallback key used for keyword generation after rate limit on primary key"
+                )
+            return completion.choices[0].message.content.strip()
+        except Exception as e:
+            last_error = e
+            if index < len(clients) - 1 and _is_rate_limit_error(e):
+                continue
+            break
+
+    return f"ERROR_KEYWORD_FAIL: {str(last_error)}"
 
 
 if __name__ == "__main__":

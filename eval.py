@@ -14,7 +14,7 @@ OUTPUT_FOLDER = "conversation_audits"
 
 # IMPORTANT:
 # Replace this with a REAL user_id from your Supabase users table
-USER_ID = "1463d0b3-efea-4248-9a3a-8ca259d4ef88"
+USER_ID = "c8d55c44-b110-439c-aeb1-e371cc2b4ce3"
 
 MESSAGE_DELAY = 2
 
