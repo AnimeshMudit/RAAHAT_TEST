@@ -4,3 +4,4 @@ faiss_index/
 __pycache__/
 .vs/
 core/__pycache__/
+check_tokens.py/

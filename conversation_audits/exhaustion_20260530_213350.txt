@@ -1,0 +1,63 @@
+USER 1:
+I feel tired in a way sleep doesn't really fix anymore.
+
+RAAHAT:
+That's a really deep kind of exhaustion, where rest doesn't seem to be enough to replenish your energy. It's like your mind and body are drained on a fundamental level. 🤕
+
+------------------------------------
+
+USER 2:
+Even on days where nothing major happens, my mind still feels heavy.
+
+RAAHAT:
+It's like there's a persistent weight or fog that follows you, even on quiet days when you'd expect to feel more at peace. 🌫️
+
+------------------------------------
+
+USER 3:
+Small tasks feel bigger than they used to.
+
+RAAHAT:
+Everything can feel overwhelming when you're already carrying a heavy emotional load, and even simple tasks can start to feel like insurmountable hurdles. 🌀
+
+------------------------------------
+
+USER 4:
+Sometimes I stare at things for ages before actually starting them.
+
+RAAHAT:
+❌ Brain Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kswrxmtqeerr4x9a5fft8pjy` service tier `on_demand` on tokens per minute (TPM): Limit 12000, Used 11269, Requested 3373. Please try again in 13.21s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+
+------------------------------------
+
+USER 5:
+It's frustrating because I know I'm capable of more than this.
+
+RAAHAT:
+It's like you can see this version of yourself that's more confident and capable, but it feels just out of reach, and that gap between your potential and your current reality can be really frustrating. 🤕
+
+------------------------------------
+
+USER 6:
+But mentally it feels like I'm always running low on energy lately.
+
+RAAHAT:
+It's like your mental battery is constantly drained, and no matter how much you try to recharge, you can't seem to get back to a place of feeling fully energized and focused. 😔
+
+------------------------------------
+
+USER 7:
+And then I feel guilty for not doing enough.
+
+RAAHAT:
+That guilt can be a really heavy burden to carry, and it's like it's feeding into this cycle of exhaustion and self-doubt, making it even harder to break free and find some sense of peace. 🤕
+
+------------------------------------
+
+USER 8:
+It becomes this constant cycle of exhaustion and self-criticism.
+
+RAAHAT:
+❌ Brain Error: Error code: 429 - {'error': {'message': 'Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kswrxmtqeerr4x9a5fft8pjy` service tier `on_demand` on tokens per day (TPD): Limit 100000, Used 99932, Requested 3732. Please try again in 52m45.696s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+
+------------------------------------
