@@ -127,6 +127,54 @@ def get_session_summary(user_id: str) -> dict | None:
         "dominant_emotion": dominant,
         "message_count": len(history),
     }
+    
+def get_recurring_themes(user_id: str, limit: int = 100):
+    """
+    Analyze a larger history window to identify recurring emotional themes.
+    Used for long-term continuity.
+    """
+
+    response = (
+        supabase.table("messages")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("created_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+
+    history = list(reversed(response.data))
+
+    if not history:
+        return []
+
+    user_messages = [
+        m["content"].lower()
+        for m in history
+        if m.get("role") == "user"
+    ]
+
+    corpus = " ".join(user_messages)
+
+    theme_scores = {}
+
+    for theme, keywords in _THEME_KEYWORDS.items():
+
+        hits = sum(
+            corpus.count(keyword)
+            for keyword in keywords
+        )
+
+        if hits > 0:
+            theme_scores[theme] = hits
+
+    ranked = sorted(
+        theme_scores.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    return [theme for theme, _ in ranked[:5]]
 
 
 
@@ -161,11 +209,23 @@ if __name__ == "__main__":
     
     tg_uuid = tg_user["id"]
     print(f"✅ Telegram User Linked! UUID: {tg_uuid}")
-    save_message(tg_uuid, "user", "Hi RAAHAT, I'm messaging from Telegram.")
+    
+    save_message(
+    tg_uuid,
+    "user",
+    "Hi RAAHAT, I'm messaging from Telegram." 
+    )
+
 
     # --- TEST 3: VERIFYING SHARED HISTORY ---
     print(f"\n{Fore.GREEN}📜 Fetching Consolidated History for Telegram User:{Fore.RESET}")
     history = fetch_history(tg_uuid)
+    
+    print(f"\n{Fore.CYAN}🧠 Session Summary:{Fore.RESET}")
+    print(get_session_summary(tg_uuid))
+
+    print(f"\n{Fore.CYAN}🔁 Recurring Themes:{Fore.RESET}")
+    print(get_recurring_themes(tg_uuid))
     
     for row in history:
         timestamp = row['created_at'][:19].replace("T", " ")
