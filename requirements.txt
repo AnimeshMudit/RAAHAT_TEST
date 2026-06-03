@@ -13,3 +13,4 @@ pdfplumber
 colorama
 python-dotenv
 python-telegram-bot
+sentance-transformers
