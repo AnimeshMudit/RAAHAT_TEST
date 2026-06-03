@@ -107,6 +107,8 @@ async function completeOAuthLogin() {
             username: syncResult.username || email,
         });
 
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
         navigate('/chat');
         return true;
     } catch (error) {
@@ -648,7 +650,15 @@ async function bindChatPage() {
 
     let session = loadSession();
     if (!session || !session.user_id) {
-        session = await restoreSessionFromSupabase();
+        for (let i = 0; i < 5; i++) {
+            session = await restoreSessionFromSupabase();
+
+            if (session?.user_id) {
+                break;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
     }
 
     if (!session || !session.user_id) {

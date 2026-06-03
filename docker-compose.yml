@@ -1,0 +1,15 @@
+services:
+  raahat:
+    build: .
+    container_name: raahat_app
+
+    ports:
+      - "8000:8000"
+
+    env_file:
+      - .env
+
+    volumes:
+      - .:/app
+
+    restart: unless-stopped
