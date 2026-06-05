@@ -207,7 +207,7 @@ function hideStatus() {
 }
 
 function navigate(path) {
-    window.location.href = path;
+    window.location.href = `${window.location.origin}${path}`;
 }
 
 function bindTextControl(selector, labelText, handler) {

@@ -102,6 +102,22 @@ def get_required_env(name: str) -> str:
     return value
 
 
+def get_public_origin(request: Request) -> str:
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    forwarded_host = request.headers.get("x-forwarded-host")
+    host = forwarded_host or request.headers.get("host")
+
+    if host:
+        scheme = forwarded_proto or request.url.scheme
+        return f"{scheme}://{host}".rstrip("/")
+
+    origin = request.headers.get("origin")
+    if origin:
+        return origin.rstrip("/")
+
+    return str(request.base_url).rstrip("/")
+
+
 def resolve_static_file(*filenames: str) -> str:
     for filename in filenames:
         file_path = os.path.join(STATIC_DIR, filename)
@@ -189,8 +205,8 @@ async def sync_user(request: SyncUserRequest):
 async def login_google(request: Request):
     try:
         # Redirect to /auth/callback so the browser can handle PKCE code exchange
-        base_url = str(request.base_url).rstrip("/")
-        url = get_google_auth_url(redirect_to=f"{base_url}/auth/callback")
+        public_origin = get_public_origin(request)
+        url = get_google_auth_url(redirect_to=f"{public_origin}/auth/callback")
         return {"url": url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -219,7 +235,7 @@ async def auth_callback():
         <p>Completing sign-in...</p>
     </main>
     <script>
-        window.location.replace('/login' + window.location.search + window.location.hash);
+        window.location.replace(window.location.origin + '/login' + window.location.search + window.location.hash);
     </script>
 </body>
 </html>"""
@@ -241,12 +257,12 @@ async def signup(request: AuthRequest, http_request: Request):
                 status_code=400, detail=f"Invalid Email: {normalized_email}"
             )
 
-        base_url = str(http_request.base_url).rstrip("/")
+        public_origin = get_public_origin(http_request)
 
         memory.supabase.auth.sign_in_with_otp(
             {
                 "email": normalized_email,
-                "options": {"redirect_to": f"{base_url}/chat"},
+                "options": {"redirect_to": f"{public_origin}/chat"},
             }
         )
 

@@ -1100,7 +1100,7 @@
         // ─── INIT ───
         window.onload = () => {
             if (!userId) {
-                window.location.href = '/login';
+                window.location.href = `${window.location.origin}/login`;
                 return;
             }
 
@@ -1365,7 +1365,7 @@
                 }
             }
             keysToRemove.forEach(k => localStorage.removeItem(k));
-            window.location.href = '/login';
+            window.location.href = `${window.location.origin}/login`;
         }
     </script>
 </body>
