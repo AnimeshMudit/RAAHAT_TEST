@@ -64,10 +64,16 @@ class VerifyRequest(BaseModel):
 class ChatRequest(BaseModel):
     user_id: UUID
     message: str
+    preferred_name: str | None = None
 
 
 class SyncUserRequest(BaseModel):
     email: str
+
+
+class UpdateNameRequest(BaseModel):
+    user_id: UUID
+    name: str
 
 
 # -------------------- UI ROUTING (FRONTEND) --------------------
@@ -116,6 +122,24 @@ def get_public_origin(request: Request) -> str:
         return origin.rstrip("/")
 
     return str(request.base_url).rstrip("/")
+
+
+def serialize_user_profile(user_row: dict | None) -> dict:
+    name = ""
+    if user_row:
+        name = (
+            user_row.get("Name")
+            or user_row.get("name")
+            or user_row.get("display_name")
+            or ""
+        )
+    trimmed_name = str(name).strip()
+    return {
+        "user_id": user_row.get("id") if user_row else None,
+        "username": user_row.get("username") if user_row else None,
+        "name": trimmed_name,
+        "needs_name": not bool(trimmed_name),
+    }
 
 
 def resolve_static_file(*filenames: str) -> str:
@@ -194,11 +218,38 @@ async def sync_user(request: SyncUserRequest):
                 is_verified=True,
                 auth_provider="google",
             )
+            user_record = memory.get_user_by_id(user_id)
         else:
             user_id = user_record["id"]
-        return {"user_id": user_id, "username": request.email}
+        profile = serialize_user_profile(user_record)
+        profile["user_id"] = user_id
+        profile["username"] = request.email
+        return profile
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/user-profile")
+async def user_profile(user_id: UUID):
+    user_record = memory.get_user_by_id(str(user_id))
+    if not user_record:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return serialize_user_profile(user_record)
+
+
+@app.post("/api/user-name")
+async def update_user_name(request: UpdateNameRequest):
+    trimmed_name = request.name.strip()
+    if not trimmed_name:
+        raise HTTPException(status_code=400, detail="Name cannot be empty.")
+
+    user_record = memory.get_user_by_id(str(request.user_id))
+    if not user_record:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    memory.update_user_name(str(request.user_id), trimmed_name)
+    updated_record = memory.get_user_by_id(str(request.user_id))
+    return serialize_user_profile(updated_record)
 
 
 @app.get("/api/auth/google")
@@ -305,7 +356,10 @@ async def verify_otp(request: VerifyRequest):
             if user_rec
             else memory.create_user(request.email, "otp_user", is_verified=True)
         )
-        return {"user_id": user_id, "username": request.email}
+        profile = serialize_user_profile(user_rec or memory.get_user_by_id(str(user_id)))
+        profile["user_id"] = user_id
+        profile["username"] = request.email
+        return profile
 
     raise HTTPException(
         status_code=400, detail="Invalid or expired OTP code. Please request a new one."
@@ -343,7 +397,10 @@ async def login(request: AuthRequest):
         )
         if not res.user:
             raise HTTPException(status_code=401, detail="Invalid credentials")
-        return {"user_id": user_record["id"], "username": normalized_email}
+        profile = serialize_user_profile(user_record)
+        profile["user_id"] = user_record["id"]
+        profile["username"] = normalized_email
+        return profile
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
@@ -403,11 +460,22 @@ async def chat(request: ChatRequest):
             str(request.user_id)
         )
         display_name = (
-            user_record.data[0].get("display_name")
-            or user_record.data[0].get("username")
-            or "friend"
-        )
-        context_text += f"\n\nSystem Note: The user is '{display_name}'."
+            request.preferred_name
+            or user_record.data[0].get("Name")
+            or user_record.data[0].get("name")
+            or user_record.data[0].get("display_name")
+            or ""
+        ).strip()
+        if display_name:
+            context_text += (
+                f"\n\nSystem Note: The user's preferred name is '{display_name}'. "
+                "Use this naturally and sparingly during conversation."
+            )
+        else:
+            context_text += (
+                "\n\nSystem Note: The user's preferred name is not yet known. "
+                "If asked their name, say you do not know yet."
+            )
 
         try:
             response_text = brain.get_response(

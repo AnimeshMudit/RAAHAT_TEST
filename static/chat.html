@@ -696,6 +696,180 @@
             }
         }
 
+        .name-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 220;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(253, 252, 249, 0.42);
+            backdrop-filter: blur(18px) saturate(120%);
+            -webkit-backdrop-filter: blur(18px) saturate(120%);
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .name-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .name-modal {
+            width: min(420px, calc(100vw - 2rem));
+            background: rgba(253, 252, 249, 0.88);
+            border: 1px solid rgba(232, 224, 208, 0.95);
+            border-radius: 24px;
+            box-shadow: 0 24px 70px rgba(26, 32, 24, 0.18);
+            padding: 2rem 1.5rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .name-modal-logo {
+            width: 108px;
+            height: 108px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .name-modal-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .name-modal-brand {
+            font-family: 'Lora', serif;
+            font-size: 1.4rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-indent: 0.1em;
+            color: var(--sage);
+        }
+
+        .name-modal-copy {
+            text-align: center;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: var(--text-soft);
+            max-width: 320px;
+        }
+
+        .name-modal-form {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .name-label {
+            font-size: 0.8rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+
+        .name-input {
+            width: 100%;
+            border: 1.5px solid var(--sand-dark);
+            border-radius: 16px;
+            padding: 0.95rem 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            color: var(--text-deep);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .name-input:focus {
+            border-color: var(--sage-mid);
+            box-shadow: 0 0 0 4px rgba(197, 217, 202, 0.35);
+        }
+
+        .name-input:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .name-error {
+            min-height: 1.1rem;
+            font-size: 0.82rem;
+            color: var(--danger);
+            text-align: center;
+        }
+
+        .name-submit {
+            width: 100%;
+            border: none;
+            border-radius: 999px;
+            background: var(--sage);
+            color: white;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 500;
+            padding: 0.92rem 1rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            box-shadow: 0 10px 24px rgba(74, 124, 89, 0.18);
+            transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .name-submit:hover {
+            background: var(--text-deep);
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(26, 32, 24, 0.18);
+        }
+
+        .name-submit:disabled {
+            opacity: 0.75;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 10px 24px rgba(74, 124, 89, 0.14);
+        }
+
+        .name-submit-content {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+        }
+
+        .name-spinner {
+            width: 0.95rem;
+            height: 0.95rem;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.42);
+            border-top-color: white;
+            animation: nameSpin 0.8s linear infinite;
+        }
+
+        .name-spinner.hidden {
+            display: none;
+        }
+
+        @keyframes nameSpin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         /* ─── CRISIS BANNER (context-aware) ─── */
         .crisis-resource-bar {
             background: var(--danger-pale);
@@ -833,6 +1007,17 @@
             .msg-body {
                 max-width: 82%;
             }
+
+            .name-modal {
+                width: min(420px, calc(100vw - 1.25rem));
+                padding: 1.5rem 1.25rem 1.25rem;
+                border-radius: 22px;
+            }
+
+            .name-modal-logo {
+                width: 92px;
+                height: 92px;
+            }
         }
 
         /* ─── SCROLLBAR ─── */
@@ -941,6 +1126,29 @@
 </head>
 
 <body>
+
+    <div class="name-overlay hidden" id="name-overlay" aria-hidden="true">
+        <div class="name-modal" role="dialog" aria-modal="true" aria-labelledby="name-modal-brand"
+            aria-describedby="name-modal-copy">
+            <div class="name-modal-logo">
+                <img alt="Raahat" loading="eager" src="/static/raahat_light-removebg-preview.png" />
+            </div>
+            <div class="name-modal-brand" id="name-modal-brand">RAAHAT</div>
+            <p class="name-modal-copy" id="name-modal-copy">Before we begin, we'd love to know what to call you during our conversations.</p>
+            <form class="name-modal-form" id="name-form" novalidate>
+                <label class="name-label" for="name-input">Your name</label>
+                <input autocomplete="name" class="name-input" id="name-input" placeholder="Enter your name"
+                    type="text" />
+                <div class="name-error" id="name-error" aria-live="polite"></div>
+                <button class="name-submit" id="name-submit" type="submit">
+                    <span class="name-submit-content">
+                        <span class="name-spinner hidden" id="name-spinner" aria-hidden="true"></span>
+                        <span id="name-submit-text">Continue</span>
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>
 
     <!-- SIDEBAR -->
     <aside class="sidebar">
@@ -1144,12 +1352,14 @@
         } catch (e) { }
         let userId = sessionObj.user_id;
         let username = sessionObj.username || 'friend';
+        let preferredName = (sessionObj.name || '').trim();
         let isFirstMessage = true;
         let isTyping = false;
         let sessionHistory = [];
+        let onboardingActive = false;
 
         // ─── INIT ───
-        window.onload = () => {
+        window.onload = async () => {
             if (!userId) {
                 window.location.href = `${window.location.origin}/login`;
                 return;
@@ -1158,17 +1368,192 @@
             setUserUI();
             loadHistory();
 
-            document.getElementById('msg-input').focus();
+            await loadUserProfile();
+
+            if (preferredName) {
+                closeNameModal(false);
+            } else {
+                openNameModal();
+            }
+
+            if (!onboardingActive) {
+                document.getElementById('msg-input').focus();
+            }
         };
 
         function setUserUI() {
-            const display = username.includes('@') ? username.split('@')[0] : username;
+            const display = preferredName || (username.includes('@') ? username.split('@')[0] : username);
             const initials = display.slice(0, 2).toUpperCase();
 
             document.getElementById('user-initials').textContent = initials;
             document.getElementById('sidebar-username').textContent = display;
             document.getElementById('sidebar-email').textContent = username.includes('@') ? username : '';
             document.getElementById('welcome-name').textContent = display;
+        }
+
+        async function loadUserProfile() {
+            try {
+                const res = await fetch(`${API_BASE}/api/user-profile?user_id=${encodeURIComponent(userId)}`);
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    return null;
+                }
+
+                const profileName = String(data?.name || '').trim();
+                if (profileName) {
+                    preferredName = profileName;
+                    sessionObj.name = profileName;
+                    localStorage.setItem('raahat_user', JSON.stringify(sessionObj));
+                    setUserUI();
+                }
+
+                return data;
+            } catch (_error) {
+                return null;
+            }
+        }
+
+        function getNameModalElements() {
+            return {
+                overlay: document.getElementById('name-overlay'),
+                input: document.getElementById('name-input'),
+                form: document.getElementById('name-form'),
+                error: document.getElementById('name-error'),
+                submit: document.getElementById('name-submit'),
+                spinner: document.getElementById('name-spinner'),
+                submitText: document.getElementById('name-submit-text'),
+            };
+        }
+
+        function setNameError(message) {
+            const { error } = getNameModalElements();
+            if (error) {
+                error.textContent = message || '';
+            }
+        }
+
+        function setNameModalLoading(loading) {
+            const { input, submit, spinner, submitText } = getNameModalElements();
+            if (input) input.disabled = loading;
+            if (submit) submit.disabled = loading;
+            if (spinner) spinner.classList.toggle('hidden', !loading);
+            if (submitText) submitText.textContent = loading ? 'Saving...' : 'Continue';
+        }
+
+        function openNameModal() {
+            const { overlay, input, submit } = getNameModalElements();
+            if (!overlay) return;
+
+            onboardingActive = true;
+            overlay.classList.remove('hidden');
+            overlay.setAttribute('aria-hidden', 'false');
+            setNameError('');
+            if (input) input.value = preferredName || '';
+            if (input) input.disabled = false;
+            if (submit) submit.disabled = false;
+            document.getElementById('msg-input').disabled = true;
+            document.getElementById('send-btn').disabled = true;
+
+            window.setTimeout(() => {
+                input?.focus();
+                input?.select();
+            }, 0);
+        }
+
+        function closeNameModal() {
+            const { overlay } = getNameModalElements();
+            if (overlay) {
+                overlay.classList.add('hidden');
+                overlay.setAttribute('aria-hidden', 'true');
+            }
+
+            onboardingActive = false;
+            document.getElementById('msg-input').disabled = false;
+            document.getElementById('send-btn').disabled = false;
+        }
+
+        async function saveUserName(name) {
+            const trimmed = String(name || '').trim();
+            if (!trimmed) {
+                throw new Error('Please enter your name.');
+            }
+
+            preferredName = trimmed;
+            sessionObj.name = preferredName;
+            localStorage.setItem('raahat_user', JSON.stringify(sessionObj));
+            setUserUI();
+            closeNameModal();
+            document.getElementById('msg-input').focus();
+
+            fetch(`${API_BASE}/api/user-name`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ user_id: userId, name: trimmed })
+            }).catch((error) => {
+                console.warn('Background name save failed:', error);
+            });
+
+            return { name: preferredName };
+        }
+
+        function trapNameModalFocus(event) {
+            if (!onboardingActive || event.key !== 'Tab') return;
+
+            const { overlay } = getNameModalElements();
+            if (!overlay) return;
+
+            const focusable = Array.from(overlay.querySelectorAll('input, button, [tabindex]:not([tabindex="-1"])'))
+                .filter((element) => !element.hasAttribute('disabled'));
+
+            if (!focusable.length) return;
+
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
+
+        document.addEventListener('keydown', trapNameModalFocus);
+
+        const nameForm = document.getElementById('name-form');
+        if (nameForm) {
+            nameForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                if (!onboardingActive) return;
+
+                const { input } = getNameModalElements();
+                const value = String(input?.value || '').trim();
+                setNameError('');
+
+                if (!value) {
+                    setNameError('Please enter your name.');
+                    input?.focus();
+                    return;
+                }
+
+                setNameModalLoading(true);
+                try {
+                    await saveUserName(value);
+                } catch (error) {
+                    console.error('Name save failed:', error);
+                    preferredName = value;
+                    sessionObj.name = value;
+                    localStorage.setItem('raahat_user', JSON.stringify(sessionObj));
+                    setUserUI();
+                    closeNameModal();
+                    document.getElementById('msg-input').focus();
+                } finally {
+                    setNameModalLoading(false);
+                }
+            });
         }
 
         function raahatLogoMarkup(sizeClass) {
@@ -1223,6 +1608,8 @@
 
         // ─── SEND ───
         async function sendMessage() {
+            if (onboardingActive) return;
+
             const input = document.getElementById('msg-input');
             const text = input.value.trim();
             if (!text || isTyping) return;
@@ -1242,7 +1629,7 @@
                 const res = await fetch(`${API_BASE}/api/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId, message: text })
+                    body: JSON.stringify({ user_id: userId, message: text, preferred_name: preferredName || sessionObj.name || '' })
                 });
 
                 const data = await res.json();
@@ -1368,6 +1755,13 @@
         }
 
         function handleKey(e) {
+            if (onboardingActive) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                }
+                return;
+            }
+
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
@@ -1380,6 +1774,8 @@
         }
 
         function usePrompt(btn) {
+            if (onboardingActive) return;
+
             const input = document.getElementById('msg-input');
             input.value = btn.textContent;
             autoResize(input);
@@ -1391,7 +1787,7 @@
             const area = document.getElementById('messages-area');
             area.innerHTML = `
     <div class="welcome-state" id="welcome-state">
-      <div class="welcome-icon">र</div>
+            <div class="welcome-icon"><img alt="Raahat" class="raahat-logo raahat-logo--welcome" loading="eager" src="/static/raahat_light-removebg-preview.png" /></div>
       <div class="welcome-title">Start fresh</div>
       <p class="welcome-sub">A new conversation. Whatever you're feeling, this is a safe space.</p>
       <div class="prompt-chips">

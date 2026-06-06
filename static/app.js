@@ -105,6 +105,7 @@ async function completeOAuthLogin() {
         saveSession({
             user_id: syncResult.user_id,
             username: syncResult.username || email,
+            name: syncResult.name || '',
         });
 
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -147,6 +148,7 @@ async function restoreSessionFromSupabase() {
                 const sessionRecord = {
                     user_id: syncResult.user_id,
                     username: syncResult.username || email,
+                    name: syncResult.name || '',
                 };
                 saveSession(sessionRecord);
                 return sessionRecord;
@@ -380,7 +382,11 @@ function bindLoginForm() {
                 timeout: 20000,
             });
             if (result && result.user_id) {
-                saveSession({ user_id: result.user_id, username: result.username || email });
+                saveSession({
+                    user_id: result.user_id,
+                    username: result.username || email,
+                    name: result.name || '',
+                });
                 navigate('/chat');
                 return;
             }
@@ -464,7 +470,11 @@ function bindOtpForm() {
                 timeout: 25000,
             });
             if (result && result.user_id) {
-                saveSession({ user_id: result.user_id, username: result.username || email });
+                saveSession({
+                    user_id: result.user_id,
+                    username: result.username || email,
+                    name: result.name || '',
+                });
                 navigate('/chat');
                 return;
             }

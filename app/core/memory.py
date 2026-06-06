@@ -18,6 +18,11 @@ def get_user_by_email(email):
         return f.data[0]
     return None
 
+
+def get_user_by_id(user_id: str):
+    response = supabase.table("users").select("*").eq("id", str(user_id)).execute()
+    return response.data[0] if response.data else None
+
 def create_user(
     email,
     hashed_password=None,
@@ -53,6 +58,17 @@ def create_telegram_user(tg_id: str, first_name: str):
     }
 
     response = supabase.table("users").insert(new_user).execute()
+    return response.data[0] if response.data else None
+
+
+def update_user_name(user_id: str, name: str):
+    trimmed_name = (name or "").strip()
+    response = (
+        supabase.table("users")
+        .update({"Name": trimmed_name})
+        .eq("id", str(user_id))
+        .execute()
+    )
     return response.data[0] if response.data else None
 
 def save_message(user_id, role, content):
