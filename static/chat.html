@@ -71,15 +71,61 @@
         }
 
         .brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
             font-family: 'Lora', serif;
-            font-size: 1.3rem;
-            color: var(--sage);
             font-weight: 500;
             letter-spacing: -0.02em;
             margin-bottom: 0.2rem;
         }
 
+        .raahat-logo {
+            display: block;
+            object-fit: contain;
+            user-select: none;
+            pointer-events: none;
+            flex-shrink: 0;
+        }
+
+        .raahat-logo--sidebar {
+            width: 112px;
+            height: 42px;
+        }
+
+        .raahat-logo--header {
+            width: 38px;
+            height: 38px;
+        }
+
+        .raahat-logo--welcome {
+            width: 64px;
+            height: 64px;
+        }
+
+        .raahat-logo--message {
+            width: 32px;
+            height: 32px;
+        }
+
+        .raahat-logo--typing {
+            width: 24px;
+            height: 24px;
+        }
+
+        .brand img,
+        .raahat-avatar img,
+        .welcome-icon img,
+        .msg-row-avatar img,
+        .typing-row img {
+            width: 100%;
+            height: 100%;
+        }
+
         .brand-sub {
+            width: 100%;
+            text-align: center;
             font-size: 0.7rem;
             color: var(--text-faint);
             letter-spacing: 0.08em;
@@ -294,9 +340,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Lora', serif;
-            font-size: 1.1rem;
-            color: var(--sage);
+            overflow: hidden;
         }
 
         .raahat-name {
@@ -458,9 +502,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Lora', serif;
-            font-size: 1.8rem;
-            color: var(--sage);
+            overflow: hidden;
             margin-bottom: 0.5rem;
         }
 
@@ -539,7 +581,7 @@
             align-items: center;
             justify-content: center;
             font-size: 0.75rem;
-            font-family: 'Lora', serif;
+            overflow: hidden;
         }
 
         .msg-row-avatar.raahat {
@@ -903,7 +945,10 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <div class="brand">RAAHAT</div>
+            <div class="brand">
+                <img alt="Raahat" class="raahat-logo raahat-logo--sidebar" loading="eager"
+                    src="/static/raahat_light-removebg-preview.png" />
+            </div>
             <div class="brand-sub">राहत · Your safe space</div>
             <button class="new-chat-btn" onclick="startNewChat()">
                 <svg viewBox="0 0 16 16" stroke-width="2" stroke-linecap="round">
@@ -952,7 +997,10 @@
         <!-- Top bar -->
         <div class="chat-topbar">
             <div class="chat-topbar-left">
-                <div class="raahat-avatar">र</div>
+                <div class="raahat-avatar">
+                    <img alt="Raahat" class="raahat-logo raahat-logo--header" loading="eager"
+                        src="/static/raahat_light-removebg-preview.png" />
+                </div>
                 <div>
                     <div class="raahat-name">RAAHAT</div>
                     <div class="raahat-status">
@@ -996,7 +1044,10 @@
 
             <!-- Welcome state (hidden once chats start) -->
             <div class="welcome-state" id="welcome-state">
-                <div class="welcome-icon">र</div>
+                <div class="welcome-icon">
+                    <img alt="Raahat" class="raahat-logo raahat-logo--welcome" loading="eager"
+                        src="/static/raahat_light-removebg-preview.png" />
+                </div>
                 <div class="welcome-title">Hello, <span id="welcome-name">friend</span></div>
                 <p class="welcome-sub">This is your safe space. You can share anything — I won't judge. What's on your
                     mind today?</p>
@@ -1120,6 +1171,10 @@
             document.getElementById('welcome-name').textContent = display;
         }
 
+        function raahatLogoMarkup(sizeClass) {
+            return `<img alt="Raahat" class="raahat-logo ${sizeClass}" loading="eager" src="/static/raahat_light-removebg-preview.png" />`;
+        }
+
         // ─── HISTORY ───
         async function loadHistory() {
             try {
@@ -1226,7 +1281,7 @@
             const area = document.getElementById('messages-area');
 
             const initials = role === 'raahat'
-                ? 'र'
+                ? raahatLogoMarkup('raahat-logo--message')
                 : (username.slice(0, 2).toUpperCase());
 
             const row = document.createElement('div');
@@ -1277,7 +1332,7 @@
             row.className = 'typing-row';
             row.id = 'typing-row';
             row.innerHTML = `
-    <div class="msg-row-avatar raahat">र</div>
+        <div class="msg-row-avatar raahat">${raahatLogoMarkup('raahat-logo--typing')}</div>
     <div class="typing-bubble">
       <div class="typing-dot"></div>
       <div class="typing-dot"></div>
