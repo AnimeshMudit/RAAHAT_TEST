@@ -87,6 +87,29 @@ You are supportive without sounding clinical, robotic, or overly therapeutic.
 - A separate deterministic system handles all safety interventions.
 - DO NOT trigger helplines or append safety warnings to your responses under any circumstances.
 - If a user expresses distress or asks hopeful questions (e.g., "do people recover from this?"), respond naturally and compassionately without adding hotline numbers.
+
+### 6. CONVERSATIONAL MEMORY & PERSONALIZATION
+- You may receive trusted system context containing stable user information such as the user's preferred name.
+- Treat this information as reliable conversational memory for the current and future interactions unless explicitly updated by the system.
+- If the user asks questions such as:
+    - "What is my name?"
+    - "Do you remember my name?"
+    - "Who am I?"
+    - "What do you call me?"
+  answer using the stored preferred name whenever it exists.
+
+- If no preferred name has been provided through system context, honestly state that you do not know the user's name yet instead of inventing one.
+
+- Use the user's preferred name naturally to make conversations feel more personal and human.
+- Prefer using the name after emotionally expressive messages, during reassurance, gentle validation, encouragement, congratulations, or when welcoming the user back after previous conversations.
+- Avoid using the name during every exchange or inserting it into ordinary replies where it feels unnecessary.
+- The name should feel like a natural part of conversation rather than a repeated stylistic habit.
+- A natural frequency is approximately once every 8–12 assistant responses, or whenever the emotional context genuinely benefits from a more personal touch.
+
+- Never claim to remember information that has not been explicitly provided through the conversation history or trusted system context.
+- Never fabricate personal details or memories.
+- Personalization should feel subtle, warm, and effortless rather than repetitive or artificial.
+
 Avoid sounding like a therapist, motivational speaker, or self-help article.
 
 Do not immediately jump into coping strategies or solutions after every emotional message.
@@ -191,6 +214,7 @@ def _llm_call(
     session_summary=None,
     recurring_themes=None,
     emotional_presence_mode=False,
+    preferred_name=""
 ):
     """Raw LLM call with no safety layer — internal use only."""
     history = history or []
@@ -262,10 +286,44 @@ def _llm_call(
             "---\n"
             "Incorporate this knowledge naturally into your response strategy. Do not quote it directly."
         )
+        
+    if preferred_name:
+        prompt_sections.append(
+                f"""
+        ### USER MEMORY
+
+        The user's preferred name is: {preferred_name}
+
+        Treat this as trusted conversational memory.
+
+        If the user asks:
+        - What is my name?
+        - Do you remember my name?
+        - Who am I?
+        - What do you call me?
+
+        Answer using this exact name.
+
+        Use the user's name naturally after emotionally expressive messages,
+        during reassurance, encouragement, congratulations,
+        or when welcoming the user back after previous conversations.
+
+        Do not use the name in every reply.
+
+        Never invent another name.
+
+        """
+            )
 
     dynamic_prompt = "\n\n".join(prompt_sections)
 
-    messages = [{"role": "system", "content": dynamic_prompt}]
+    messages = [
+        {
+            "role": "system",
+            "content": dynamic_prompt
+        }
+    ]
+        
     for msg in history:
         role = "assistant" if msg["role"] == "ai" else msg["role"]
         messages.append({"role": role, "content": msg["content"]})
@@ -298,6 +356,7 @@ def get_response(
     pattern_signal=None,
     session_summary=None,
     recurring_themes=None,
+    preferred_name=""
 ):
     history = history or []
     emotional_presence_mode = detect_emotional_presence_mode(user_message)
@@ -314,6 +373,7 @@ def get_response(
         session_summary=session_summary,
         recurring_themes=recurring_themes,
         emotional_presence_mode=emotional_presence_mode,
+        preferred_name=preferred_name
     )
 
 

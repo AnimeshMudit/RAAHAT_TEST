@@ -1134,7 +1134,8 @@
                 <img alt="Raahat" loading="eager" src="/static/raahat_light-removebg-preview.png" />
             </div>
             <div class="name-modal-brand" id="name-modal-brand">RAAHAT</div>
-            <p class="name-modal-copy" id="name-modal-copy">Before we begin, we'd love to know what to call you during our conversations.</p>
+            <p class="name-modal-copy" id="name-modal-copy">Before we begin, we'd love to know what to call you during
+                our conversations.</p>
             <form class="name-modal-form" id="name-form" novalidate>
                 <label class="name-label" for="name-input">Your name</label>
                 <input autocomplete="name" class="name-input" id="name-input" placeholder="Enter your name"
@@ -1365,17 +1366,17 @@
                 return;
             }
 
+            await loadUserProfile();
             setUserUI();
             loadHistory();
 
-            await loadUserProfile();
-
-            if (preferredName) {
-                closeNameModal(false);
-            } else {
+            if(preferredName){
+                closeNameModal();
+            }
+            else{
                 openNameModal();
             }
-
+            
             if (!onboardingActive) {
                 document.getElementById('msg-input').focus();
             }
@@ -1474,27 +1475,43 @@
         }
 
         async function saveUserName(name) {
-            const trimmed = String(name || '').trim();
+
+            const trimmed = String(name || "").trim();
+
             if (!trimmed) {
-                throw new Error('Please enter your name.');
+                throw new Error("Please enter your name.");
+            }
+
+            const response = await fetch(`${API_BASE}/api/user-name`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    name: trimmed
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("Unable to save name.");
             }
 
             preferredName = trimmed;
-            sessionObj.name = preferredName;
-            localStorage.setItem('raahat_user', JSON.stringify(sessionObj));
+            sessionObj.name = trimmed;
+            localStorage.setItem(
+                "raahat_user",
+                JSON.stringify(sessionObj)
+            );
+
             setUserUI();
+
             closeNameModal();
-            document.getElementById('msg-input').focus();
 
-            fetch(`${API_BASE}/api/user-name`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({ user_id: userId, name: trimmed })
-            }).catch((error) => {
-                console.warn('Background name save failed:', error);
-            });
+            document.getElementById("msg-input").focus();
 
-            return { name: preferredName };
+            return true;
         }
 
         function trapNameModalFocus(event) {
@@ -1542,15 +1559,14 @@
                 setNameModalLoading(true);
                 try {
                     await saveUserName(value);
-                } catch (error) {
-                    console.error('Name save failed:', error);
-                    preferredName = value;
-                    sessionObj.name = value;
-                    localStorage.setItem('raahat_user', JSON.stringify(sessionObj));
-                    setUserUI();
-                    closeNameModal();
-                    document.getElementById('msg-input').focus();
-                } finally {
+                } catch(error){
+                    console.error(error);
+                    setNameError(
+                        error.message || "Unable to save your name."
+                    );
+                    input.focus();
+                }
+                finally {
                     setNameModalLoading(false);
                 }
             });

@@ -467,10 +467,7 @@ async def chat(request: ChatRequest):
             or ""
         ).strip()
         if display_name:
-            context_text += (
-                f"\n\nSystem Note: The user's preferred name is '{display_name}'. "
-                "Use this naturally and sparingly during conversation."
-            )
+            context_text += f"\nUser's preferred name: {display_name}"
         else:
             context_text += (
                 "\n\nSystem Note: The user's preferred name is not yet known. "
@@ -485,6 +482,7 @@ async def chat(request: ChatRequest):
                 pattern_signal=pattern_signal,
                 session_summary=session_summary,
                 recurring_themes=recurring_themes,
+                preferred_name=display_name,
             )
         except Exception as e:
             logger.exception("Response generation failed")

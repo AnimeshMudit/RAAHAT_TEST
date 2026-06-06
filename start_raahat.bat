@@ -34,7 +34,9 @@ if errorlevel 1 (
 )
 
 echo.
-echo Starting containers...
+echo Rebuilding Docker image...
+docker compose down
+docker compose build --no-cache
 docker compose up -d
 
 echo.
