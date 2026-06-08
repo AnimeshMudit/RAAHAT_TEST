@@ -245,7 +245,7 @@ function ensureAuthViews() {
 
     const loginPasswordRow = loginForm.querySelector('a[href="#"]');
     if (loginPasswordRow) {
-        loginPasswordRow.outerHTML = '<span class="font-label-sm text-label-sm text-sage-muted">Forgot Password? Use OTP verification after sign up.</span>';
+        loginPasswordRow.outerHTML = '<span class="font-label-sm text-label-sm text-sage-muted">Use your email and password to sign in.</span>';
     }
 
     loginForm.parentNode.insertBefore(tabRow, loginForm);
@@ -274,31 +274,7 @@ function ensureAuthViews() {
         <button id="signup-submit" class="w-full bg-lavender-dark text-white font-label-md text-label-md py-3 rounded-full hover:bg-sage-deep shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5" type="submit">Create Account</button>
     `;
 
-    const otpForm = document.createElement('form');
-    otpForm.id = 'otp-form';
-    otpForm.className = 'hidden space-y-stack-md mt-stack-lg';
-    otpForm.action = '#';
-    otpForm.method = 'POST';
-    otpForm.innerHTML = `
-        <div class="relative">
-            <label class="block font-label-md text-label-md text-on-surface-variant mb-stack-sm" for="otp-email">Email Address</label>
-            <div class="relative">
-                <span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-outline-variant pointer-events-none">mail</span>
-                <input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface focus:border-lavender-dark focus:ring-2 focus:ring-lavender-soft transition-all placeholder-outline-variant/70 shadow-sm" id="otp-email" name="otp-email" placeholder="you@example.com" required type="email" />
-            </div>
-        </div>
-        <div class="relative">
-            <label class="block font-label-md text-label-md text-on-surface-variant mb-stack-sm" for="otp-token">Verification Code</label>
-            <div class="relative">
-                <span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-outline-variant pointer-events-none">verified</span>
-                <input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface focus:border-lavender-dark focus:ring-2 focus:ring-lavender-soft transition-all placeholder-outline-variant/70 shadow-sm" id="otp-token" name="otp-token" placeholder="123456" required type="text" />
-            </div>
-        </div>
-        <button id="otp-submit" class="w-full bg-sage-muted text-white font-label-md text-label-md py-3 rounded-full hover:bg-sage-deep shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5" type="submit">Verify and Continue</button>
-    `;
-
     loginForm.parentNode.insertBefore(signupForm, loginForm.nextSibling);
-    signupForm.parentNode.insertBefore(otpForm, signupForm.nextSibling);
 
     const createAccountLink = Array.from(document.querySelectorAll('button, a')).find((element) => {
         return element.textContent && element.textContent.trim().toLowerCase().includes('create an account');
@@ -319,13 +295,11 @@ function ensureAuthViews() {
 function setAuthView(view) {
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
-    const otpForm = document.getElementById('otp-form');
     const showLoginButton = document.getElementById('show-login');
     const showSignupButton = document.getElementById('show-signup');
     const viewMap = {
         login: loginForm,
         signup: signupForm,
-        otp: otpForm,
     };
 
     Object.values(viewMap).forEach((form) => {
@@ -428,47 +402,6 @@ function bindSignupForm() {
                 body: { username: email, password },
                 timeout: 25000,
             });
-            showStatus(result?.message || 'Verification code sent. Check your email.', 'info');
-            const otpEmail = document.getElementById('otp-email');
-            if (otpEmail) otpEmail.value = email;
-            setAuthView('otp');
-        } catch (error) {
-            console.error('Signup failed:', error);
-            showStatus(error.message || 'Signup failed.', 'error');
-        } finally {
-            setButtonLoading(submitButton, false);
-        }
-    });
-}
-
-function bindOtpForm() {
-    const otpForm = document.getElementById('otp-form');
-    if (!otpForm) return;
-
-    otpForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        hideStatus();
-
-        const email = document.getElementById('otp-email')?.value?.trim() || '';
-        const token = document.getElementById('otp-token')?.value?.trim() || '';
-        const submitButton = document.getElementById('otp-submit');
-
-        if (!emailLooksValid(email)) {
-            showStatus('Enter a valid email address.', 'error');
-            return;
-        }
-        if (!token) {
-            showStatus('Enter the verification code.', 'error');
-            return;
-        }
-
-        setButtonLoading(submitButton, true, 'Verifying...');
-        try {
-            const result = await apiFetch('/api/verify-otp', {
-                method: 'POST',
-                body: { email, token },
-                timeout: 25000,
-            });
             if (result && result.user_id) {
                 saveSession({
                     user_id: result.user_id,
@@ -478,10 +411,11 @@ function bindOtpForm() {
                 navigate('/chat');
                 return;
             }
-            throw new Error('Verification succeeded but no session was returned.');
+            showStatus('Account created. Please sign in.', 'info');
+            setAuthView('login');
         } catch (error) {
-            console.error('OTP verification failed:', error);
-            showStatus(error.message || 'OTP verification failed.', 'error');
+            console.error('Signup failed:', error);
+            showStatus(error.message || 'Signup failed.', 'error');
         } finally {
             setButtonLoading(submitButton, false);
         }
@@ -843,7 +777,6 @@ async function bindGeneralRouting() {
         ensureAuthViews();
         bindLoginForm();
         bindSignupForm();
-        bindOtpForm();
         bindGoogleAuth();
     }
 

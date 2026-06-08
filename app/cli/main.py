@@ -60,7 +60,7 @@ def main():
                 user_id = None
         else:
             hashed_password = security.get_password_hash(password)
-            # Auto-verify CLI-created accounts since there is no OTP flow
+            # Auto-verify CLI-created local accounts.
             user_id = memory.create_user(
                 user_name, 
                 hashed_password, 

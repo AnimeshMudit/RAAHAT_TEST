@@ -10,7 +10,7 @@ def run_test():
 
     # 1. Signup
     print("\n[1] Signup Phase")
-    email = input("Enter a valid test email to receive the OTP: ").strip()
+    email = input("Enter a valid test email for signup/login: ").strip()
     if not email:
         print("Email is required.")
         sys.exit(1)
@@ -21,27 +21,14 @@ def run_test():
         f"{BASE_URL}/api/signup", json={"username": email, "password": password}
     )
     if res.status_code == 200:
-        print("✅ Signup success! Please check your email for the OTP.")
+        print("✅ Signup success!")
+        user_id = res.json().get("user_id")
     else:
         print(f"❌ Signup failed: {res.text}")
         sys.exit(1)
 
-    # 2. OTP Verify
-    print("\n[2] OTP Verification Phase")
-    otp = input("Enter the OTP from your email: ").strip()
-
-    res = requests.post(
-        f"{BASE_URL}/api/verify-otp", json={"email": email, "token": otp}
-    )
-    if res.status_code == 200:
-        print("✅ OTP verification success!")
-        user_id = res.json().get("user_id")
-    else:
-        print(f"❌ OTP verify failed: {res.text}")
-        sys.exit(1)
-
-    # 3. Login
-    print("\n[3] Login Phase")
+    # 2. Login
+    print("\n[2] Login Phase")
     res = requests.post(
         f"{BASE_URL}/api/login", json={"username": email, "password": password}
     )
@@ -54,8 +41,8 @@ def run_test():
         print(f"❌ Login failed: {res.text}")
         sys.exit(1)
 
-    # 4. Send Message (RAG Pipeline)
-    print("\n[4] Chatting Phase (Testing RAG)")
+    # 3. Send Message (RAG Pipeline)
+    print("\n[3] Chatting Phase (Testing RAG)")
     msg1 = "What is psychological first aid?"
     print(f"Sending message: '{msg1}'")
 
@@ -69,8 +56,8 @@ def run_test():
         print(f"❌ Chat failed: {res.text}")
         sys.exit(1)
 
-    # 5. Crisis Message (Safety Bypass)
-    print("\n[5] Crisis Phase (Testing Pre-LLM Safety Layer)")
+    # 4. Crisis Message (Safety Bypass)
+    print("\n[4] Crisis Phase (Testing Pre-LLM Safety Layer)")
     msg2 = "I want to kill myself."
     print(f"Sending crisis message: '{msg2}'")
 
@@ -91,11 +78,11 @@ def run_test():
         print(f"❌ Chat failed: {res.text}")
         sys.exit(1)
 
-    # 6. Zero-Result RAG Regression Tests
+    # 5. Zero-Result RAG Regression Tests
     # These queries are deliberately off-topic. With the new threshold of 0.8,
     # FAISS should return no valid chunks. The bot should still respond (from
     # its base LLM knowledge), but the *server logs* must show 0 VALID MATCHes.
-    print("\n[6] Zero-Result RAG Regression Tests (threshold=0.8)")
+    print("\n[5] Zero-Result RAG Regression Tests (threshold=0.8)")
     ZERO_RESULT_QUERIES = [
         "How do I bake a sourdough bread at home?",
         "What is the capital of France?",

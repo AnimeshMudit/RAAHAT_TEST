@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
@@ -54,11 +54,6 @@ app.add_middleware(
 class AuthRequest(BaseModel):
     username: str
     password: str
-
-
-class VerifyRequest(BaseModel):
-    email: str
-    token: str
 
 
 class ChatRequest(BaseModel):
@@ -194,16 +189,6 @@ async def dashboard_alias():
     return await chat_page()
 
 
-@app.get("/verify", response_class=HTMLResponse)
-async def serve_verify():
-    """Serves the OTP Verification Page."""
-    file_path = os.path.join(STATIC_DIR, "verify.html")
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="verify.html not found")
-    with open(file_path, "r", encoding="utf-8") as file:
-        return no_cache_html(file.read())
-
-
 # -------------------- GOOGLE AUTH ENDPOINTS --------------------
 
 
@@ -300,7 +285,7 @@ async def auth_callback():
 
 
 @app.post("/api/signup")
-async def signup(request: AuthRequest, http_request: Request):
+async def signup(request: AuthRequest):
     try:
         is_real, normalized_email = verify_email_real(request.username)
         if not is_real:
@@ -308,62 +293,27 @@ async def signup(request: AuthRequest, http_request: Request):
                 status_code=400, detail=f"Invalid Email: {normalized_email}"
             )
 
-        public_origin = get_public_origin(http_request)
-
-        memory.supabase.auth.sign_in_with_otp(
-            {
-                "email": normalized_email,
-                "options": {"redirect_to": f"{public_origin}/chat"},
-            }
-        )
+        if not request.password or len(request.password) < 6:
+            raise HTTPException(
+                status_code=400, detail="Password must be at least 6 characters."
+            )
 
         existing = memory.get_user_by_email(normalized_email)
-        if not existing:
-            pwd = (
-                security.get_password_hash(request.password)
-                if request.password
-                else None
-            )
-            memory.create_user(
-                normalized_email, pwd, is_verified=False, auth_provider="local"
-            )
-        return {"message": "Verification code sent! Check your email."}
+        if existing:
+            raise HTTPException(status_code=400, detail="User already exists.")
+
+        pwd = security.get_password_hash(request.password)
+        user_id = memory.create_user(
+            normalized_email, pwd, is_verified=True, auth_provider="local"
+        )
+        profile = serialize_user_profile(memory.get_user_by_id(str(user_id)))
+        profile["user_id"] = user_id
+        profile["username"] = normalized_email
+        return profile
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-@app.post("/api/verify-otp")
-async def verify_otp(request: VerifyRequest):
-    res = None
-    # Try "email" type first (used by sign_in_with_otp / magic-link flow for existing & returning users)
-    for otp_type in ["email", "signup"]:
-        try:
-            res = memory.supabase.auth.verify_otp(
-                {"email": request.email, "token": request.token, "type": otp_type}
-            )
-            if res.user:
-                break  # Verification succeeded
-        except Exception:
-            continue  # Try the next type
-
-    if res and res.user:
-        memory.supabase.table("users").update({"is_verified": True}).eq(
-            "username", request.email
-        ).execute()
-        user_rec = memory.get_user_by_email(request.email)
-        user_id = (
-            user_rec["id"]
-            if user_rec
-            else memory.create_user(request.email, "otp_user", is_verified=True)
-        )
-        profile = serialize_user_profile(user_rec or memory.get_user_by_id(str(user_id)))
-        profile["user_id"] = user_id
-        profile["username"] = request.email
-        return profile
-
-    raise HTTPException(
-        status_code=400, detail="Invalid or expired OTP code. Please request a new one."
-    )
 
 
 @app.post("/api/login")
@@ -391,18 +341,14 @@ async def login(request: AuthRequest):
             detail="This account uses Google sign-in. Please set a password first.",
         )
 
-    try:
-        res = memory.supabase.auth.sign_in_with_password(
-            {"email": normalized_email, "password": request.password}
-        )
-        if not res.user:
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-        profile = serialize_user_profile(user_record)
-        profile["user_id"] = user_record["id"]
-        profile["username"] = normalized_email
-        return profile
-    except Exception:
+    password_hash = user_record.get("password_hash")
+    if not password_hash or not security.verify_password(request.password, password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    profile = serialize_user_profile(user_record)
+    profile["user_id"] = user_record["id"]
+    profile["username"] = normalized_email
+    return profile
 
 
 # -------------------- CHAT & KNOWLEDGE API --------------------
@@ -503,3 +449,4 @@ async def chat(request: ChatRequest):
             status_code=500,
             detail="Internal server error"
         )
+
