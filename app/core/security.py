@@ -1,3 +1,19 @@
+import bcrypt
+
+# Fix compatibility between passlib and bcrypt 4.x+
+if not hasattr(bcrypt, "__about__"):
+    class DummyAbout:
+        __version__ = bcrypt.__version__
+    bcrypt.__about__ = DummyAbout()
+
+# Fix passlib wrap bug checking compatibility by truncating long password bytes
+orig_hashpw = bcrypt.hashpw
+def patched_hashpw(password, salt):
+    if isinstance(password, bytes) and len(password) > 72:
+        password = password[:72]
+    return orig_hashpw(password, salt)
+bcrypt.hashpw = patched_hashpw
+
 from passlib.context import CryptContext
 from passlib.exc import UnknownHashError
 import re

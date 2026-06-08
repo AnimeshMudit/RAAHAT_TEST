@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
@@ -69,6 +69,12 @@ class SyncUserRequest(BaseModel):
 class UpdateNameRequest(BaseModel):
     user_id: UUID
     name: str
+
+
+class UpdateProfileRequest(BaseModel):
+    user_id: UUID
+    display_name: str
+    age: int | None = None
 
 
 # -------------------- UI ROUTING (FRONTEND) --------------------
@@ -189,6 +195,18 @@ async def dashboard_alias():
     return await chat_page()
 
 
+@app.get("/onboarding", response_class=HTMLResponse)
+async def onboarding_page():
+    file_name = "onboarding.html"
+    return render_static_html(
+        file_name,
+        {
+            "SUPABASE_URL": get_required_env("SUPABASE_URL"),
+            "SUPABASE_KEY": get_required_env("SUPABASE_KEY"),
+        },
+    )
+
+
 # -------------------- GOOGLE AUTH ENDPOINTS --------------------
 
 
@@ -196,6 +214,7 @@ async def dashboard_alias():
 async def sync_user(request: SyncUserRequest):
     try:
         user_record = memory.get_user_by_email(request.email)
+        is_new_signup = False
         if not user_record:
             user_id = memory.create_user(
                 email=request.email,
@@ -204,11 +223,13 @@ async def sync_user(request: SyncUserRequest):
                 auth_provider="google",
             )
             user_record = memory.get_user_by_id(user_id)
+            is_new_signup = True
         else:
             user_id = user_record["id"]
         profile = serialize_user_profile(user_record)
         profile["user_id"] = user_id
         profile["username"] = request.email
+        profile["is_new_signup"] = is_new_signup
         return profile
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -225,6 +246,21 @@ async def user_profile(user_id: UUID):
 @app.post("/api/user-name")
 async def update_user_name(request: UpdateNameRequest):
     trimmed_name = request.name.strip()
+    if not trimmed_name:
+        raise HTTPException(status_code=400, detail="Name cannot be empty.")
+
+    user_record = memory.get_user_by_id(str(request.user_id))
+    if not user_record:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    memory.update_user_name(str(request.user_id), trimmed_name)
+    updated_record = memory.get_user_by_id(str(request.user_id))
+    return serialize_user_profile(updated_record)
+
+
+@app.post("/api/update-profile")
+async def update_profile(request: UpdateProfileRequest):
+    trimmed_name = request.display_name.strip()
     if not trimmed_name:
         raise HTTPException(status_code=400, detail="Name cannot be empty.")
 
@@ -309,6 +345,7 @@ async def signup(request: AuthRequest):
         profile = serialize_user_profile(memory.get_user_by_id(str(user_id)))
         profile["user_id"] = user_id
         profile["username"] = normalized_email
+        profile["is_new_signup"] = True
         return profile
     except HTTPException:
         raise
@@ -348,6 +385,7 @@ async def login(request: AuthRequest):
     profile = serialize_user_profile(user_record)
     profile["user_id"] = user_record["id"]
     profile["username"] = normalized_email
+    profile["is_new_signup"] = False
     return profile
 
 

@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAAHAT — Welcome</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --sage: #4a7c59;
+            --sage-light: #7aab8a;
+            --sage-pale: #e8f0eb;
+            --sage-mid: #c5d9ca;
+            --sand: #f5f0e8;
+            --sand-dark: #e8e0d0;
+            --text-deep: #1a2018;
+            --text-mid: #3d4a3a;
+            --text-soft: #6b7a68;
+            --text-faint: #9aaa97;
+            --warm-white: #fdfcf9;
+            --accent: #c17f3e;
+            --accent-pale: #f5e8d5;
+            --error: #c0392b;
+            --error-pale: #fdf0ee;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--warm-white);
+            color: var(--text-deep);
+            font-size: 16px;
+            line-height: 1.6;
+            overflow: hidden;
+        }
+
+        /* ─── LAYOUT ─── */
+        .page {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            height: 100vh;
+        }
+
+        /* LEFT PANEL */
+        .left-panel {
+            background: var(--sage);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            width: 420px;
+            height: 420px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.04);
+            top: -100px;
+            right: -100px;
+        }
+
+        .left-panel::after {
+            content: '';
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.04);
+            bottom: -60px;
+            left: -60px;
+        }
+
+        .left-logo {
+            font-family: 'Lora', serif;
+            font-size: 1.4rem;
+            color: white;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .left-logo span {
+            display: block;
+            font-size: 0.7rem;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            opacity: 0.65;
+            margin-top: 2px;
+        }
+
+        .left-mid {
+            position: relative;
+            z-index: 1;
+        }
+
+        .left-quote {
+            font-family: 'Lora', serif;
+            font-size: clamp(1.4rem, 2.5vw, 2rem);
+            color: white;
+            font-weight: 400;
+            line-height: 1.4;
+            font-style: italic;
+            margin-bottom: 1.25rem;
+            opacity: 0.92;
+        }
+
+        .left-quote-attr {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 300;
+            letter-spacing: 0.04em;
+        }
+
+        /* progress steps on left */
+        .left-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .left-step {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            opacity: 0.4;
+            transition: opacity 0.4s;
+        }
+
+        .left-step.active {
+            opacity: 1;
+        }
+
+        .left-step.done {
+            opacity: 0.65;
+        }
+
+        .step-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255, 255, 255, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.6);
+            flex-shrink: 0;
+            transition: all 0.4s;
+        }
+
+        .left-step.active .step-circle {
+            background: white;
+            border-color: white;
+            color: var(--sage);
+            font-weight: 600;
+        }
+
+        .left-step.done .step-circle {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 300;
+        }
+
+        .left-step.active .step-label {
+            font-weight: 500;
+            color: white;
+        }
+
+        /* ─── RIGHT PANEL ─── */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 3rem 3.5rem;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* ─── STEP SCREENS ─── */
+        .step-screen {
+            display: none;
+            flex-direction: column;
+            gap: 0;
+            animation: stepIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+            max-width: 420px;
+            width: 100%;
+        }
+
+        .step-screen.active {
+            display: flex;
+        }
+
+        @keyframes stepIn {
+            from {
+                opacity: 0;
+                transform: translateX(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes stepOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateX(-24px);
+            }
+        }
+
+        .step-eyebrow {
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--sage);
+            margin-bottom: 0.6rem;
+        }
+
+        .step-title {
+            font-family: 'Lora', serif;
+            font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+            font-weight: 500;
+            color: var(--text-deep);
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            margin-bottom: 0.75rem;
+        }
+
+        .step-title em {
+            font-style: italic;
+            color: var(--sage);
+        }
+
+        .step-sub {
+            font-size: 0.9rem;
+            color: var(--text-soft);
+            font-weight: 300;
+            line-height: 1.75;
+            margin-bottom: 2.25rem;
+        }
+
+        /* ─── FORM ELEMENTS ─── */
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .field-label {
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text-mid);
+            letter-spacing: 0.01em;
+        }
+
+        .field-input {
+            background: white;
+            border: 1.5px solid var(--sand-dark);
+            border-radius: 12px;
+            padding: 0.8rem 1rem;
+            font-size: 0.95rem;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text-deep);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            width: 100%;
+            -moz-appearance: textfield;
+        }
+
+        .field-input::-webkit-outer-spin-button,
+        .field-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .field-input::placeholder {
+            color: var(--text-faint);
+        }
+
+        .field-input:focus {
+            border-color: var(--sage-mid);
+            box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.08);
+        }
+
+        .field-input.error {
+            border-color: #e8b4ad;
+            box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.06);
+        }
+
+        .field-hint {
+            font-size: 0.75rem;
+            color: var(--text-faint);
+            font-weight: 300;
+        }
+
+        .field-hint.error-msg {
+            color: var(--error);
+            display: none;
+        }
+
+        .field-hint.error-msg.visible {
+            display: block;
+        }
+
+        /* Age row: number + slider together */
+        .age-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .age-number {
+            width: 90px;
+            flex-shrink: 0;
+            font-size: 1.6rem;
+            font-family: 'Lora', serif;
+            font-weight: 500;
+            color: var(--sage);
+            text-align: center;
+            border: 1.5px solid var(--sand-dark);
+            border-radius: 12px;
+            padding: 0.6rem 0.5rem;
+            outline: none;
+            background: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            -moz-appearance: textfield;
+        }
+
+        .age-number::-webkit-outer-spin-button,
+        .age-number::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+
+        .age-number:focus {
+            border-color: var(--sage-mid);
+            box-shadow: 0 0 0 3px rgba(74, 124, 89, 0.08);
+        }
+
+        .age-slider-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 5px;
+            border-radius: 100px;
+            background: var(--sand-dark);
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--sage);
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(74, 124, 89, 0.25);
+            transition: transform 0.15s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        .age-range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-faint);
+        }
+
+        /* ─── CHIPS ─── */
+        .chip-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .chip {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: white;
+            border: 1.5px solid var(--sand-dark);
+            border-radius: 100px;
+            padding: 0.5rem 1rem;
+            font-size: 0.82rem;
+            color: var(--text-mid);
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .chip:hover {
+            border-color: var(--sage-mid);
+            background: var(--sage-pale);
+            color: var(--sage);
+        }
+
+        .chip.selected {
+            background: var(--sage-pale);
+            border-color: var(--sage);
+            color: var(--sage);
+            font-weight: 500;
+        }
+
+        .chip .chip-emoji {
+            font-size: 1rem;
+        }
+
+        /* ─── BUTTON ─── */
+        .btn-next {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: var(--sage);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0.9rem 2rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.25s;
+            letter-spacing: 0.01em;
+            margin-top: 0.5rem;
+        }
+
+        .btn-next:hover {
+            background: var(--text-deep);
+            transform: translateY(-1px);
+        }
+
+        .btn-next:disabled {
+            background: var(--sage-mid);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-next svg {
+            width: 16px;
+            height: 16px;
+            stroke: white;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .btn-skip {
+            background: none;
+            border: none;
+            color: var(--text-faint);
+            font-size: 0.82rem;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            margin-top: 0.85rem;
+            text-align: center;
+            width: 100%;
+            transition: color 0.2s;
+        }
+
+        .btn-skip:hover {
+            color: var(--text-soft);
+        }
+
+        /* ─── STEP 3: SUCCESS ─── */
+        .success-state {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        .success-ring {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--sage-pale);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .success-ring svg {
+            width: 36px;
+            height: 36px;
+            stroke: var(--sage);
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 60;
+            stroke-dashoffset: 60;
+            animation: drawCheck 0.5s 0.3s ease both;
+        }
+
+        @keyframes drawCheck {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .success-title {
+            font-family: 'Lora', serif;
+            font-size: 1.9rem;
+            font-weight: 500;
+            color: var(--text-deep);
+            letter-spacing: -0.03em;
+            line-height: 1.25;
+            margin-bottom: 0.75rem;
+        }
+
+        .success-title em {
+            font-style: italic;
+            color: var(--sage);
+        }
+
+        .success-sub {
+            font-size: 0.9rem;
+            color: var(--text-soft);
+            font-weight: 300;
+            line-height: 1.8;
+            max-width: 340px;
+            margin-bottom: 2rem;
+        }
+
+        .summary-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            width: 100%;
+            max-width: 340px;
+            margin-bottom: 2rem;
+        }
+
+        .summary-card {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--sage-pale);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+        }
+
+        .summary-card .s-icon {
+            font-size: 1rem;
+        }
+
+        .summary-card .s-label {
+            font-size: 0.78rem;
+            color: var(--text-faint);
+        }
+
+        .summary-card .s-value {
+            font-size: 0.9rem;
+            color: var(--text-deep);
+            font-weight: 500;
+        }
+
+        /* ─── MOBILE ─── */
+        @media (max-width: 760px) {
+            .page {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+                overflow: auto;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            html,
+            body {
+                overflow: auto;
+            }
+
+            .left-panel {
+                padding: 1.75rem;
+                min-height: auto;
+            }
+
+            .left-mid {
+                display: none;
+            }
+
+            .left-steps {
+                flex-direction: row;
+                gap: 0.5rem;
+            }
+
+            .step-label {
+                display: none;
+            }
+
+            .right-panel {
+                padding: 2rem 1.5rem 3rem;
+                justify-content: flex-start;
+            }
+
+            .step-screen {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <!-- ─── LEFT PANEL ─── -->
+        <aside class="left-panel">
+            <div class="left-logo">
+                RAAHAT
+                <span>राहत · Mental Health Companion</span>
+            </div>
+
+            <div class="left-mid">
+                <div class="left-quote" id="left-quote">"You don't have to have it all figured out to take the next
+                    step."</div>
+                <div class="left-quote-attr">— Setting up your safe space</div>
+            </div>
+
+            <div class="left-steps">
+                <div class="left-step active" id="lstep-1">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">Your name</div>
+                </div>
+                <div class="left-step" id="lstep-2">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">About you</div>
+                </div>
+                <div class="left-step" id="lstep-3">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">All set</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ─── RIGHT PANEL ─── -->
+        <main class="right-panel">
+
+            <!-- STEP 1: Name -->
+            <div class="step-screen active" id="step-1">
+                <div class="step-eyebrow">Step 1 of 2</div>
+                <h1 class="step-title">What should<br>RAAHAT <em>call you?</em></h1>
+                <p class="step-sub">This is just your display name — RAAHAT will use it to feel more personal. No last
+                    name needed.</p>
+
+                <div class="field-group">
+                    <label class="field-label" for="input-name">Your name or nickname</label>
+                    <input class="field-input" id="input-name" type="text" placeholder="e.g. Animesh, Anu, just me…"
+                        autocomplete="given-name" oninput="clearError('input-name', 'err-name')"
+                        onkeydown="if(event.key==='Enter') goToStep(2)">
+                    <span class="field-hint error-msg" id="err-name">Please enter a name so RAAHAT knows what to call
+                        you.</span>
+                    <span class="field-hint">This won't be shared with anyone.</span>
+                </div>
+
+                <button class="btn-next" onclick="goToStep(2)">
+                    Continue
+                    <svg viewBox="0 0 16 16">
+                        <path d="M3 8h10M9 4l4 4-4 4" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- STEP 2: Age + context -->
+            <div class="step-screen" id="step-2">
+                <div class="step-eyebrow">Step 2 of 2</div>
+                <h1 class="step-title">A little more<br><em>about you</em></h1>
+                <p class="step-sub">Helps RAAHAT understand where you're coming from. All optional — share only what
+                    feels comfortable.</p>
+
+                <div class="field-group">
+                    <label class="field-label">How old are you?</label>
+                    <div class="age-row">
+                        <input type="number" class="age-number" id="input-age" value="22" min="13" max="80"
+                            oninput="syncSlider(this.value)">
+                        <div class="age-slider-wrap">
+                            <input type="range" id="age-slider" min="13" max="80" value="22"
+                                oninput="syncAge(this.value)">
+                            <div class="age-range-labels"><span>13</span><span>80</span></div>
+                        </div>
+                    </div>
+                    <span class="field-hint error-msg" id="err-age">Please enter a valid age between 13 and 80.</span>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">What brings you to RAAHAT? <span
+                            style="font-weight:300; color: var(--text-faint);">(pick all that feel right)</span></label>
+                    <div class="chip-grid" id="reason-chips">
+                        <div class="chip" onclick="toggleChip(this)" data-val="anxiety"><span
+                                class="chip-emoji">😰</span> Anxiety or worry</div>
+                        <div class="chip" onclick="toggleChip(this)" data-val="low"><span class="chip-emoji">🌧</span>
+                            Feeling low</div>
+                        <div class="chip" onclick="toggleChip(this)" data-val="stress"><span
+                                class="chip-emoji">🔥</span> Stress</div>
+                        <div class="chip" onclick="toggleChip(this)" data-val="lonely"><span
+                                class="chip-emoji">🌑</span> Loneliness</div>
+                        <div class="chip" onclick="toggleChip(this)" data-val="sleep"><span class="chip-emoji">😴</span>
+                            Sleep problems</div>
+                        <div class="chip" onclick="toggleChip(this)" data-val="vent"><span class="chip-emoji">💬</span>
+                            Just need to vent</div>
+                        <div class="chip" onclick="toggleChip(this)" data-val="explore"><span
+                                class="chip-emoji">🔍</span> Just exploring</div>
+                        <div class="chip" onclick="toggleChip(this)" data-val="academic"><span
+                                class="chip-emoji">📚</span> Academic pressure</div>
+                    </div>
+                </div>
+
+                <button class="btn-next" onclick="finish()">
+                    Set up my space
+                    <svg viewBox="0 0 16 16">
+                        <path d="M3 8h10M9 4l4 4-4 4" />
+                    </svg>
+                </button>
+                <button class="btn-skip" onclick="finish()">Skip for now</button>
+            </div>
+
+            <!-- STEP 3: Done -->
+            <div class="step-screen" id="step-3">
+                <div class="success-state">
+                    <div class="success-ring">
+                        <svg viewBox="0 0 36 36">
+                            <polyline points="6 18 14 26 30 10" />
+                        </svg>
+                    </div>
+                    <h2 class="success-title">Your space is<br><em>ready, <span id="done-name">friend</span></em></h2>
+                    <p class="success-sub">RAAHAT remembers who you are and what matters to you. This conversation
+                        belongs to you.</p>
+
+                    <div class="summary-cards" id="summary-cards"></div>
+
+                    <button class="btn-next" onclick="goToDashboard()" style="max-width: 340px; width: 100%;">
+                        Start talking to RAAHAT
+                        <svg viewBox="0 0 16 16">
+                            <path d="M3 8h10M9 4l4 4-4 4" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        const QUOTES = {
+            1: '"You don\'t have to have it all figured out to take the next step."',
+            2: '"Knowing yourself is the beginning of all wisdom."',
+            3: '"You took the first step. That already took courage."'
+        };
+
+        let userData = {
+            name: '',
+            age: 22,
+            reasons: []
+        };
+
+        // ─── STEP NAVIGATION ───
+        function goToStep(n) {
+            if (n === 2) {
+                const name = document.getElementById('input-name').value.trim();
+                if (!name) {
+                    showError('input-name', 'err-name');
+                    return;
+                }
+                userData.name = name;
+            }
+
+            // Animate out
+            const cur = document.querySelector('.step-screen.active');
+            if (cur) {
+                cur.style.animation = 'stepOut 0.3s ease both';
+                setTimeout(() => {
+                    cur.classList.remove('active');
+                    cur.style.animation = '';
+                    activateStep(n);
+                }, 250);
+            } else {
+                activateStep(n);
+            }
+        }
+
+        function activateStep(n) {
+            document.getElementById(`step-${n}`).classList.add('active');
+            updateLeftSteps(n);
+            document.getElementById('left-quote').textContent = QUOTES[n] || QUOTES[1];
+        }
+
+        function updateLeftSteps(active) {
+            for (let i = 1; i <= 3; i++) {
+                const el = document.getElementById(`lstep-${i}`);
+                el.classList.remove('active', 'done');
+                if (i < active) el.classList.add('done');
+                if (i === active) el.classList.add('active');
+            }
+        }
+
+        // ─── AGE SYNC ───
+        function syncSlider(val) {
+            const v = parseInt(val);
+            if (v >= 13 && v <= 80) {
+                document.getElementById('age-slider').value = v;
+                userData.age = v;
+            }
+        }
+
+        function syncAge(val) {
+            document.getElementById('input-age').value = val;
+            userData.age = parseInt(val);
+        }
+
+        // ─── CHIPS ───
+        function toggleChip(el) {
+            el.classList.toggle('selected');
+            userData.reasons = Array.from(
+                document.querySelectorAll('#reason-chips .chip.selected')
+            ).map(c => c.dataset.val);
+        }
+
+        // ─── ERRORS ───
+        function showError(inputId, errId) {
+            document.getElementById(inputId).classList.add('error');
+            document.getElementById(errId).classList.add('visible');
+            document.getElementById(inputId).focus();
+        }
+
+        function clearError(inputId, errId) {
+            document.getElementById(inputId).classList.remove('error');
+            document.getElementById(errId).classList.remove('visible');
+        }
+
+        // ─── FINISH ───
+        async function finish() {
+            const age = parseInt(document.getElementById('input-age').value);
+            if (!age || age < 13 || age > 80) {
+                showError('input-age', 'err-age');
+                return;
+            }
+            userData.age = age;
+
+            // Save to localStorage
+            localStorage.setItem('raahat_display_name', userData.name);
+            localStorage.setItem('raahat_age', userData.age);
+            localStorage.setItem('raahat_reasons', JSON.stringify(userData.reasons));
+
+            // POST display_name to API if user is logged in
+            let userId = localStorage.getItem('raahat_user_id');
+            if (!userId) {
+                try {
+                    const session = JSON.parse(localStorage.getItem('raahat_user') || '{}');
+                    if (session && session.user_id) {
+                        userId = session.user_id;
+                    }
+                } catch (e) {
+                    console.warn(e);
+                }
+            }
+            if (userId && userData.name) {
+                try {
+                    await fetch(`${API_BASE}/api/update-profile`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: userId, display_name: userData.name, age: userData.age })
+                    });
+                } catch (e) {
+                    // Non-blocking — continue regardless
+                    console.warn('Profile update failed:', e);
+                }
+            }
+
+            buildSummary();
+            goToStep(3);
+        }
+
+        function buildSummary() {
+            const name = userData.name;
+            const age = userData.age;
+            const reasons = userData.reasons;
+
+            document.getElementById('done-name').textContent = name;
+
+            const REASON_LABELS = {
+                anxiety: '😰 Anxiety or worry',
+                low: '🌧 Feeling low',
+                stress: '🔥 Stress',
+                lonely: '🌑 Loneliness',
+                sleep: '😴 Sleep problems',
+                vent: '💬 Need to vent',
+                explore: '🔍 Exploring',
+                academic: '📚 Academic pressure'
+            };
+
+            let html = `
+    <div class="summary-card">
+      <div class="s-icon">👤</div>
+      <div>
+        <div class="s-label">Name</div>
+        <div class="s-value">${escHtml(name)}</div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="s-icon">🎂</div>
+      <div>
+        <div class="s-label">Age</div>
+        <div class="s-value">${age} years old</div>
+      </div>
+    </div>
+  `;
+
+            if (reasons.length > 0) {
+                html += `
+      <div class="summary-card">
+        <div class="s-icon">🌿</div>
+        <div>
+          <div class="s-label">Here for</div>
+          <div class="s-value">${reasons.map(r => REASON_LABELS[r] || r).join(' · ')}</div>
+        </div>
+      </div>
+    `;
+            }
+
+            document.getElementById('summary-cards').innerHTML = html;
+        }
+
+        function goToDashboard() {
+            try {
+                const session = JSON.parse(localStorage.getItem('raahat_user') || '{}');
+                session.name = userData.name;
+                localStorage.setItem('raahat_user', JSON.stringify(session));
+            } catch (e) {
+                console.error('Failed to update session name:', e);
+            }
+            window.location.href = '/dashboard';
+        }
+
+        function escHtml(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // ─── INIT ───
+        window.onload = () => {
+            // Prefill name if already known
+            const stored = localStorage.getItem('raahat_display_name');
+            if (stored) document.getElementById('input-name').value = stored;
+            document.getElementById('input-name').focus();
+        };
+    </script>
+</body>
+
+</html>

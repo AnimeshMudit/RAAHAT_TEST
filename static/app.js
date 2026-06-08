@@ -49,6 +49,9 @@ function apiFetch(path, { method = 'GET', body = null, timeout = 15000 } = {}) {
 
 function saveSession(user) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    if (user && user.user_id) {
+        localStorage.setItem('raahat_user_id', user.user_id);
+    }
 }
 
 function loadSession() {
@@ -62,6 +65,7 @@ function loadSession() {
 
 function clearSession() {
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem('raahat_user_id');
 }
 
 async function completeOAuthLogin() {
@@ -110,7 +114,11 @@ async function completeOAuthLogin() {
 
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        navigate('/chat');
+        if (syncResult && syncResult.is_new_signup) {
+            navigate('/onboarding');
+        } else {
+            navigate('/chat');
+        }
         return true;
     } catch (error) {
         console.error('OAuth completion failed:', error);
@@ -361,7 +369,11 @@ function bindLoginForm() {
                     username: result.username || email,
                     name: result.name || '',
                 });
-                navigate('/chat');
+                if (result && result.is_new_signup) {
+                    navigate('/onboarding');
+                } else {
+                    navigate('/chat');
+                }
                 return;
             }
             throw new Error('Login succeeded but no session was returned.');
@@ -408,7 +420,11 @@ function bindSignupForm() {
                     username: result.username || email,
                     name: result.name || '',
                 });
-                navigate('/chat');
+                if (result && result.is_new_signup) {
+                    navigate('/onboarding');
+                } else {
+                    navigate('/chat');
+                }
                 return;
             }
             showStatus('Account created. Please sign in.', 'info');
