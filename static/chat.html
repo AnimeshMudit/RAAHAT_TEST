@@ -1397,7 +1397,7 @@
             const welcomeName = document.getElementById("welcome-name");
 
             if (userInitials)
-                userInitials.textContent = initials;
+                userInitials.innerHTML = `<img alt="User" src="/static/default_avatar.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />`;
 
             if (sidebarUsername)
                 sidebarUsername.textContent = display;
@@ -1704,9 +1704,9 @@
         function appendMessage(role, text, animate, isCrisis = false) {
             const area = document.getElementById('messages-area');
 
-            const initials = role === 'raahat'
+            const avatarMarkup = role === 'raahat'
                 ? raahatLogoMarkup('raahat-logo--message')
-                : (username.slice(0, 2).toUpperCase());
+                : `<img alt="User" src="/static/default_avatar.png" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />`;
 
             const row = document.createElement('div');
             row.className = `msg-row ${role === 'user' ? 'user-row' : ''}`;
@@ -1725,7 +1725,7 @@
             }
 
             row.innerHTML = `
-    <div class="msg-row-avatar ${role}">${initials}</div>
+    <div class="msg-row-avatar ${role}">${avatarMarkup}</div>
     <div class="msg-body">
       ${bubbleHTML}
       <div class="msg-meta">${role === 'raahat' ? 'RAAHAT' : 'You'} · ${time}</div>
