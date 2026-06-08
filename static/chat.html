@@ -1376,20 +1376,38 @@
             else{
                 openNameModal();
             }
-            
+
             if (!onboardingActive) {
                 document.getElementById('msg-input').focus();
             }
         };
 
         function setUserUI() {
-            const display = preferredName || (username.includes('@') ? username.split('@')[0] : username);
+            const display =
+                preferredName ||
+                (username.includes("@")
+                    ? username.split("@")[0]
+                    : username);
+
             const initials = display.slice(0, 2).toUpperCase();
 
-            document.getElementById('user-initials').textContent = initials;
-            document.getElementById('sidebar-username').textContent = display;
-            document.getElementById('sidebar-email').textContent = username.includes('@') ? username : '';
-            document.getElementById('welcome-name').textContent = display;
+            const userInitials = document.getElementById("user-initials");
+            const sidebarUsername = document.getElementById("sidebar-username");
+            const sidebarEmail = document.getElementById("sidebar-email");
+            const welcomeName = document.getElementById("welcome-name");
+
+            if (userInitials)
+                userInitials.textContent = initials;
+
+            if (sidebarUsername)
+                sidebarUsername.textContent = display;
+
+            if (sidebarEmail)
+                sidebarEmail.textContent =
+                    username.includes("@") ? username : "";
+
+            if (welcomeName)
+                welcomeName.textContent = display;
         }
 
         async function loadUserProfile() {
@@ -1509,7 +1527,10 @@
 
             closeNameModal();
 
-            document.getElementById("msg-input").focus();
+            const input = document.getElementById("msg-input");
+            if (input) {
+                input.focus();
+            }
 
             return true;
         }
