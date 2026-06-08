@@ -243,11 +243,6 @@ function ensureAuthViews() {
     statusEl.id = 'auth-message';
     statusEl.className = 'hidden mb-stack-md rounded-lg border border-outline-variant/30 bg-surface-container-low px-4 py-3 font-label-md text-label-md text-sage-deep';
 
-    const loginPasswordRow = loginForm.querySelector('a[href="#"]');
-    if (loginPasswordRow) {
-        loginPasswordRow.outerHTML = '<span class="font-label-sm text-label-sm text-sage-muted">Use your email and password to sign in.</span>';
-    }
-
     loginForm.parentNode.insertBefore(tabRow, loginForm);
     loginForm.parentNode.insertBefore(statusEl, loginForm);
 
