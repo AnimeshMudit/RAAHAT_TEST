@@ -87,7 +87,7 @@ async function completeOAuthLogin() {
     }
 
     try {
-        const client = getSupabaseClient();
+        const client = await getSupabaseClient();
         const { data, error } = await client.auth.exchangeCodeForSession(code);
         if (error) throw error;
 
@@ -129,15 +129,11 @@ async function completeOAuthLogin() {
 
 async function restoreSessionFromSupabase() {
     try {
-        if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
-            return null;
-        }
-
         if (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function') {
             return null;
         }
 
-        const client = getSupabaseClient();
+        const client = await getSupabaseClient();
         const { data, error } = await client.auth.getSession();
         const email = data?.session?.user?.email;
 
@@ -433,13 +429,35 @@ function bindSignupForm() {
     });
 }
 
-function getSupabaseClient() {
+let configPromise = null;
+
+function fetchConfig() {
+    if (!configPromise) {
+        configPromise = apiFetch('/api/config')
+            .then(config => {
+                window.SUPABASE_URL = config.supabase_url;
+                window.SUPABASE_KEY = config.supabase_key;
+                return config;
+            })
+            .catch(err => {
+                console.error('Failed to fetch Supabase config:', err);
+                configPromise = null;
+                throw err;
+            });
+    }
+    return configPromise;
+}
+
+async function getSupabaseClient() {
     if (supabaseClient) {
         return supabaseClient;
     }
 
     if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
-        throw new Error('Supabase is not configured for this page.');
+        const config = await fetchConfig();
+        if (!config.supabase_url || !config.supabase_key) {
+            throw new Error('Supabase configuration is missing from the server.');
+        }
     }
 
     if (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function') {
@@ -480,7 +498,7 @@ function bindGoogleAuth() {
         );
 
         try {
-            const client = getSupabaseClient();
+            const client = await getSupabaseClient();
             const { data, error } =
                 await client.auth.signInWithOAuth({
                     provider: 'google',

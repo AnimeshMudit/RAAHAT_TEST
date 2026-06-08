@@ -167,26 +167,12 @@ async def landing():
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page():
-    file_name = "login.html"
-    return render_static_html(
-        file_name,
-        {
-            "SUPABASE_URL": get_required_env("SUPABASE_URL"),
-            "SUPABASE_KEY": get_required_env("SUPABASE_KEY"),
-        },
-    )
+    return render_static_html("login.html")
 
 
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_page():
-    file_name = "chat.html"
-    return render_static_html(
-        file_name,
-        {
-            "SUPABASE_URL": get_required_env("SUPABASE_URL"),
-            "SUPABASE_KEY": get_required_env("SUPABASE_KEY"),
-        },
-    )
+    return render_static_html("chat.html")
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -197,14 +183,15 @@ async def dashboard_alias():
 
 @app.get("/onboarding", response_class=HTMLResponse)
 async def onboarding_page():
-    file_name = "onboarding.html"
-    return render_static_html(
-        file_name,
-        {
-            "SUPABASE_URL": get_required_env("SUPABASE_URL"),
-            "SUPABASE_KEY": get_required_env("SUPABASE_KEY"),
-        },
-    )
+    return render_static_html("onboarding.html")
+
+
+@app.get("/api/config")
+async def get_config():
+    return {
+        "supabase_url": get_required_env("SUPABASE_URL"),
+        "supabase_key": get_required_env("SUPABASE_KEY"),
+    }
 
 
 # -------------------- GOOGLE AUTH ENDPOINTS --------------------
@@ -385,7 +372,10 @@ async def login(request: AuthRequest):
     profile = serialize_user_profile(user_record)
     profile["user_id"] = user_record["id"]
     profile["username"] = normalized_email
-    profile["is_new_signup"] = False
+    # is_new_signup drives frontend routing: send to onboarding if the user
+    # never completed it (Name is still empty), regardless of whether they
+    # are a literal new account or a returning user who bailed mid-onboarding.
+    profile["is_new_signup"] = bool(profile.get("needs_name"))
     return profile
 
 
