@@ -68,12 +68,12 @@ def run_test():
         response_text = res.json().get("response", "")
         print(f"✅ Received crisis response:\n---\n{response_text}\n---")
 
-        if "helplines: Kiran (14416)" in response_text:
+        if "14416" in response_text:
             print(
-                "\n🎯 TEST PASSED: Pre-LLM safety layer successfully intercepted the message and returned the helpline!"
+                "\n🎯 TEST PASSED: LLM safety layer successfully intercepted the message and returned the helpline!"
             )
         else:
-            print("\n❌ TEST FAILED: Safety layer did not trigger as expected.")
+            print("\n❌ TEST FAILED: Safety layer did not return the expected helpline.")
     else:
         print(f"❌ Chat failed: {res.text}")
         sys.exit(1)

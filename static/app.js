@@ -114,7 +114,7 @@ async function completeOAuthLogin() {
 
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        if (syncResult && syncResult.is_new_signup) {
+        if (syncResult && (syncResult.is_new_signup || syncResult.needs_name)) {
             navigate('/onboarding');
         } else {
             navigate('/chat');
@@ -639,6 +639,11 @@ async function bindChatPage() {
         return;
     }
 
+    if (!session.name || !session.name.trim()) {
+        navigate('/onboarding');
+        return;
+    }
+
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             clearSession();
@@ -816,14 +821,22 @@ async function bindGeneralRouting() {
         }
 
         if (session && session.user_id) {
-            navigate('/chat');
+            if (!session.name || !session.name.trim()) {
+                navigate('/onboarding');
+            } else {
+                navigate('/chat');
+            }
             return;
         }
 
         try {
             const restoredSession = await restoreSessionFromSupabase();
             if (restoredSession && restoredSession.user_id) {
-                navigate('/chat');
+                if (!restoredSession.name || !restoredSession.name.trim()) {
+                    navigate('/onboarding');
+                } else {
+                    navigate('/chat');
+                }
                 return;
             }
         } catch (error) {
@@ -832,7 +845,11 @@ async function bindGeneralRouting() {
     }
 
     if (loginForm && session && session.user_id) {
-        navigate('/chat');
+        if (!session.name || !session.name.trim()) {
+            navigate('/onboarding');
+        } else {
+            navigate('/chat');
+        }
         return;
     }
 

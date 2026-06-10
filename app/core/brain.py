@@ -19,6 +19,38 @@ if not api_keys:
 
 clients = [Groq(api_key=value) for value in api_keys]
 
+# Cache DEBUG config and behavior examples at module level
+DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
+
+_BEHAVIOR_EXAMPLES: list = []
+
+def _load_behavior_examples_once() -> list:
+    try:
+        path = os.path.join(os.path.dirname(__file__), "behaviour_examples.json")
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        logger.exception("Failed to load behaviour examples")
+        return []
+
+_BEHAVIOR_EXAMPLES = _load_behavior_examples_once()
+
+CRISIS_CONTEXT = """
+CRISIS MODE ACTIVE
+
+The user may be experiencing a mental health crisis or suicidal ideation.
+
+- Respond with warmth, calm, and empathy. Do not panic or over-react.
+- Acknowledge what they said directly before anything else.
+- Provide the following Indian crisis resources naturally within your response:
+    Kiran Mental Health Helpline: 14416 (24/7, free, multilingual)
+    iCall: 9152987821
+    Vandrevala Foundation: 1860-2662-345
+- Maintain your RAAHAT personality. Do not become robotic or clinical.
+- Keep the response concise — do not overwhelm them with text.
+- Do not ask multiple questions. Ask at most one gentle question.
+"""
+
 
 def _is_rate_limit_error(error):
     status_code = getattr(error, "status_code", None) or getattr(error, "status", None)
@@ -40,25 +72,14 @@ def _create_completion(client, messages, temperature=0.65, max_tokens=800):
     )
 
 
-def load_behavior_examples(num_examples=3):
-    try:
-        with open("app/core/behaviour_examples.json", "r", encoding="utf-8") as f:
-            examples = json.load(f)
-
-        selected = random.sample(examples, min(num_examples, len(examples)))
-
-        formatted = []
-
-        for ex in selected:
-            formatted.append(
-                f"User: {ex['user']}\n" f"GOOD Response: {ex['good_response']}\n"
-            )
-
-        return "\n\n".join(formatted)
-
-    except Exception:
-        logger.exception("Failed to load behaviour examples")
+def load_behavior_examples(num_examples=3) -> str:
+    if not _BEHAVIOR_EXAMPLES:
         return ""
+    selected = random.sample(_BEHAVIOR_EXAMPLES, min(num_examples, len(_BEHAVIOR_EXAMPLES)))
+    return "\n\n".join(
+        f"User: {ex['user']}\nGOOD Response: {ex['good_response']}"
+        for ex in selected
+    )
 
 
 SYSTEM_PROMPT = """
@@ -83,10 +104,13 @@ You are supportive without sounding clinical, robotic, or overly therapeutic.
 - Context matters: If the user is discussing design, UI, or success, interpret "strong" words as creative excitement.
 
 ### 5. SAFETY & CRISIS DETECTION
-- You are NOT responsible for crisis detection.
-- A separate deterministic system handles all safety interventions.
-- DO NOT trigger helplines or append safety warnings to your responses under any circumstances.
-- If a user expresses distress or asks hopeful questions (e.g., "do people recover from this?"), respond naturally and compassionately without adding hotline numbers.
+- Under normal circumstances you are NOT responsible for appending crisis resources.
+- A separate deterministic system handles crisis detection.
+- Do NOT add helpline numbers to responses about general sadness, stress, or everyday struggles.
+- EXCEPTION: If you receive a CRISIS MODE ACTIVE block in your context, you must
+  respond empathetically AND include the provided crisis resources naturally within
+  your response. In crisis mode, maintain your RAAHAT personality — do not become
+  robotic or clinical.
 
 ### 6. CONVERSATIONAL MEMORY & PERSONALIZATION
 - You may receive trusted system context containing stable user information such as the user's preferred name.
@@ -120,7 +144,7 @@ Prioritize emotionally natural conversation flow over constant intervention.
 """
 
 
-def safety_check(text):
+def safety_check(text) -> bool:
     text_lower = text.lower()
 
     # Exclude known safe idioms so they don't trigger false positives
@@ -136,24 +160,59 @@ def safety_check(text):
         text_lower = text_lower.replace(idiom, "")
 
     danger_keywords = [
+        # Direct self-harm
         "suicide",
+        "suicidal",
         "kill myself",
+        "killing myself",
         "want to die",
-        "end it all",
-        "hopeless",
-        "can't take it anymore",
-        "better off without me",
+        "wanted to die",
+        "wish i was dead",
+        "wish i were dead",
+        "should die",
+        "i should die",
+        "better off dead",
         "don't want to live",
         "do not want to live",
-        "wish i was dead",
-        "life is not worth it",
-        "want to disappear",
+        "don't wish to live",
+        "do not wish to live",
+        "no reason to live",
+        "no reason to be alive",
+        "end my life",
+        "end it all",
+        "take my life",
+
+        # Farewell / giving up signals
+        "goodbye forever",
+        "goodbye everyone",
+        "goodbye mate",
+        "no point going on",
+        "no point in going on",
+        "can't go on",
+        "cannot go on",
+        "done with life",
         "i'm done with life",
+        "done with everything",
+
+        # Indirect crisis signals
+        "take the wrong step",
+        "won't be here anymore",
+        "won't be around much longer",
+        "last time talking",
+        "nobody would miss me",
+        "better off without me",
+        "want to disappear",
+        "want to vanish",
+
+        # Existing list preserved
+        "hopeless",
+        "can't take it anymore",
+        "life is not worth it",
     ]
     for word in danger_keywords:
         if word in text_lower:
-            return "I am concerned about your safety. Please reach out to these helplines: Kiran (14416), iCall (9152987821), or Vandrevala Foundation (1860-2662-345)."
-    return None
+            return True
+    return False
 
 
 def detect_emotional_presence_mode(user_message):
@@ -214,7 +273,8 @@ def _llm_call(
     session_summary=None,
     recurring_themes=None,
     emotional_presence_mode=False,
-    preferred_name=""
+    preferred_name="",
+    crisis_mode=False,
 ):
     """Raw LLM call with no safety layer — internal use only."""
     history = history or []
@@ -270,50 +330,25 @@ def _llm_call(
 
     if context:
         prompt_sections.append(
-            "### CRITICAL DIRECTION ON CLINICAL RAG CONTEXT:\n"
-            "You have been provided verified psychological manual excerpts below. \n"
-            "Use retrieved psychological context only if it feels naturally relevant to the emotional flow of the conversation.\n"
-            "Do not force coping strategies, frameworks, or interventions into every response.\n"
-            "Sometimes emotional presence and understanding are more important than advice."
-        )
-        prompt_sections.append(
-            "### RETRIEVED CLINICAL CONTEXT (USE THIS):\n"
-            "The following is verified material from psychological first aid manuals. \n"
-            "Use this context only if it naturally supports the emotional flow of the conversation.\n"
-            "Do not force psychological frameworks or coping strategies into every reply:\n"
+            "### RETRIEVED CLINICAL CONTEXT\n\n"
+            "The following is verified material from psychological first aid manuals.\n"
+            "Use it only if it naturally supports the emotional flow of the conversation.\n"
+            "Do not force frameworks or coping strategies into every reply.\n"
+            "Do not quote it directly.\n"
             "---\n"
             f"{context}\n"
-            "---\n"
-            "Incorporate this knowledge naturally into your response strategy. Do not quote it directly."
+            "---"
         )
         
     if preferred_name:
         prompt_sections.append(
-                f"""
-        ### USER MEMORY
-
-        The user's preferred name is: {preferred_name}
-
-        Treat this as trusted conversational memory.
-
-        If the user asks:
-        - What is my name?
-        - Do you remember my name?
-        - Who am I?
-        - What do you call me?
-
-        Answer using this exact name.
-
-        Use the user's name naturally after emotionally expressive messages,
-        during reassurance, encouragement, congratulations,
-        or when welcoming the user back after previous conversations.
-
-        Do not use the name in every reply.
-
-        Never invent another name.
-
-        """
-            )
+            f"### USER MEMORY\n\n"
+            f"The user's preferred name is: {preferred_name}\n\n"
+            "Treat this as trusted conversational memory. "
+            "Use the name naturally — after emotionally expressive messages, "
+            "during reassurance, encouragement, or when welcoming them back. "
+            "Do not use the name in every reply. Never invent another name."
+        )
 
     dynamic_prompt = "\n\n".join(prompt_sections)
 
@@ -328,8 +363,6 @@ def _llm_call(
         role = "assistant" if msg["role"] == "ai" else msg["role"]
         messages.append({"role": role, "content": msg["content"]})
     messages.append({"role": "user", "content": user_message})
-
-    DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
     last_error = None
     for index, client in enumerate(clients):
@@ -361,9 +394,9 @@ def get_response(
     history = history or []
     emotional_presence_mode = detect_emotional_presence_mode(user_message)
 
-    safety_warning = safety_check(user_message)
-    if safety_warning:
-        return safety_warning
+    crisis_active = safety_check(user_message)
+    if crisis_active:
+        context = CRISIS_CONTEXT + "\n\n" + context
 
     return _llm_call(
         user_message,
@@ -373,7 +406,8 @@ def get_response(
         session_summary=session_summary,
         recurring_themes=recurring_themes,
         emotional_presence_mode=emotional_presence_mode,
-        preferred_name=preferred_name
+        preferred_name=preferred_name,
+        crisis_mode=crisis_active,
     )
 
 
@@ -469,7 +503,8 @@ def generate_search_keywords(user_input):
                 continue
             break
 
-    return f"ERROR_KEYWORD_FAIL: {str(last_error)}"
+    logger.error("Keyword generation failed after all clients exhausted: %s", last_error)
+    return "SKIP"
 
 
 if __name__ == "__main__":

@@ -99,13 +99,13 @@ def search_knowledge(query, vector_store, k=5, threshold=1.15):
       - 0.8+       → Reject (too weak)
     """
     phrases = clean_query(query)
-    print(f"🔍 Phrases sent to FAISS: {phrases}")
+    print(f"[FAISS SEARCH] Phrases sent to FAISS: {phrases}")
 
     context_chunks = []
     seen = set()  # Deduplicate by raw content across all phrase queries
 
     for phrase in phrases:
-        print(f"  ↳ Querying FAISS for phrase: '{phrase}'")
+        print(f"  -> Querying FAISS for phrase: '{phrase}'")
         results = vector_store.similarity_search_with_score(phrase, k=k)
 
         for rank, (doc, score) in enumerate(results, start=1):
@@ -119,14 +119,24 @@ def search_knowledge(query, vector_store, k=5, threshold=1.15):
 
             source = doc.metadata.get("source", "Unknown Manual")
 
-            print("\n-----------------------------------")
-            print(f"Rank      : {rank}")
-            print(f"Source    : {source}")
-            print(f"Score     : {score:.4f}")
-            print(f"Threshold : {threshold}")
+            try:
+                print("\n-----------------------------------")
+                print(f"Rank      : {rank}")
+                print(f"Source    : {source}")
+                print(f"Score     : {score:.4f}")
+                print(f"Threshold : {threshold}")
+            except Exception:
+                pass
 
             preview = content[:200].replace("\n", " ")
-            print(f"Preview   : {preview}")
+            try:
+                print(f"Preview   : {preview}")
+            except Exception:
+                try:
+                    safe_preview = preview.encode('ascii', errors='replace').decode('ascii')
+                    print(f"Preview   : {safe_preview}")
+                except Exception:
+                    pass
 
             if score <= threshold:
 
@@ -137,19 +147,31 @@ def search_knowledge(query, vector_store, k=5, threshold=1.15):
 
                 context_chunks.append(formatted_chunk)
 
-                print("Result    : ACCEPTED")
+                try:
+                    print("Result    : ACCEPTED")
+                except Exception:
+                    pass
 
             else:
 
-                print("Result    : REJECTED")
+                try:
+                    print("Result    : REJECTED")
+                except Exception:
+                    pass
 
-            print("-----------------------------------")
+            try:
+                print("-----------------------------------")
+            except Exception:
+                pass
             
-    print("\n========== Retrieval Summary ==========")
-    print(f"Original Query : {query}")
-    print(f"Phrases Used   : {phrases}")
-    print(f"Chunks Returned: {len(context_chunks)}")
-    print("========================================\n")
+    try:
+        print("\n========== Retrieval Summary ==========")
+        print(f"Original Query : {query}")
+        print(f"Phrases Used   : {phrases}")
+        print(f"Chunks Returned: {len(context_chunks)}")
+        print("========================================\n")
+    except Exception:
+        pass
 
     return context_chunks
 
@@ -176,10 +198,10 @@ def load_all(folder_path="data"):
 
 def build_vector_store_from_folder(folder_path="data"):
     if not os.path.exists(folder_path):
-        print(f"❌ Error: Folder {folder_path} not found.")
+        print(f"[ERROR] Error: Folder {folder_path} not found.")
         return None
 
-    print(f"🚀 Starting Full Ingestion from: {folder_path}")
+    print(f"[INGESTION] Starting Full Ingestion from: {folder_path}")
     
     all_documents = []
     for filename in os.listdir(folder_path):
@@ -197,7 +219,7 @@ def build_vector_store_from_folder(folder_path="data"):
                 )
                 all_documents.append(doc)
             else:
-                print(f"⚠️ Warning: {filename} is empty or unreadable.")
+                print(f"[WARNING] Warning: {filename} is empty or unreadable.")
     
     if not all_documents:
         print("❌ No valid text found in any PDFs. Check your data folder!")
@@ -209,14 +231,14 @@ def build_vector_store_from_folder(folder_path="data"):
     final_chunks = splitter.split_documents(all_documents)
     
     # 2. Create the Vector Database with normalized embeddings + default L2
-    print(f"🧠 Vectorizing {len(final_chunks)} chunks with all-mpnet-base-v2...")
+    print(f"[VECTORIZATION] Vectorizing {len(final_chunks)} chunks with all-mpnet-base-v2...")
     embeddings = _get_embeddings()
     print(f"Starting batch vectorization of {len(final_chunks)} chunks...")
     vector_db = FAISS.from_documents(final_chunks, embeddings)
     
     # 3. Save it
     vector_db.save_local(FAISS_DB_PATH)
-    print(f"✅ Full Vector Vault created and saved to '{FAISS_DB_PATH}'!")
+    print(f"[SUCCESS] Full Vector Vault created and saved to '{FAISS_DB_PATH}'!")
     return vector_db
 
 #Execute this block in case of recreation of Faiss index
