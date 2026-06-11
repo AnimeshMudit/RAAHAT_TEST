@@ -2,6 +2,7 @@ import os
 import json
 import random
 import re
+import time
 from dotenv import load_dotenv
 from groq import Groq
 import logging
@@ -293,7 +294,11 @@ def is_crisis_active(message: str, history: list[dict] = None) -> bool:
     
     # Task 11: Only run classifier conditionally
     if should_run_safety_classifier(message):
-        llm_class = llm_safety_classify(message)
+        llm_class = (
+            llm_safety_classify(message)
+            if should_run_safety_classifier(message)
+            else "SAFE"
+        )
         if llm_class in ("HIGH", "CRISIS"):
             return True
             
@@ -306,7 +311,11 @@ def evaluate_crisis_state(message: str, history: list[dict] | None = None) -> di
     """Single-pass crisis evaluation reused by server and get_response."""
     history = history or []
     matched_trigger = safety_check(message)
-    llm_class = llm_safety_classify(message)
+    llm_class = (
+        llm_safety_classify(message)
+        if should_run_safety_classifier(message)
+        else "SAFE"
+    )
     recent_crisis = check_recent_crisis(history)
     crisis_active = bool(matched_trigger) or (llm_class in ("HIGH", "CRISIS")) or recent_crisis
     card_appended = bool(matched_trigger) or llm_class in ("HIGH", "CRISIS")
@@ -506,10 +515,12 @@ def _llm_call(
     emotional_presence_mode=False,
     preferred_name="",
     crisis_mode=False,
+    perf_out=None,
 ):
     """Raw LLM call with no safety layer — internal use only."""
     history = history or []
     context_text = context.strip() if isinstance(context, str) else str(context).strip()
+    t_prompt = time.perf_counter()
     trimmed_history = _trim_history_for_prompt(history, session_summary=session_summary)
     dynamic_prompt = _build_system_prompt(
         crisis_mode=crisis_mode,
@@ -528,13 +539,18 @@ def _llm_call(
     messages.append({"role": "user", "content": user_message})
 
     _log_prompt_metrics(messages, trimmed_history, context_text)
+    if perf_out is not None:
+        perf_out["prompt_construction"] = time.perf_counter() - t_prompt
 
     last_error = None
+    t_llm = time.perf_counter()
     for index, client in enumerate(clients):
         try:
             completion = _create_completion(client, messages)
             if index > 0:
                 logger.warning("Groq fallback key used after rate limit on primary key")
+            if perf_out is not None:
+                perf_out["llm_generation"] = time.perf_counter() - t_llm
             return completion.choices[0].message.content
         except Exception as e:
             last_error = e
@@ -542,6 +558,8 @@ def _llm_call(
                 continue
             break
 
+    if perf_out is not None:
+        perf_out["llm_generation"] = time.perf_counter() - t_llm
     if DEBUG and last_error is not None:
         return f"❌ Brain Error: {str(last_error)}"
     return "I'm having trouble responding right now."
@@ -693,6 +711,7 @@ def get_response(
     recurring_themes=None,
     preferred_name="",
     crisis_state=None,
+    perf_out=None,
 ):
     history = history or []
     emotional_presence_mode = detect_emotional_presence_mode(user_message)
@@ -726,6 +745,7 @@ def get_response(
         emotional_presence_mode=emotional_presence_mode,
         preferred_name=preferred_name,
         crisis_mode=crisis_active,
+        perf_out=perf_out,
     )
 
     if card_appended:

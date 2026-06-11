@@ -213,7 +213,11 @@ def get_recurring_themes(user_id: str, limit: int = _THEME_HISTORY_LIMIT):
     return recurring_themes_from_history(history)
 
 
-def build_chat_context(user_id: str, history: list[dict] | None = None) -> dict:
+def build_chat_context(
+    user_id: str,
+    history: list[dict] | None = None,
+    perf_out: dict | None = None,
+) -> dict:
     """
     Single-pass context builder for the chat pipeline.
     Fetches messages once, derives summary/themes, and trims LLM history.
@@ -222,19 +226,30 @@ def build_chat_context(user_id: str, history: list[dict] | None = None) -> dict:
     if history is None:
         cached = _cache_get(_context_cache, uid)
         if cached is not None:
+            if perf_out is not None:
+                perf_out["history_fetch"] = 0.0
+                perf_out["conversation_summary"] = 0.0
             return cached[2]
 
+        t_fetch = time.perf_counter()
         theme_history = fetch_messages(uid, limit=_THEME_HISTORY_LIMIT)
+        if perf_out is not None:
+            perf_out["history_fetch"] = time.perf_counter() - t_fetch
         message_count = len(theme_history)
         session_history = theme_history[-_STORAGE_HISTORY_LIMIT:] if message_count > _STORAGE_HISTORY_LIMIT else theme_history
     else:
+        if perf_out is not None:
+            perf_out["history_fetch"] = 0.0
         theme_history = history
         message_count = len(theme_history)
         session_history = theme_history
 
+    t_summary = time.perf_counter()
     session_summary = session_summary_from_history(session_history, user_id=uid)
     recurring_themes = recurring_themes_from_history(theme_history)
     llm_history = session_history[-_LLM_HISTORY_LIMIT:] if len(session_history) > _LLM_HISTORY_LIMIT else session_history
+    if perf_out is not None:
+        perf_out["conversation_summary"] = time.perf_counter() - t_summary
 
     context = {
         "history": session_history,

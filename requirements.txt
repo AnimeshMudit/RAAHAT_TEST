@@ -14,3 +14,4 @@ colorama
 python-dotenv
 python-telegram-bot
 sentence-transformers
+huggingface_hub

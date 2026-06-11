@@ -1,12 +1,14 @@
 import os
 import re
 import logging
+import threading
+import time
 from functools import lru_cache
 import pdfplumber
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-import numpy as np
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_core.embeddings import Embeddings
+from sentence_transformers import SentenceTransformer
 from langchain_core.documents import Document
 
 logger = logging.getLogger(__name__)
@@ -14,9 +16,114 @@ logger = logging.getLogger(__name__)
 FAISS_DB_PATH = "faiss_index"
 EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 
+_init_lock = threading.RLock()
+_embedding_model = None
 _embeddings = None
 _vector_store = None
 _vector_store_path: str | None = None
+_hf_authenticated = False
+
+
+def authenticate_huggingface():
+    global _hf_authenticated
+
+    if _hf_authenticated:
+        return
+
+    token = os.getenv("HF_TOKEN")
+
+    if token:
+        try:
+            from huggingface_hub import login
+            login(token=token)
+            logger.info("HuggingFace authentication complete.")
+        except Exception:
+            logger.exception("HuggingFace login failed")
+
+    _hf_authenticated = True
+
+
+def get_embedding_model() -> SentenceTransformer:
+    global _embedding_model
+    if _embedding_model is None:
+        with _init_lock:
+            if _embedding_model is None:
+                authenticate_huggingface()
+                logger.info("Loading embedding model...")
+                _embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+    return _embedding_model
+
+
+class _CachedEmbeddings(Embeddings):
+    """LangChain embeddings wrapper backed by the global SentenceTransformer."""
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        model = get_embedding_model()
+        vectors = model.encode(
+            texts,
+            convert_to_numpy=True,
+            normalize_embeddings=True,
+        )
+        return vectors.tolist()
+
+    def embed_query(self, text: str) -> list[float]:
+        model = get_embedding_model()
+        vector = model.encode(
+            [text],
+            convert_to_numpy=True,
+            normalize_embeddings=True,
+        )
+        return vector[0].tolist()
+
+
+def get_embeddings() -> Embeddings:
+    global _embeddings
+    if _embeddings is None:
+        with _init_lock:
+            if _embeddings is None:
+                get_embedding_model()
+                _embeddings = _CachedEmbeddings()
+    return _embeddings
+
+
+def get_vector_store(path=None):
+    """Load and cache the FAISS index globally — never reload per request."""
+    global _vector_store, _vector_store_path
+    load_path = path or FAISS_DB_PATH
+    if _vector_store is not None and _vector_store_path == load_path:
+        return _vector_store
+    with _init_lock:
+        if _vector_store is not None and _vector_store_path == load_path:
+            return _vector_store
+        logger.info("Loading FAISS index...")
+        _vector_store = FAISS.load_local(
+            load_path,
+            get_embeddings(),
+            allow_dangerous_deserialization=True,
+        )
+        _vector_store_path = load_path
+        return _vector_store
+
+
+def load_vector_store(path=None):
+    return get_vector_store(path)
+
+
+def warmup_embeddings() -> None:
+    logger.info("Loading tokenizer...")
+    model = get_embedding_model()
+    model.encode(["system warmup"], convert_to_numpy=True, normalize_embeddings=True)
+    logger.info("Embedding warmup complete.")
+
+
+def warmup_retrieval(path=None) -> None:
+    get_vector_store(path)
+    search_knowledge("warmup", k=1)
+    logger.info("Retrieval warmup complete.")
+
+
+def startup_warmup(faiss_path=None):
+    pass
 
 
 def extract_text(file_path):
@@ -61,32 +168,6 @@ def split_chunks(raw):
     return chunks
 
 
-def get_embeddings():
-    global _embeddings
-    if _embeddings is None:
-        _embeddings = HuggingFaceEmbeddings(
-            model_name=EMBEDDING_MODEL,
-            show_progress=False,
-            encode_kwargs={"normalize_embeddings": True},
-        )
-    return _embeddings
-
-
-def get_vector_store(path=None):
-    """Load and cache the FAISS index globally — never reload per request."""
-    global _vector_store, _vector_store_path
-    load_path = path or FAISS_DB_PATH
-    if _vector_store is not None and _vector_store_path == load_path:
-        return _vector_store
-    _vector_store = FAISS.load_local(
-        load_path,
-        get_embeddings(),
-        allow_dangerous_deserialization=True,
-    )
-    _vector_store_path = load_path
-    return _vector_store
-
-
 def create_vector_store(documents):
     embeddings = get_embeddings()
     # Use default L2 — with normalized vectors, L2 and cosine rank identically
@@ -97,9 +178,6 @@ def create_vector_store(documents):
     _vector_store = vector_db
     _vector_store_path = FAISS_DB_PATH
     return vector_db
-
-def load_vector_store(path=None):
-    return get_vector_store(path)
 
 
 def clean_query(query: str) -> list[str]:
@@ -112,13 +190,32 @@ def clean_query(query: str) -> list[str]:
     return phrases[:3]  # Cap at 3 phrases to avoid over-querying
 
 
-def _search_knowledge_uncached(phrases_tuple: tuple[str, ...], k: int, threshold: float):
+def _search_knowledge_uncached(
+    phrases_tuple: tuple[str, ...],
+    k: int,
+    threshold: float,
+    perf_out: dict | None = None,
+):
     vector_store = get_vector_store()
+    embeddings = get_embeddings()
     context_chunks = []
     seen = set()
+    embed_time = 0.0
+    retrieval_time = 0.0
 
     for phrase in phrases_tuple:
-        results = vector_store.similarity_search_with_score(phrase, k=k)
+        if perf_out is not None:
+            t_embed = time.perf_counter()
+            query_vector = embeddings.embed_query(phrase)
+            embed_time += time.perf_counter() - t_embed
+            t_ret = time.perf_counter()
+            results = vector_store.similarity_search_with_score_by_vector(
+                query_vector, k=k
+            )
+            retrieval_time += time.perf_counter() - t_ret
+        else:
+            results = vector_store.similarity_search_with_score(phrase, k=k)
+
         for doc, score in results:
             content = doc.page_content.strip()
             if content in seen:
@@ -128,6 +225,10 @@ def _search_knowledge_uncached(phrases_tuple: tuple[str, ...], k: int, threshold
                 source = doc.metadata.get("source", "Unknown Manual")
                 context_chunks.append(f"[Source: {source}]\n{doc.page_content}")
 
+    if perf_out is not None:
+        perf_out["embedding"] = perf_out.get("embedding", 0.0) + embed_time
+        perf_out["retrieval"] = perf_out.get("retrieval", 0.0) + retrieval_time
+
     return tuple(context_chunks)
 
 
@@ -136,7 +237,7 @@ def _search_knowledge_cached(phrases_tuple: tuple[str, ...], k: int, threshold: 
     return _search_knowledge_uncached(phrases_tuple, k, threshold)
 
 
-def search_knowledge(query, vector_store=None, k=5, threshold=1.15):
+def search_knowledge(query, vector_store=None, k=5, threshold=1.15, perf_out=None):
     """
     Searches the FAISS index using multi-phrase FAISS calls and unions results.
     vector_store arg kept for API compatibility; global cache is always used.
@@ -145,6 +246,9 @@ def search_knowledge(query, vector_store=None, k=5, threshold=1.15):
     if not phrases:
         return []
     phrases_tuple = tuple(phrases)
+    if perf_out is not None:
+        cached = _search_knowledge_uncached(phrases_tuple, k, threshold, perf_out=perf_out)
+        return list(cached)
     cached = _search_knowledge_cached(phrases_tuple, k, threshold)
     return list(cached)
 

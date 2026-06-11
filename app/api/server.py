@@ -14,7 +14,10 @@ import time
 import json
 
 logger = logging.getLogger(__name__)
-_chat_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="raahat-chat")
+_chat_executor = ThreadPoolExecutor(
+    max_workers=min(8, os.cpu_count() or 4),
+    thread_name_prefix="raahat-chat"
+)
 
 # -------------------- PATH SETUP --------------------
 # This ensures Python can find your 'app' module regardless of where you run the script
@@ -384,7 +387,47 @@ async def login(request: AuthRequest):
     return profile
 
 
+# -------------------- STARTUP WARMUP --------------------
+
+
+@app.on_event("startup")
+async def warmup_on_startup():
+    loop = asyncio.get_running_loop()
+
+    # Launch warmup asynchronously
+    loop.run_in_executor(
+        _chat_executor,
+        knowledge.startup_warmup,
+        FAISS_DIR
+    )
+
+    logger.info("Warmup running in background.")
+
+
 # -------------------- CHAT & KNOWLEDGE API --------------------
+
+
+def _perf_enabled() -> bool:
+    return os.getenv("PERFORMANCE_LOGGING", "false").lower() == "true" or brain.DEBUG
+
+
+def _print_perf(timings: dict, label: str = "") -> None:
+    header = f"[PERF]{f' {label}' if label else ''}"
+    print(header)
+    rows = [
+        ("History Fetch", "history_fetch"),
+        ("Conversation", "conversation_summary"),
+        ("Safety", "safety"),
+        ("Embedding", "embedding"),
+        ("Retrieval", "retrieval"),
+        ("Knowledge", "knowledge_formatting"),
+        ("Prompt", "prompt_construction"),
+        ("LLM", "llm_generation"),
+        ("Formatting", "response_formatting"),
+        ("Total", "total"),
+    ]
+    for name, key in rows:
+        print(f"{name:<22}{timings.get(key, 0.0):.2f}s")
 
 
 @app.get("/api/history")
@@ -401,26 +444,52 @@ async def get_history(user_id: str):
         )
 
 
-def _run_retrieval(message: str, k: int = 5) -> str:
+def _run_retrieval(message: str, k: int = 5, perf_out: dict | None = None) -> str:
     try:
-        knowledge.get_vector_store(FAISS_DIR)
+        t_keywords = time.perf_counter()
         search_query = brain.generate_search_keywords(message)
+        keyword_time = time.perf_counter() - t_keywords
         if search_query == "SKIP":
+            if perf_out is not None:
+                perf_out["embedding"] = 0.0
+                perf_out["retrieval"] = 0.0
+                perf_out["knowledge_formatting"] = keyword_time
             return ""
-        results = knowledge.search_knowledge(search_query, k=k)
-        return "\n".join(results) if results else ""
+        retrieval_perf: dict = {}
+        results = knowledge.search_knowledge(search_query, k=k, perf_out=retrieval_perf)
+        t_format = time.perf_counter()
+        context_text = "\n".join(results) if results else ""
+        format_time = time.perf_counter() - t_format
+        if perf_out is not None:
+            perf_out["embedding"] = retrieval_perf.get("embedding", 0.0)
+            perf_out["retrieval"] = retrieval_perf.get("retrieval", 0.0)
+            perf_out["knowledge_formatting"] = keyword_time + format_time
+        return context_text
     except Exception:
         logger.exception("Vector search failed")
+        if perf_out is not None:
+            perf_out.setdefault("embedding", 0.0)
+            perf_out.setdefault("retrieval", 0.0)
+            perf_out.setdefault("knowledge_formatting", 0.0)
         return ""
 
 
-def _run_crisis_eval(message: str, history: list[dict]) -> dict:
-    return brain.evaluate_crisis_state(message, history)
+def _run_crisis_eval(
+    message: str,
+    history: list[dict],
+    perf_out: dict | None = None,
+) -> dict:
+    t_safety = time.perf_counter()
+    result = brain.evaluate_crisis_state(message, history)
+    if perf_out is not None:
+        perf_out["safety"] = time.perf_counter() - t_safety
+    return result
 
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
     start_total = time.perf_counter()
+    perf: dict = {}
     try:
         user_id = str(request.user_id)
         user_record = memory.get_user_by_id(user_id)
@@ -429,9 +498,7 @@ async def chat(request: ChatRequest):
 
         memory.save_message(user_id, "user", request.message)
 
-        start_ctx = time.perf_counter()
-        chat_context = memory.build_chat_context(user_id)
-        ctx_time = time.perf_counter() - start_ctx
+        chat_context = memory.build_chat_context(user_id, perf_out=perf)
         chat_history = chat_context["history"]
         llm_history = chat_context["llm_history"]
         session_summary = chat_context["session_summary"]
@@ -441,22 +508,28 @@ async def chat(request: ChatRequest):
         quick_trigger = brain.safety_check(request.message)
         retrieval_k = 1 if quick_trigger else 5
 
-        start_parallel = time.perf_counter()
+        crisis_perf: dict = {}
+        retrieval_perf: dict = {}
         crisis_state, context_text = await asyncio.gather(
             loop.run_in_executor(
                 _chat_executor,
                 _run_crisis_eval,
                 request.message,
                 chat_history,
+                crisis_perf,
             ),
             loop.run_in_executor(
                 _chat_executor,
                 _run_retrieval,
                 request.message,
                 retrieval_k,
+                retrieval_perf,
             ),
         )
-        parallel_time = time.perf_counter() - start_parallel
+        perf["safety"] = crisis_perf.get("safety", 0.0)
+        perf["embedding"] = retrieval_perf.get("embedding", 0.0)
+        perf["retrieval"] = retrieval_perf.get("retrieval", 0.0)
+        perf["knowledge_formatting"] = retrieval_perf.get("knowledge_formatting", 0.0)
 
         if crisis_state["crisis_active"] and not brain.needs_psychoeducation(request.message):
             context_text = ""
@@ -467,7 +540,7 @@ async def chat(request: ChatRequest):
             preferred_name=request.preferred_name,
         )
 
-        start_llm = time.perf_counter()
+        llm_perf: dict = {}
         try:
             response_text = await loop.run_in_executor(
                 _chat_executor,
@@ -480,6 +553,7 @@ async def chat(request: ChatRequest):
                     recurring_themes=recurring_themes,
                     preferred_name=display_name,
                     crisis_state=crisis_state,
+                    perf_out=llm_perf,
                 ),
             )
         except Exception:
@@ -488,22 +562,17 @@ async def chat(request: ChatRequest):
                 status_code=500,
                 detail="Failed to generate response.",
             )
-        llm_time = time.perf_counter() - start_llm
+        perf["prompt_construction"] = llm_perf.get("prompt_construction", 0.0)
+        perf["llm_generation"] = llm_perf.get("llm_generation", 0.0)
 
-        start_post = time.perf_counter()
+        t_post = time.perf_counter()
         memory.save_message(user_id, "ai", response_text)
-        post_time = time.perf_counter() - start_post
+        perf["response_formatting"] = time.perf_counter() - t_post
 
-        total_time = time.perf_counter() - start_total
+        perf["total"] = time.perf_counter() - start_total
 
-        perf_logging = os.getenv("PERFORMANCE_LOGGING", "false").lower() == "true" or brain.DEBUG
-        if perf_logging:
-            print("[PERF]")
-            print(f"Context      {ctx_time:.2f}s")
-            print(f"Crisis+Ret   {parallel_time:.2f}s")
-            print(f"LLM          {llm_time:.2f}s")
-            print(f"Formatting   {post_time:.2f}s")
-            print(f"Total        {total_time:.2f}s")
+        if _perf_enabled():
+            _print_perf(perf)
 
         return {"response": response_text}
     except HTTPException:
@@ -519,6 +588,7 @@ async def chat(request: ChatRequest):
 @app.post("/api/chat/stream")
 async def chat_stream(request: ChatRequest):
     start_total = time.perf_counter()
+    perf: dict = {}
     try:
         user_id = str(request.user_id)
         user_record = memory.get_user_by_id(user_id)
@@ -527,9 +597,7 @@ async def chat_stream(request: ChatRequest):
 
         memory.save_message(user_id, "user", request.message)
 
-        start_ctx = time.perf_counter()
-        chat_context = memory.build_chat_context(user_id)
-        ctx_time = time.perf_counter() - start_ctx
+        chat_context = memory.build_chat_context(user_id, perf_out=perf)
         chat_history = chat_context["history"]
         llm_history = chat_context["llm_history"]
         session_summary = chat_context["session_summary"]
@@ -539,22 +607,28 @@ async def chat_stream(request: ChatRequest):
         quick_trigger = brain.safety_check(request.message)
         retrieval_k = 1 if quick_trigger else 5
 
-        start_parallel = time.perf_counter()
+        crisis_perf: dict = {}
+        retrieval_perf: dict = {}
         crisis_state, context_text = await asyncio.gather(
             loop.run_in_executor(
                 _chat_executor,
                 _run_crisis_eval,
                 request.message,
                 chat_history,
+                crisis_perf,
             ),
             loop.run_in_executor(
                 _chat_executor,
                 _run_retrieval,
                 request.message,
                 retrieval_k,
+                retrieval_perf,
             ),
         )
-        parallel_time = time.perf_counter() - start_parallel
+        perf["safety"] = crisis_perf.get("safety", 0.0)
+        perf["embedding"] = retrieval_perf.get("embedding", 0.0)
+        perf["retrieval"] = retrieval_perf.get("retrieval", 0.0)
+        perf["knowledge_formatting"] = retrieval_perf.get("knowledge_formatting", 0.0)
 
         if crisis_state["crisis_active"] and not brain.needs_psychoeducation(request.message):
             context_text = ""
@@ -585,27 +659,22 @@ async def chat_stream(request: ChatRequest):
                 logger.exception("Stream generation failed")
                 yield f"data: {json.dumps({'error': 'Failed to generate response'})}\n\n"
             finally:
-                llm_time = time.perf_counter() - start_llm
+                perf["llm_generation"] = time.perf_counter() - start_llm
+                perf["prompt_construction"] = 0.0
 
-                start_post = time.perf_counter()
+                t_post = time.perf_counter()
                 complete_text = "".join(full_response)
                 if complete_text:
                     try:
                         memory.save_message(user_id, "ai", complete_text)
                     except Exception:
                         logger.exception("Failed to save streamed response to database")
-                post_time = time.perf_counter() - start_post
+                perf["response_formatting"] = time.perf_counter() - t_post
 
-                total_time = time.perf_counter() - start_total
+                perf["total"] = time.perf_counter() - start_total
 
-                perf_logging = os.getenv("PERFORMANCE_LOGGING", "false").lower() == "true" or brain.DEBUG
-                if perf_logging:
-                    print("[PERF] [STREAMING]")
-                    print(f"Context      {ctx_time:.2f}s")
-                    print(f"Crisis+Ret   {parallel_time:.2f}s")
-                    print(f"LLM (Stream) {llm_time:.2f}s")
-                    print(f"Formatting   {post_time:.2f}s")
-                    print(f"Total        {total_time:.2f}s")
+                if _perf_enabled():
+                    _print_perf(perf, label="[STREAMING]")
 
         return StreamingResponse(event_generator(), media_type="text/event-stream")
     except HTTPException:
