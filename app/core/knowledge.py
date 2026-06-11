@@ -1,11 +1,23 @@
 import os
 import re
+import logging
+from functools import lru_cache
 import pdfplumber
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 import numpy as np
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
+
+logger = logging.getLogger(__name__)
+
+FAISS_DB_PATH = "faiss_index"
+EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
+
+_embeddings = None
+_vector_store = None
+_vector_store_path: str | None = None
+
 
 def extract_text(file_path):
     print(f"Reading: {file_path}...")
@@ -48,35 +60,50 @@ def split_chunks(raw):
     chunks = splitter.split_text(raw)
     return chunks
 
-FAISS_DB_PATH = "faiss_index"
 
-# --- EMBEDDING MODEL (Upgraded for Clinical Precision) ---
-EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
+def get_embeddings():
+    global _embeddings
+    if _embeddings is None:
+        _embeddings = HuggingFaceEmbeddings(
+            model_name=EMBEDDING_MODEL,
+            show_progress=False,
+            encode_kwargs={"normalize_embeddings": True},
+        )
+    return _embeddings
+
 
 def _get_embeddings():
-    return HuggingFaceEmbeddings(
-        model_name=EMBEDDING_MODEL,
-        show_progress=True,  # <-- Pass it directly here
-        encode_kwargs={"normalize_embeddings": True}
+    return get_embeddings()
+
+
+def get_vector_store(path=None):
+    """Load and cache the FAISS index globally — never reload per request."""
+    global _vector_store, _vector_store_path
+    load_path = path or FAISS_DB_PATH
+    if _vector_store is not None and _vector_store_path == load_path:
+        return _vector_store
+    _vector_store = FAISS.load_local(
+        load_path,
+        get_embeddings(),
+        allow_dangerous_deserialization=True,
     )
+    _vector_store_path = load_path
+    return _vector_store
+
 
 def create_vector_store(documents):
-    embeddings = _get_embeddings()
+    embeddings = get_embeddings()
     # Use default L2 — with normalized vectors, L2 and cosine rank identically
     # Score range becomes 0.0 (identical) to 2.0 (opposite), NOT 0–1
     vector_db = FAISS.from_documents(documents, embeddings)
     vector_db.save_local(FAISS_DB_PATH)
+    global _vector_store, _vector_store_path
+    _vector_store = vector_db
+    _vector_store_path = FAISS_DB_PATH
     return vector_db
 
 def load_vector_store(path=None):
-    load_path = path or FAISS_DB_PATH
-    embeddings = _get_embeddings()
-    return FAISS.load_local(
-        load_path,
-        embeddings,
-        allow_dangerous_deserialization=True
-        # No distance_strategy — use default L2
-    )
+    return get_vector_store(path)
 
 def clean_query(query: str) -> list[str]:
     """
@@ -87,93 +114,42 @@ def clean_query(query: str) -> list[str]:
     phrases = [p.strip().lower() for p in query.split(',') if p.strip()]
     return phrases[:3]  # Cap at 3 phrases to avoid over-querying
 
-def search_knowledge(query, vector_store, k=5, threshold=1.15):
-    """
-    Searches the FAISS index using multi-phrase FAISS calls and unions results.
-    Runs each phrase from clean_query() as a separate FAISS search, then
-    deduplicates by content to produce a single ranked result list.
 
-    With normalized vectors + L2, the score mapping is:
-      - 0.0 – 0.3  → Near-exact match
-      - 0.3 – 0.8  → Good clinical match (threshold boundary)
-      - 0.8+       → Reject (too weak)
-    """
-    phrases = clean_query(query)
-    print(f"[FAISS SEARCH] Phrases sent to FAISS: {phrases}")
-
+def _search_knowledge_uncached(phrases_tuple: tuple[str, ...], k: int, threshold: float):
+    vector_store = get_vector_store()
     context_chunks = []
-    seen = set()  # Deduplicate by raw content across all phrase queries
+    seen = set()
 
-    for phrase in phrases:
-        print(f"  -> Querying FAISS for phrase: '{phrase}'")
+    for phrase in phrases_tuple:
         results = vector_store.similarity_search_with_score(phrase, k=k)
-
-        for rank, (doc, score) in enumerate(results, start=1):
-
+        for doc, score in results:
             content = doc.page_content.strip()
-
             if content in seen:
                 continue
-
             seen.add(content)
-
-            source = doc.metadata.get("source", "Unknown Manual")
-
-            try:
-                print("\n-----------------------------------")
-                print(f"Rank      : {rank}")
-                print(f"Source    : {source}")
-                print(f"Score     : {score:.4f}")
-                print(f"Threshold : {threshold}")
-            except Exception:
-                pass
-
-            preview = content[:200].replace("\n", " ")
-            try:
-                print(f"Preview   : {preview}")
-            except Exception:
-                try:
-                    safe_preview = preview.encode('ascii', errors='replace').decode('ascii')
-                    print(f"Preview   : {safe_preview}")
-                except Exception:
-                    pass
-
             if score <= threshold:
+                source = doc.metadata.get("source", "Unknown Manual")
+                context_chunks.append(f"[Source: {source}]\n{doc.page_content}")
 
-                formatted_chunk = (
-                    f"[Source: {source}]\n"
-                    f"{doc.page_content}"
-                )
+    return tuple(context_chunks)
 
-                context_chunks.append(formatted_chunk)
 
-                try:
-                    print("Result    : ACCEPTED")
-                except Exception:
-                    pass
+@lru_cache(maxsize=128)
+def _search_knowledge_cached(phrases_tuple: tuple[str, ...], k: int, threshold: float):
+    return _search_knowledge_uncached(phrases_tuple, k, threshold)
 
-            else:
 
-                try:
-                    print("Result    : REJECTED")
-                except Exception:
-                    pass
-
-            try:
-                print("-----------------------------------")
-            except Exception:
-                pass
-            
-    try:
-        print("\n========== Retrieval Summary ==========")
-        print(f"Original Query : {query}")
-        print(f"Phrases Used   : {phrases}")
-        print(f"Chunks Returned: {len(context_chunks)}")
-        print("========================================\n")
-    except Exception:
-        pass
-
-    return context_chunks
+def search_knowledge(query, vector_store=None, k=5, threshold=1.15):
+    """
+    Searches the FAISS index using multi-phrase FAISS calls and unions results.
+    vector_store arg kept for API compatibility; global cache is always used.
+    """
+    phrases = clean_query(query)
+    if not phrases:
+        return []
+    phrases_tuple = tuple(phrases)
+    cached = _search_knowledge_cached(phrases_tuple, k, threshold)
+    return list(cached)
 
 def load_all(folder_path="data"):
     print(f"Scanning folder: {folder_path}...")
@@ -185,15 +161,6 @@ def load_all(folder_path="data"):
             combined_text += extract_text(file_path) + "\n"
             
     return combined_text
-#old stuff...slow
-'''def create_vector_store(chunks):
-    print("Converting text into math (Vectorizing)... this might take a minute.")
-    
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    
-    # Create the vector database 
-    vector_store = FAISS.from_texts(chunks, embeddings)
-    return vector_store'''
 
 
 def build_vector_store_from_folder(folder_path="data"):
@@ -232,30 +199,12 @@ def build_vector_store_from_folder(folder_path="data"):
     
     # 2. Create the Vector Database with normalized embeddings + default L2
     print(f"[VECTORIZATION] Vectorizing {len(final_chunks)} chunks with all-mpnet-base-v2...")
-    embeddings = _get_embeddings()
     print(f"Starting batch vectorization of {len(final_chunks)} chunks...")
-    vector_db = FAISS.from_documents(final_chunks, embeddings)
+    vector_db = create_vector_store(final_chunks)
     
-    # 3. Save it
-    vector_db.save_local(FAISS_DB_PATH)
     print(f"[SUCCESS] Full Vector Vault created and saved to '{FAISS_DB_PATH}'!")
     return vector_db
 
-#Execute this block in case of recreation of Faiss index
-# if __name__ == "__main__":
-#     folder = "data" 
-    
-#     vector_db = build_vector_store_from_folder(folder)
-    
-#     if vector_db:
-#         # 4. Test Query
-#         user_question = "I don't really feel anything anymore"
-#         results = search_knowledge(user_question, vector_db)
-        
-#         print("\n--- 🎯 TOP SEARCH RESULT ---")
-#         if results:
-#             print(results[0])
-#         print("---------------------------")
 if __name__ == "__main__":
 
     print("Loading existing FAISS index...")

@@ -1,5 +1,7 @@
 import os
 import sys
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +12,7 @@ from dotenv import load_dotenv
 import logging
 
 logger = logging.getLogger(__name__)
+_chat_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="raahat-chat")
 
 # -------------------- PATH SETUP --------------------
 # This ensures Python can find your 'app' module regardless of where you run the script
@@ -396,83 +399,96 @@ async def get_history(user_id: str):
         )
 
 
+def _run_retrieval(message: str, k: int = 5) -> str:
+    try:
+        knowledge.get_vector_store(FAISS_DIR)
+        search_query = brain.generate_search_keywords(message)
+        if search_query == "SKIP":
+            return ""
+        results = knowledge.search_knowledge(search_query, k=k)
+        return "\n".join(results) if results else ""
+    except Exception:
+        logger.exception("Vector search failed")
+        return ""
+
+
+def _run_crisis_eval(message: str, history: list[dict]) -> dict:
+    return brain.evaluate_crisis_state(message, history)
+
+
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
     try:
-        user_record = (
-            memory.supabase.table("users")
-            .select("*")
-            .eq("id", str(request.user_id))
-            .execute()
-        )
-        if not user_record.data:
+        user_id = str(request.user_id)
+        user_record = memory.get_user_by_id(user_id)
+        if not user_record:
             raise HTTPException(status_code=400, detail="User not found.")
 
-        memory.save_message(str(request.user_id), "user", request.message)
+        memory.save_message(user_id, "user", request.message)
 
-        chat_history = memory.fetch_history(str(request.user_id))
-        is_crisis = brain.is_crisis_active(request.message, chat_history)
+        chat_context = memory.build_chat_context(user_id)
+        chat_history = chat_context["history"]
+        llm_history = chat_context["llm_history"]
+        session_summary = chat_context["session_summary"]
+        recurring_themes = chat_context["recurring_themes"]
 
-        context_text = ""
-        if is_crisis and not brain.needs_psychoeducation(request.message):
-            pass
-        else:
-            try:
-                vector_db = knowledge.load_vector_store(FAISS_DIR)
-                search_query = brain.generate_search_keywords(request.message)
-                if search_query == "SKIP":
-                    results = []
-                else:
-                    k_val = 1 if is_crisis else 5
-                    results = knowledge.search_knowledge(search_query, vector_db, k=k_val)
-                context_text = "\n".join(results) if results else ""
-            except Exception as e:
-                logger.exception("Vector search failed")
-            
+        loop = asyncio.get_running_loop()
+        quick_trigger = brain.safety_check(request.message)
+        retrieval_k = 1 if quick_trigger else 5
+
+        crisis_state, context_text = await asyncio.gather(
+            loop.run_in_executor(
+                _chat_executor,
+                _run_crisis_eval,
+                request.message,
+                chat_history,
+            ),
+            loop.run_in_executor(
+                _chat_executor,
+                _run_retrieval,
+                request.message,
+                retrieval_k,
+            ),
+        )
+
+        if crisis_state["crisis_active"] and not brain.needs_psychoeducation(request.message):
+            context_text = ""
+
         pattern_signal = session.get_pattern_signal(chat_history)
-
-        session_summary = memory.get_session_summary(
-            str(request.user_id)
+        display_name = memory.get_user_display_name(
+            user_record,
+            preferred_name=request.preferred_name,
         )
-
-        recurring_themes = memory.get_recurring_themes(
-            str(request.user_id)
-        )
-        display_name = (
-            request.preferred_name
-            or user_record.data[0].get("Name")
-            or user_record.data[0].get("name")
-            or user_record.data[0].get("display_name")
-            or ""
-        ).strip()
 
         try:
-            response_text = brain.get_response(
-                user_message=request.message,
-                history=chat_history,
-                context=context_text,
-                pattern_signal=pattern_signal,
-                session_summary=session_summary,
-                recurring_themes=recurring_themes,
-                preferred_name=display_name,
+            response_text = await loop.run_in_executor(
+                _chat_executor,
+                lambda: brain.get_response(
+                    user_message=request.message,
+                    history=llm_history,
+                    context=context_text,
+                    pattern_signal=pattern_signal,
+                    session_summary=session_summary,
+                    recurring_themes=recurring_themes,
+                    preferred_name=display_name,
+                    crisis_state=crisis_state,
+                ),
             )
-        except Exception as e:
+        except Exception:
             logger.exception("Response generation failed")
-
             raise HTTPException(
                 status_code=500,
-                detail="Failed to generate response."
+                detail="Failed to generate response.",
             )
-        memory.save_message(str(request.user_id), "ai", response_text)
 
+        memory.save_message(user_id, "ai", response_text)
         return {"response": response_text}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         logger.exception("Chat endpoint failed")
-
         raise HTTPException(
             status_code=500,
-            detail="Internal server error"
+            detail="Internal server error",
         )
 
