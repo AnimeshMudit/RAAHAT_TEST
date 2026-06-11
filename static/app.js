@@ -772,18 +772,110 @@ async function bindChatPage() {
         scrollToBottom();
 
         try {
-            const result = await apiFetch('/api/chat', {
+            const response = await fetch('/api/chat/stream', {
                 method: 'POST',
-                body: { user_id: session.user_id, message },
-                timeout: 60000,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ user_id: session.user_id, message }),
             });
-            messagesEl.appendChild(createMessageBubble('ai', result?.response || 'I am here with you.'));
+
+            if (!response.ok) {
+                throw new Error(`Server responded with status ${response.status}`);
+            }
+
+            hideTyping();
+
+            // Create streaming bubble
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex justify-start fade-in-up';
+
+            const container = document.createElement('div');
+            container.className = 'flex gap-3 max-w-[80%]';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'w-8 h-8 rounded-full bg-lavender-soft flex-shrink-0 flex items-center justify-center text-lavender-dark mt-1';
+            avatar.innerHTML = '<span class="material-symbols-outlined text-[16px]">psychiatry</span>';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bg-lavender-soft/40 p-stack-md rounded-2xl rounded-bl-sm shadow-sm border border-lavender-soft/50';
+            const paragraph = document.createElement('p');
+            paragraph.className = 'font-body-md text-body-md text-on-surface whitespace-pre-wrap';
+            paragraph.textContent = '';
+            bubble.appendChild(paragraph);
+
+            container.appendChild(avatar);
+            container.appendChild(bubble);
+            wrapper.appendChild(container);
+            
+            messagesEl.appendChild(wrapper);
+            scrollToBottom();
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let buffer = '';
+            let aiResponseText = '';
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                const lines = buffer.split('\n');
+                buffer = lines.pop(); // Keep partial line in buffer
+
+                for (const line of lines) {
+                    const cleanLine = line.trim();
+                    if (!cleanLine.startsWith('data: ')) continue;
+                    
+                    try {
+                        const parsed = JSON.parse(cleanLine.substring(6));
+                        if (parsed.text) {
+                            aiResponseText += parsed.text;
+                            paragraph.textContent = aiResponseText;
+                            scrollToBottom();
+                        } else if (parsed.error) {
+                            console.error('Stream error:', parsed.error);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse stream line:', cleanLine, e);
+                    }
+                }
+            }
+
+            if (buffer) {
+                const cleanLine = buffer.trim();
+                if (cleanLine.startsWith('data: ')) {
+                    try {
+                        const parsed = JSON.parse(cleanLine.substring(6));
+                        if (parsed.text) {
+                            aiResponseText += parsed.text;
+                            paragraph.textContent = aiResponseText;
+                            scrollToBottom();
+                        }
+                    } catch (e) {}
+                }
+            }
         } catch (error) {
-            console.error('Chat send failed:', error);
-            const errorBubble = document.createElement('div');
-            errorBubble.className = 'flex justify-start fade-in-up';
-            errorBubble.innerHTML = '<div class="bg-error-container text-on-error-container px-4 py-3 rounded-2xl rounded-bl-sm max-w-[80%]">Message could not be sent. Please try again.</div>';
-            messagesEl.appendChild(errorBubble);
+            console.error('Chat stream failed, falling back to standard POST:', error);
+            hideTyping();
+            try {
+                showTyping();
+                const result = await apiFetch('/api/chat', {
+                    method: 'POST',
+                    body: { user_id: session.user_id, message },
+                    timeout: 60000,
+                });
+                hideTyping();
+                messagesEl.appendChild(createMessageBubble('ai', result?.response || 'I am here with you.'));
+            } catch (fallbackError) {
+                console.error('Fallback chat send failed:', fallbackError);
+                hideTyping();
+                const errorBubble = document.createElement('div');
+                errorBubble.className = 'flex justify-start fade-in-up';
+                errorBubble.innerHTML = '<div class="bg-error-container text-on-error-container px-4 py-3 rounded-2xl rounded-bl-sm max-w-[80%]">Message could not be sent. Please try again.</div>';
+                messagesEl.appendChild(errorBubble);
+            }
         } finally {
             hideTyping();
             sending = false;

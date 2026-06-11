@@ -1,13 +1,15 @@
 import os
 import sys
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from uuid import UUID
 from dotenv import load_dotenv
 import logging
+import time
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -398,6 +400,7 @@ async def get_history(user_id: str):
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
+    start_total = time.perf_counter()
     try:
         user_record = (
             memory.supabase.table("users")
@@ -410,34 +413,17 @@ async def chat(request: ChatRequest):
 
         memory.save_message(str(request.user_id), "user", request.message)
 
+        # 1. History fetch
+        start_hist = time.perf_counter()
         chat_history = memory.fetch_history(str(request.user_id))
+        hist_time = time.perf_counter() - start_hist
+
+        # 2. Session summary / memory fetch
+        start_mem = time.perf_counter()
         is_crisis = brain.is_crisis_active(request.message, chat_history)
-
-        context_text = ""
-        if is_crisis and not brain.needs_psychoeducation(request.message):
-            pass
-        else:
-            try:
-                vector_db = knowledge.load_vector_store(FAISS_DIR)
-                search_query = brain.generate_search_keywords(request.message)
-                if search_query == "SKIP":
-                    results = []
-                else:
-                    k_val = 1 if is_crisis else 5
-                    results = knowledge.search_knowledge(search_query, vector_db, k=k_val)
-                context_text = "\n".join(results) if results else ""
-            except Exception as e:
-                logger.exception("Vector search failed")
-            
         pattern_signal = session.get_pattern_signal(chat_history)
-
-        session_summary = memory.get_session_summary(
-            str(request.user_id)
-        )
-
-        recurring_themes = memory.get_recurring_themes(
-            str(request.user_id)
-        )
+        session_summary = memory.get_session_summary(str(request.user_id))
+        recurring_themes = memory.get_recurring_themes(str(request.user_id))
         display_name = (
             request.preferred_name
             or user_record.data[0].get("Name")
@@ -445,7 +431,35 @@ async def chat(request: ChatRequest):
             or user_record.data[0].get("display_name")
             or ""
         ).strip()
+        mem_time = time.perf_counter() - start_mem
 
+        # 3. Smart Retrieval Trigger
+        used_retrieval = brain.should_use_retrieval(request.message, chat_history)
+        
+        kw_time = 0.0
+        ret_time = 0.0
+        context_text = ""
+        
+        if used_retrieval:
+            # 4. Keyword generation
+            start_kw = time.perf_counter()
+            search_query = brain.generate_search_keywords(request.message)
+            kw_time = time.perf_counter() - start_kw
+            
+            if search_query != "SKIP":
+                # 5. FAISS retrieval
+                start_ret = time.perf_counter()
+                try:
+                    vector_db = knowledge.get_vector_store(FAISS_DIR)
+                    k_val = 1 if is_crisis else 5
+                    results = knowledge.search_knowledge(search_query, vector_db, k=k_val)
+                    context_text = "\n".join(results) if results else ""
+                except Exception as e:
+                    logger.exception("Vector search failed")
+                ret_time = time.perf_counter() - start_ret
+
+        # 6. LLM call
+        start_llm = time.perf_counter()
         try:
             response_text = brain.get_response(
                 user_message=request.message,
@@ -458,19 +472,153 @@ async def chat(request: ChatRequest):
             )
         except Exception as e:
             logger.exception("Response generation failed")
-
             raise HTTPException(
                 status_code=500,
                 detail="Failed to generate response."
             )
+        llm_time = time.perf_counter() - start_llm
+
+        start_post = time.perf_counter()
         memory.save_message(str(request.user_id), "ai", response_text)
+        post_time = time.perf_counter() - start_post
+        
+        total_time = time.perf_counter() - start_total
+
+        # Log perf stats
+        perf_logging = os.getenv("PERFORMANCE_LOGGING", "false").lower() == "true" or brain.DEBUG
+        if perf_logging:
+            print("[PERF]")
+            print(f"History      {hist_time:.2f}s")
+            print(f"SessionMem   {mem_time:.2f}s")
+            if used_retrieval:
+                print(f"Keywords     {kw_time:.2f}s")
+                print(f"Retrieval    {ret_time:.2f}s")
+            print(f"LLM          {llm_time:.2f}s")
+            print(f"Formatting   {post_time:.2f}s")
+            print(f"Total        {total_time:.2f}s")
 
         return {"response": response_text}
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("Chat endpoint failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error"
+        )
 
+
+@app.post("/api/chat/stream")
+async def chat_stream(request: ChatRequest):
+    start_total = time.perf_counter()
+    try:
+        user_record = (
+            memory.supabase.table("users")
+            .select("*")
+            .eq("id", str(request.user_id))
+            .execute()
+        )
+        if not user_record.data:
+            raise HTTPException(status_code=400, detail="User not found.")
+
+        memory.save_message(str(request.user_id), "user", request.message)
+
+        # 1. History fetch
+        start_hist = time.perf_counter()
+        chat_history = memory.fetch_history(str(request.user_id))
+        hist_time = time.perf_counter() - start_hist
+
+        # 2. Session summary / memory fetch
+        start_mem = time.perf_counter()
+        is_crisis = brain.is_crisis_active(request.message, chat_history)
+        pattern_signal = session.get_pattern_signal(chat_history)
+        session_summary = memory.get_session_summary(str(request.user_id))
+        recurring_themes = memory.get_recurring_themes(str(request.user_id))
+        display_name = (
+            request.preferred_name
+            or user_record.data[0].get("Name")
+            or user_record.data[0].get("name")
+            or user_record.data[0].get("display_name")
+            or ""
+        ).strip()
+        mem_time = time.perf_counter() - start_mem
+
+        # 3. Smart Retrieval Trigger
+        used_retrieval = brain.should_use_retrieval(request.message, chat_history)
+        
+        kw_time = 0.0
+        ret_time = 0.0
+        context_text = ""
+        
+        if used_retrieval:
+            # 4. Keyword generation
+            start_kw = time.perf_counter()
+            search_query = brain.generate_search_keywords(request.message)
+            kw_time = time.perf_counter() - start_kw
+            
+            if search_query != "SKIP":
+                # 5. FAISS retrieval
+                start_ret = time.perf_counter()
+                try:
+                    vector_db = knowledge.get_vector_store(FAISS_DIR)
+                    k_val = 1 if is_crisis else 5
+                    results = knowledge.search_knowledge(search_query, vector_db, k=k_val)
+                    context_text = "\n".join(results) if results else ""
+                except Exception as e:
+                    logger.exception("Vector search failed")
+                ret_time = time.perf_counter() - start_ret
+
+        # SSE stream generator
+        async def event_generator():
+            full_response = []
+            start_llm = time.perf_counter()
+            try:
+                # Retrieve stream
+                generator = brain.get_response_stream(
+                    user_message=request.message,
+                    history=chat_history,
+                    context=context_text,
+                    pattern_signal=pattern_signal,
+                    session_summary=session_summary,
+                    recurring_themes=recurring_themes,
+                    preferred_name=display_name,
+                )
+                for chunk in generator:
+                    full_response.append(chunk)
+                    yield f"data: {json.dumps({'text': chunk})}\n\n"
+            except Exception as e:
+                logger.exception("Stream generation failed")
+                yield f"data: {json.dumps({'error': 'Failed to generate response'})}\n\n"
+            finally:
+                llm_time = time.perf_counter() - start_llm
+                
+                # Save the complete message
+                start_post = time.perf_counter()
+                complete_text = "".join(full_response)
+                if complete_text:
+                    try:
+                        memory.save_message(str(request.user_id), "ai", complete_text)
+                    except Exception:
+                        logger.exception("Failed to save streamed response to database")
+                post_time = time.perf_counter() - start_post
+                
+                total_time = time.perf_counter() - start_total
+                
+                perf_logging = os.getenv("PERFORMANCE_LOGGING", "false").lower() == "true" or brain.DEBUG
+                if perf_logging:
+                    print("[PERF] [STREAMING]")
+                    print(f"History      {hist_time:.2f}s")
+                    print(f"SessionMem   {mem_time:.2f}s")
+                    if used_retrieval:
+                        print(f"Keywords     {kw_time:.2f}s")
+                        print(f"Retrieval    {ret_time:.2f}s")
+                    print(f"LLM (Stream) {llm_time:.2f}s")
+                    print(f"Formatting   {post_time:.2f}s")
+                    print(f"Total        {total_time:.2f}s")
+
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
+    except Exception as e:
+        logger.exception("Chat stream setup failed")
         raise HTTPException(
             status_code=500,
             detail="Internal server error"

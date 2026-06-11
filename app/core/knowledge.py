@@ -53,12 +53,17 @@ FAISS_DB_PATH = "faiss_index"
 # --- EMBEDDING MODEL (Upgraded for Clinical Precision) ---
 EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
 
+EMBEDDING_MODEL_CACHE = None
+
 def _get_embeddings():
-    return HuggingFaceEmbeddings(
-        model_name=EMBEDDING_MODEL,
-        show_progress=True,  # <-- Pass it directly here
-        encode_kwargs={"normalize_embeddings": True}
-    )
+    global EMBEDDING_MODEL_CACHE
+    if EMBEDDING_MODEL_CACHE is None:
+        EMBEDDING_MODEL_CACHE = HuggingFaceEmbeddings(
+            model_name=EMBEDDING_MODEL,
+            show_progress=True,
+            encode_kwargs={"normalize_embeddings": True}
+        )
+    return EMBEDDING_MODEL_CACHE
 
 def create_vector_store(documents):
     embeddings = _get_embeddings()
@@ -67,6 +72,8 @@ def create_vector_store(documents):
     vector_db = FAISS.from_documents(documents, embeddings)
     vector_db.save_local(FAISS_DB_PATH)
     return vector_db
+
+VECTOR_STORE = None
 
 def load_vector_store(path=None):
     load_path = path or FAISS_DB_PATH
@@ -77,6 +84,12 @@ def load_vector_store(path=None):
         allow_dangerous_deserialization=True
         # No distance_strategy — use default L2
     )
+
+def get_vector_store(path=None):
+    global VECTOR_STORE
+    if VECTOR_STORE is None:
+        VECTOR_STORE = load_vector_store(path)
+    return VECTOR_STORE
 
 def clean_query(query: str) -> list[str]:
     """
