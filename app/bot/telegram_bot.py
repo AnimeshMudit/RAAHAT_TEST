@@ -31,22 +31,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # 1. Save user msg to shared DB
     memory.save_message(user_uuid, "user", user_text)
 
+    # 3. Get Shared History
+    history_records = memory.fetch_history(user_uuid)
+
     # 2. Search PDF Context (if any)
     context_text = ""
     if vector_db:
         try:
-            search_query = brain.generate_search_keywords(user_text)
-            if search_query == "SKIP":
+            is_crisis = brain.is_crisis_active(user_text, history_records)
+            if is_crisis and not brain.needs_psychoeducation(user_text):
                 rel_chunks = []
             else:
-                rel_chunks = knowledge.search_knowledge(search_query, vector_db, k=4)
+                search_query = brain.generate_search_keywords(user_text)
+                if search_query == "SKIP":
+                    rel_chunks = []
+                else:
+                    k_val = 1 if is_crisis else 4
+                    rel_chunks = knowledge.search_knowledge(search_query, vector_db, k=k_val)
             if rel_chunks:
                 context_text = "\n".join(rel_chunks)
         except Exception as e:
             logging.error(f"Vector search failed: {e}")
-
-    # 3. Get Shared History
-    history_records = memory.fetch_history(user_uuid)
 
     # 4. Generate Brain Response
     response = brain.get_response(user_text, history_records, context_text)

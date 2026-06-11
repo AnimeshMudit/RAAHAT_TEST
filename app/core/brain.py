@@ -35,21 +35,86 @@ def _load_behavior_examples_once() -> list:
 
 _BEHAVIOR_EXAMPLES = _load_behavior_examples_once()
 
-CRISIS_CONTEXT = """
+import re
+
+ACTIVE_SAFETY_OVERRIDE = """
+### ACTIVE SAFETY OVERRIDE
+
 CRISIS MODE ACTIVE
 
 The user may be experiencing a mental health crisis or suicidal ideation.
 
 - Respond with warmth, calm, and empathy. Do not panic or over-react.
 - Acknowledge what they said directly before anything else.
-- Provide the following Indian crisis resources naturally within your response:
-    Kiran Mental Health Helpline: 14416 (24/7, free, multilingual)
-    iCall: 9152987821
-    Vandrevala Foundation: 1860-2662-345
 - Maintain your RAAHAT personality. Do not become robotic or clinical.
 - Keep the response concise — do not overwhelm them with text.
 - Do not ask multiple questions. Ask at most one gentle question.
 """
+
+CRISIS_RESOURCE_CARD = """
+
+---
+
+**Need immediate support? approved Indian resources:**
+- Kiran Mental Health Helpline: 14416 (24/7, free, multilingual)
+- iCall: 9152987821 (Monday-Saturday, 10 AM-8 PM)
+- Vandrevala Foundation: 1860-2662-345 or 9999-666-555 (24/7)
+"""
+
+CLASSIFIER_SYSTEM_PROMPT = """
+You are a safety classification assistant.
+Analyze the user message and classify it into exactly one of these categories:
+- SAFE: Everyday conversations, general queries, positive topics, or very minor/ordinary stress.
+- LOW: Sadness, standard relationship problems, stress, exam anxiety, fatigue, or general venting, but NO hints of self-harm or death.
+- HIGH: Indirect or implied self-harm, deep hopelessness, passive suicidal ideation (e.g., "everyone would be better without me", "no reason to continue", "no point going on").
+- CRISIS: Explicit active suicidal ideation, self-harm statements, active intent or plans (e.g., "I want to end my life", "I'm going to kill myself", "goodbye mate", "taking the wrong step").
+
+Output ONLY the category name: SAFE, LOW, HIGH, or CRISIS. Do not include any other words or punctuation.
+"""
+
+# Compiled regexes for safety detection
+_SAFETY_PATTERNS = [
+    ("suicidal", re.compile(r"\bsuicidal\b", re.IGNORECASE)),
+    ("I should die", re.compile(r"\bi\b.*\bshould\b.*\bdie\b", re.IGNORECASE)),
+    ("I want to end my life", re.compile(r"\bi\b.*\bwant\b.*\b(to\b.*\b)?end\b.*\b(my\b.*\b)?life\b", re.IGNORECASE)),
+    ("I don't wish to live anymore", re.compile(r"\bi\b.*\bdon'?t\b.*\bwish\b.*\bto\b.*\blive\b", re.IGNORECASE)),
+    ("goodbye everyone", re.compile(r"\bgoodbye\b.*\beveryone\b", re.IGNORECASE)),
+    ("goodbye mate", re.compile(r"\bgoodbye\b.*\bmate\b", re.IGNORECASE)),
+    ("take the wrong step", re.compile(r"\btake\b.*\b(the\b.*\b)?wrong\b.*\bstep\b", re.IGNORECASE)),
+    ("everyone would be better without me", re.compile(r"\b(everyone\b.*\bbetter\b.*\bwithout\b.*\bme\b|better\b.*\boff\b.*\bwithout\b.*\bme\b)", re.IGNORECASE)),
+    ("no reason to continue", re.compile(r"\bno\b.*\breason\b.*\b(to\b.*\b)?continue\b", re.IGNORECASE)),
+    ("wish I were dead", re.compile(r"\bwish\b.*\bi\b.*\b(were|was)\b.*\bdead\b", re.IGNORECASE)),
+    ("suicide", re.compile(r"\bsuicide\b", re.IGNORECASE)),
+    ("kill myself", re.compile(r"\bkill\b.*\bmyself\b", re.IGNORECASE)),
+    ("killing myself", re.compile(r"\bkilling\b.*\bmyself\b", re.IGNORECASE)),
+    ("want to die", re.compile(r"\bwant\b.*\bto\b.*\bdie\b", re.IGNORECASE)),
+    ("wanted to die", re.compile(r"\bwanted\b.*\bto\b.*\bdie\b", re.IGNORECASE)),
+    ("better off dead", re.compile(r"\bbetter\b.*\boff\b.*\bdead\b", re.IGNORECASE)),
+    ("don't want to live", re.compile(r"\bdon'?t\b.*\bwant\b.*\bto\b.*\blive\b", re.IGNORECASE)),
+    ("do not want to live", re.compile(r"\bdo\b.*\bnot\b.*\bwant\b.*\bto\b.*\blive\b", re.IGNORECASE)),
+    ("no reason to live", re.compile(r"\bno\b.*\breason\b.*\bto\b.*\blive\b", re.IGNORECASE)),
+    ("no reason to be alive", re.compile(r"\bno\b.*\breason\b.*\bto\b.*\bbe\b.*\balive\b", re.IGNORECASE)),
+    ("end it all", re.compile(r"\bend\b.*\bit\b.*\ball\b", re.IGNORECASE)),
+    ("take my life", re.compile(r"\btake\b.*\bmy\b.*\blife\b", re.IGNORECASE)),
+    ("goodbye forever", re.compile(r"\bgoodbye\b.*\bforever\b", re.IGNORECASE)),
+    ("no point going on", re.compile(r"\bno\b.*\bpoint\b.*\bgoing\b.*\bon\b", re.IGNORECASE)),
+    ("no point in going on", re.compile(r"\bno\b.*\bpoint\b.*\bin\b.*\bgoing\b.*\bon\b", re.IGNORECASE)),
+    ("can't go on", re.compile(r"\bcan'?t\b.*\bgo\b.*\bon\b", re.IGNORECASE)),
+    ("cannot go on", re.compile(r"\bcannot\b.*\bgo\b.*\bon\b", re.IGNORECASE)),
+    ("done with life", re.compile(r"\bdone\b.*\bwith\b.*\blife\b", re.IGNORECASE)),
+    ("i'm done with life", re.compile(r"\bi'?m\b.*\bdone\b.*\bwith\b.*\blife\b", re.IGNORECASE)),
+    ("done with everything", re.compile(r"\bdone\b.*\bwith\b.*\beverything\b", re.IGNORECASE)),
+    ("won't be here anymore", re.compile(r"\bwon'?t\b.*\bbe\b.*\bhere\b.*\banymore\b", re.IGNORECASE)),
+    ("won't be around much longer", re.compile(r"\bwon'?t\b.*\bbe\b.*\baround\b.*\blonger\b", re.IGNORECASE)),
+    ("last time talking", re.compile(r"\blast\b.*\btime\b.*\btalking\b", re.IGNORECASE)),
+    ("nobody would miss me", re.compile(r"\bnobody\b.*\bmiss\b.*\bme\b", re.IGNORECASE)),
+    ("better off without me", re.compile(r"\bbetter\b.*\boff\b.*\bwithout\b.*\bme\b", re.IGNORECASE)),
+    ("want to disappear", re.compile(r"\bwant\b.*\bto\b.*\bdisappear\b", re.IGNORECASE)),
+    ("want to vanish", re.compile(r"\bwant\b.*\bto\b.*\bvanish\b", re.IGNORECASE)),
+    ("hopeless", re.compile(r"\bhopeless\b", re.IGNORECASE)),
+    ("can't take it anymore", re.compile(r"\bcan'?t\b.*\btake\b.*\bit\b.*\banymore\b", re.IGNORECASE)),
+    ("life is not worth it", re.compile(r"\blife\b.*\bnot\b.*\bworth\b.*\bit\b", re.IGNORECASE)),
+]
 
 
 def _is_rate_limit_error(error):
@@ -144,7 +209,7 @@ Prioritize emotionally natural conversation flow over constant intervention.
 """
 
 
-def safety_check(text) -> bool:
+def safety_check(text: str) -> str | None:
     text_lower = text.lower()
 
     # Exclude known safe idioms so they don't trigger false positives
@@ -159,60 +224,69 @@ def safety_check(text) -> bool:
     for idiom in safe_idioms:
         text_lower = text_lower.replace(idiom, "")
 
-    danger_keywords = [
-        # Direct self-harm
-        "suicide",
-        "suicidal",
-        "kill myself",
-        "killing myself",
-        "want to die",
-        "wanted to die",
-        "wish i was dead",
-        "wish i were dead",
-        "should die",
-        "i should die",
-        "better off dead",
-        "don't want to live",
-        "do not want to live",
-        "don't wish to live",
-        "do not wish to live",
-        "no reason to live",
-        "no reason to be alive",
-        "end my life",
-        "end it all",
-        "take my life",
+    for name, pattern in _SAFETY_PATTERNS:
+        if pattern.search(text_lower):
+            return name
+    return None
 
-        # Farewell / giving up signals
-        "goodbye forever",
-        "goodbye everyone",
-        "goodbye mate",
-        "no point going on",
-        "no point in going on",
-        "can't go on",
-        "cannot go on",
-        "done with life",
-        "i'm done with life",
-        "done with everything",
 
-        # Indirect crisis signals
-        "take the wrong step",
-        "won't be here anymore",
-        "won't be around much longer",
-        "last time talking",
-        "nobody would miss me",
-        "better off without me",
-        "want to disappear",
-        "want to vanish",
-
-        # Existing list preserved
-        "hopeless",
-        "can't take it anymore",
-        "life is not worth it",
+def llm_safety_classify(user_message: str) -> str:
+    messages = [
+        {"role": "system", "content": CLASSIFIER_SYSTEM_PROMPT},
+        {"role": "user", "content": user_message}
     ]
-    for word in danger_keywords:
-        if word in text_lower:
+    last_error = None
+    for index, client in enumerate(clients):
+        try:
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=messages,
+                temperature=0.0,
+                max_tokens=10,
+            )
+            result = completion.choices[0].message.content.strip().upper()
+            for category in ("CRISIS", "HIGH", "LOW", "SAFE"):
+                if category in result:
+                    return category
+            return "SAFE"
+        except Exception as e:
+            last_error = e
+            if index < len(clients) - 1 and _is_rate_limit_error(e):
+                continue
+            break
+    logger.error("LLM Safety Classifier failed: %s", last_error)
+    return "SAFE"
+
+
+def check_recent_crisis(history) -> bool:
+    if not history:
+        return False
+    # Check the last 10 messages (user and assistant) for the crisis resource card text
+    for msg in reversed(history[-10:]):
+        content = msg.get("content", "")
+        if msg.get("role") in ("assistant", "ai") and "Kiran Mental Health Helpline" in content:
             return True
     return False
+
+
+def is_crisis_active(message: str, history: list[dict] = None) -> bool:
+    """Helper to check if crisis mode is active for the current message or recent session."""
+    history = history or []
+    matched_trigger = safety_check(message)
+    if matched_trigger:
+        return True
+    llm_class = llm_safety_classify(message)
+    if llm_class in ("HIGH", "CRISIS"):
+        return True
+    if check_recent_crisis(history):
+        return True
+    return False
+
+
+def needs_psychoeducation(message: str) -> bool:
+    msg = message.lower()
+    keywords = ["what is", "how do i", "explain", "technique", "exercise", "therapy", "cbt", "dbt", "pfa", "grounding"]
+    return any(kw in msg for kw in keywords)
 
 
 def detect_emotional_presence_mode(user_message):
@@ -281,6 +355,59 @@ def _llm_call(
 
     prompt_sections = [SYSTEM_PROMPT.rstrip()]
 
+    # 1. Safety Overrides (if active)
+    if crisis_mode:
+        prompt_sections.append(ACTIVE_SAFETY_OVERRIDE)
+
+    # 2. Memory (Preferred Name)
+    memory_section = ["### USER MEMORY\n"]
+    if preferred_name:
+        memory_section.append(
+            f"The user's preferred name is: {preferred_name}\n"
+            "Treat this as trusted conversational memory. "
+            "Use the name naturally — after emotionally expressive messages, "
+            "during reassurance, encouragement, or when welcoming them back. "
+            "Do not use the name in every reply. Never invent another name."
+        )
+    else:
+        memory_section.append(
+            "The user's preferred name is not yet known. "
+            "If asked what their name is, say you do not know their name yet."
+        )
+    prompt_sections.append("\n".join(memory_section))
+
+    # 3. Memory Summaries & Theme Contexts
+    if session_summary:
+        prompt_sections.append(
+            "### RETURNING USER CONTEXT\n\n"
+            "Summary of prior sessions:\n\n"
+            f"{_format_prompt_context(session_summary)}\n\n"
+            "Use this context naturally.\n"
+            "Do not quote it verbatim.\n"
+            "Do not reveal internal memory mechanisms."
+        )
+
+    if recurring_themes:
+        prompt_sections.append(
+            "### LONG-TERM EMOTIONAL THEMES\n\n"
+            "The following themes have appeared repeatedly across the user's history:\n\n"
+            f"{_format_prompt_context(recurring_themes)}\n\n"
+            "Use this only as soft contextual awareness.\n"
+            "Do not mention memory, tracking, or recurring themes explicitly.\n"
+            "Do not assume the user currently feels these emotions."
+        )
+
+    if pattern_signal:
+        prompt_sections.append(
+            "### PATTERN AWARENESS\n\n"
+            "The user has shown recurring themes across previous conversations:\n\n"
+            f"{_format_prompt_context(pattern_signal)}\n\n"
+            "Use this only as supporting context.\n"
+            "Do not mention that patterns were detected.\n"
+            "Do not sound repetitive or deterministic.\n"
+            "Treat the user as an individual in the current moment."
+        )
+
     if emotional_presence_mode:
         prompt_sections.append(
             "### EMOTIONAL PRESENCE MODE\n\n"
@@ -297,37 +424,7 @@ def _llm_call(
             f"{behavior_examples}"
         )
 
-    if recurring_themes:
-        prompt_sections.append(
-            "### LONG-TERM EMOTIONAL THEMES\n\n"
-            "The following themes have appeared repeatedly across the user's history:\n\n"
-            f"{_format_prompt_context(recurring_themes)}\n\n"
-            "Use this only as soft contextual awareness.\n"
-            "Do not mention memory, tracking, or recurring themes explicitly.\n"
-            "Do not assume the user currently feels these emotions."
-        )
-
-    if session_summary:
-        prompt_sections.append(
-            "### RETURNING USER CONTEXT\n\n"
-            "Summary of prior sessions:\n\n"
-            f"{_format_prompt_context(session_summary)}\n\n"
-            "Use this context naturally.\n"
-            "Do not quote it verbatim.\n"
-            "Do not reveal internal memory mechanisms."
-        )
-
-    if pattern_signal:
-        prompt_sections.append(
-            "### PATTERN AWARENESS\n\n"
-            "The user has shown recurring themes across previous conversations:\n\n"
-            f"{_format_prompt_context(pattern_signal)}\n\n"
-            "Use this only as supporting context.\n"
-            "Do not mention that patterns were detected.\n"
-            "Do not sound repetitive or deterministic.\n"
-            "Treat the user as an individual in the current moment."
-        )
-
+    # 4. RAG Context (Retrieved Clinical Context)
     if context:
         prompt_sections.append(
             "### RETRIEVED CLINICAL CONTEXT\n\n"
@@ -339,16 +436,6 @@ def _llm_call(
             f"{context}\n"
             "---"
         )
-        
-    if preferred_name:
-        prompt_sections.append(
-            f"### USER MEMORY\n\n"
-            f"The user's preferred name is: {preferred_name}\n\n"
-            "Treat this as trusted conversational memory. "
-            "Use the name naturally — after emotionally expressive messages, "
-            "during reassurance, encouragement, or when welcoming them back. "
-            "Do not use the name in every reply. Never invent another name."
-        )
 
     dynamic_prompt = "\n\n".join(prompt_sections)
 
@@ -358,7 +445,7 @@ def _llm_call(
             "content": dynamic_prompt
         }
     ]
-        
+
     for msg in history:
         role = "assistant" if msg["role"] == "ai" else msg["role"]
         messages.append({"role": role, "content": msg["content"]})
@@ -394,11 +481,34 @@ def get_response(
     history = history or []
     emotional_presence_mode = detect_emotional_presence_mode(user_message)
 
-    crisis_active = safety_check(user_message)
-    if crisis_active:
-        context = CRISIS_CONTEXT + "\n\n" + context
+    # 1. First-stage Keyword/Pattern Check
+    matched_trigger = safety_check(user_message)
 
-    return _llm_call(
+    # 2. Second-stage LLM Safety Classifier
+    llm_class = llm_safety_classify(user_message)
+
+    # 3. Check Session Memory
+    recent_crisis = check_recent_crisis(history)
+
+    # Determine if crisis is active
+    crisis_active = bool(matched_trigger) or (llm_class in ("HIGH", "CRISIS")) or recent_crisis
+
+    card_appended = "Yes" if (bool(matched_trigger) or llm_class in ("HIGH", "CRISIS")) else "No"
+
+    # 4. Safety Debug Logging
+    if DEBUG:
+        print(f"[SAFETY DEBUG] Crisis detected: {crisis_active}")
+        print(f"[SAFETY DEBUG] Matched keyword or pattern: {matched_trigger}")
+        print(f"[SAFETY DEBUG] Safety classifier output: {llm_class}")
+        print(f"[SAFETY DEBUG] Crisis resource card appended: {card_appended}")
+
+    logger.info("Crisis detected: %s", crisis_active)
+    logger.info("Matched keyword or pattern: %s", matched_trigger)
+    logger.info("Safety classifier output: %s", llm_class)
+    logger.info("Crisis resource card appended: %s", card_appended)
+
+    # Call the raw LLM
+    response_text = _llm_call(
         user_message,
         history,
         context,
@@ -409,6 +519,12 @@ def get_response(
         preferred_name=preferred_name,
         crisis_mode=crisis_active,
     )
+
+    # If this message is classified as HIGH/CRISIS, append the card
+    if bool(matched_trigger) or (llm_class in ("HIGH", "CRISIS")):
+        response_text += "\n\n" + CRISIS_RESOURCE_CARD
+
+    return response_text
 
 
 def generate_search_keywords(user_input):

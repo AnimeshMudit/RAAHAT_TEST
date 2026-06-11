@@ -107,24 +107,27 @@ def main():
         # Save user query
         memory.save_message(user_id, "user", user_input)
 
+        # Retrieve Past Memory
+        chat_history = memory.fetch_history(user_id)
+
         context_text = ""
         if vector_db:
             try:
-                # --- NEW: SEARCH QUERY EXPANSION ---
-                # 1. Ask brain to generate clinical terms (e.g., "drowning" -> "Grounding")
-                search_query = brain.generate_search_keywords(user_input)
-                if search_query == "SKIP":
+                is_crisis = brain.is_crisis_active(user_input, chat_history)
+                if is_crisis and not brain.needs_psychoeducation(user_input):
                     results = []
                 else:
-                    print(Fore.MAGENTA + f"🔍 Searching Knowledge Base for: {search_query}")
-                    # 2. search_knowledge cleans the query internally via clean_query()
-                    results = knowledge.search_knowledge(search_query, vector_db)
+                    # 1. Ask brain to generate clinical terms (e.g., "drowning" -> "Grounding")
+                    search_query = brain.generate_search_keywords(user_input)
+                    if search_query == "SKIP":
+                        results = []
+                    else:
+                        print(Fore.MAGENTA + f"🔍 Searching Knowledge Base for: {search_query}")
+                        k_val = 1 if is_crisis else 5
+                        results = knowledge.search_knowledge(search_query, vector_db, k=k_val)
                 context_text = "\n".join(results)
             except Exception as e:
                 print(Fore.RED + f"Search Error: {e}")
-
-        # Retrieve Past Memory
-        chat_history = memory.fetch_history(user_id)
 
         # Generate Brain Response
         response = brain.get_response(user_input, chat_history, context_text)

@@ -410,20 +410,25 @@ async def chat(request: ChatRequest):
 
         memory.save_message(str(request.user_id), "user", request.message)
 
-        context_text = ""
-        try:
-            vector_db = knowledge.load_vector_store(FAISS_DIR)
-            search_query = brain.generate_search_keywords(request.message)
-            if search_query == "SKIP":
-                results = []
-            else:
-                results = knowledge.search_knowledge(search_query, vector_db)
-            context_text = "\n".join(results) if results else ""
-        except Exception as e:
-            logger.exception("Vector search failed")
-            
-            
         chat_history = memory.fetch_history(str(request.user_id))
+        is_crisis = brain.is_crisis_active(request.message, chat_history)
+
+        context_text = ""
+        if is_crisis and not brain.needs_psychoeducation(request.message):
+            pass
+        else:
+            try:
+                vector_db = knowledge.load_vector_store(FAISS_DIR)
+                search_query = brain.generate_search_keywords(request.message)
+                if search_query == "SKIP":
+                    results = []
+                else:
+                    k_val = 1 if is_crisis else 5
+                    results = knowledge.search_knowledge(search_query, vector_db, k=k_val)
+                context_text = "\n".join(results) if results else ""
+            except Exception as e:
+                logger.exception("Vector search failed")
+            
         pattern_signal = session.get_pattern_signal(chat_history)
 
         session_summary = memory.get_session_summary(
@@ -440,13 +445,6 @@ async def chat(request: ChatRequest):
             or user_record.data[0].get("display_name")
             or ""
         ).strip()
-        if display_name:
-            context_text += f"\nUser's preferred name: {display_name}"
-        else:
-            context_text += (
-                "\n\nSystem Note: The user's preferred name is not yet known. "
-                "If asked their name, say you do not know yet."
-            )
 
         try:
             response_text = brain.get_response(
