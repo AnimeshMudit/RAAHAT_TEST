@@ -12,7 +12,7 @@ key = os.getenv("SUPABASE_KEY")     #gets the key
 supabase = create_client(url,key)   #i guess it establish the connection between database and my code 
 
 _MSG_COLS = "role,content,created_at"
-_USER_PROFILE_COLS = "id,username,Name,name,display_name,is_verified,auth_provider,password_hash,google_id,telegram_id"
+_USER_PROFILE_COLS = "id,username,Name,is_verified,auth_provider,password_hash,google_id,telegram_id"
 _LLM_HISTORY_LIMIT = 8          # 4 turns for LLM prompt
 _STORAGE_HISTORY_LIMIT = 25     # unchanged storage/API limit
 _THEME_HISTORY_LIMIT = 100
@@ -255,7 +255,6 @@ def get_user_display_name(user_row: dict | None, preferred_name: str | None = No
         return ""
     return str(
         user_row.get("Name")
-        or user_row.get("name")
         or user_row.get("display_name")
         or ""
     ).strip()
