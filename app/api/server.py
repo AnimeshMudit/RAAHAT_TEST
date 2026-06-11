@@ -3,13 +3,15 @@ import sys
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from uuid import UUID
 from dotenv import load_dotenv
 import logging
+import time
+import json
 
 logger = logging.getLogger(__name__)
 _chat_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="raahat-chat")
@@ -418,6 +420,7 @@ def _run_crisis_eval(message: str, history: list[dict]) -> dict:
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
+    start_total = time.perf_counter()
     try:
         user_id = str(request.user_id)
         user_record = memory.get_user_by_id(user_id)
@@ -426,7 +429,9 @@ async def chat(request: ChatRequest):
 
         memory.save_message(user_id, "user", request.message)
 
+        start_ctx = time.perf_counter()
         chat_context = memory.build_chat_context(user_id)
+        ctx_time = time.perf_counter() - start_ctx
         chat_history = chat_context["history"]
         llm_history = chat_context["llm_history"]
         session_summary = chat_context["session_summary"]
@@ -436,6 +441,7 @@ async def chat(request: ChatRequest):
         quick_trigger = brain.safety_check(request.message)
         retrieval_k = 1 if quick_trigger else 5
 
+        start_parallel = time.perf_counter()
         crisis_state, context_text = await asyncio.gather(
             loop.run_in_executor(
                 _chat_executor,
@@ -450,6 +456,7 @@ async def chat(request: ChatRequest):
                 retrieval_k,
             ),
         )
+        parallel_time = time.perf_counter() - start_parallel
 
         if crisis_state["crisis_active"] and not brain.needs_psychoeducation(request.message):
             context_text = ""
@@ -460,6 +467,7 @@ async def chat(request: ChatRequest):
             preferred_name=request.preferred_name,
         )
 
+        start_llm = time.perf_counter()
         try:
             response_text = await loop.run_in_executor(
                 _chat_executor,
@@ -480,13 +488,130 @@ async def chat(request: ChatRequest):
                 status_code=500,
                 detail="Failed to generate response.",
             )
+        llm_time = time.perf_counter() - start_llm
 
+        start_post = time.perf_counter()
         memory.save_message(user_id, "ai", response_text)
+        post_time = time.perf_counter() - start_post
+
+        total_time = time.perf_counter() - start_total
+
+        perf_logging = os.getenv("PERFORMANCE_LOGGING", "false").lower() == "true" or brain.DEBUG
+        if perf_logging:
+            print("[PERF]")
+            print(f"Context      {ctx_time:.2f}s")
+            print(f"Crisis+Ret   {parallel_time:.2f}s")
+            print(f"LLM          {llm_time:.2f}s")
+            print(f"Formatting   {post_time:.2f}s")
+            print(f"Total        {total_time:.2f}s")
+
         return {"response": response_text}
     except HTTPException:
         raise
     except Exception:
         logger.exception("Chat endpoint failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error"
+        )
+
+
+@app.post("/api/chat/stream")
+async def chat_stream(request: ChatRequest):
+    start_total = time.perf_counter()
+    try:
+        user_id = str(request.user_id)
+        user_record = memory.get_user_by_id(user_id)
+        if not user_record:
+            raise HTTPException(status_code=400, detail="User not found.")
+
+        memory.save_message(user_id, "user", request.message)
+
+        start_ctx = time.perf_counter()
+        chat_context = memory.build_chat_context(user_id)
+        ctx_time = time.perf_counter() - start_ctx
+        chat_history = chat_context["history"]
+        llm_history = chat_context["llm_history"]
+        session_summary = chat_context["session_summary"]
+        recurring_themes = chat_context["recurring_themes"]
+
+        loop = asyncio.get_running_loop()
+        quick_trigger = brain.safety_check(request.message)
+        retrieval_k = 1 if quick_trigger else 5
+
+        start_parallel = time.perf_counter()
+        crisis_state, context_text = await asyncio.gather(
+            loop.run_in_executor(
+                _chat_executor,
+                _run_crisis_eval,
+                request.message,
+                chat_history,
+            ),
+            loop.run_in_executor(
+                _chat_executor,
+                _run_retrieval,
+                request.message,
+                retrieval_k,
+            ),
+        )
+        parallel_time = time.perf_counter() - start_parallel
+
+        if crisis_state["crisis_active"] and not brain.needs_psychoeducation(request.message):
+            context_text = ""
+
+        pattern_signal = session.get_pattern_signal(chat_history)
+        display_name = memory.get_user_display_name(
+            user_record,
+            preferred_name=request.preferred_name,
+        )
+
+        async def event_generator():
+            full_response = []
+            start_llm = time.perf_counter()
+            try:
+                generator = brain.get_response_stream(
+                    user_message=request.message,
+                    history=llm_history,
+                    context=context_text,
+                    pattern_signal=pattern_signal,
+                    session_summary=session_summary,
+                    recurring_themes=recurring_themes,
+                    preferred_name=display_name,
+                )
+                for chunk in generator:
+                    full_response.append(chunk)
+                    yield f"data: {json.dumps({'text': chunk})}\n\n"
+            except Exception:
+                logger.exception("Stream generation failed")
+                yield f"data: {json.dumps({'error': 'Failed to generate response'})}\n\n"
+            finally:
+                llm_time = time.perf_counter() - start_llm
+
+                start_post = time.perf_counter()
+                complete_text = "".join(full_response)
+                if complete_text:
+                    try:
+                        memory.save_message(user_id, "ai", complete_text)
+                    except Exception:
+                        logger.exception("Failed to save streamed response to database")
+                post_time = time.perf_counter() - start_post
+
+                total_time = time.perf_counter() - start_total
+
+                perf_logging = os.getenv("PERFORMANCE_LOGGING", "false").lower() == "true" or brain.DEBUG
+                if perf_logging:
+                    print("[PERF] [STREAMING]")
+                    print(f"Context      {ctx_time:.2f}s")
+                    print(f"Crisis+Ret   {parallel_time:.2f}s")
+                    print(f"LLM (Stream) {llm_time:.2f}s")
+                    print(f"Formatting   {post_time:.2f}s")
+                    print(f"Total        {total_time:.2f}s")
+
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Chat stream setup failed")
         raise HTTPException(
             status_code=500,
             detail="Internal server error",

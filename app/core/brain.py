@@ -162,12 +162,13 @@ def _is_rate_limit_error(error):
     )
 
 
-def _create_completion(client, messages, temperature=0.65, max_tokens=800):
+def _create_completion(client, messages, temperature=0.65, max_tokens=800, stream=False):
     return client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=messages,
         temperature=temperature,
         max_tokens=max_tokens,
+        stream=stream,
     )
 
 
@@ -235,15 +236,67 @@ def check_recent_crisis(history) -> bool:
     return False
 
 
+def should_run_safety_classifier(text: str) -> bool:
+    text_lower = text.lower()
+    high_risk_words = {
+        "sad", "hurt", "pain", "hopeless", "give up", "tired", "exhausted",
+        "worthless", "empty", "alone", "lonely", "die", "kill", "end",
+        "goodbye", "live", "world", "life", "cruel", "better", "without",
+        "step", "reason", "continue", "going on", "go on", "disappear", "vanish",
+        "suicide", "suicidal", "myself", "dead", "point"
+    }
+    return any(word in text_lower for word in high_risk_words)
+
+
+def should_use_retrieval(user_message: str, history: list = None) -> bool:
+    text = user_message.lower().strip().strip(".,!?")
+    
+    # 1. Greetings and farewells skip list
+    skip_phrases = {
+        "hello", "hi", "hey", "thanks", "thank you", 
+        "good morning", "good evening", "how are you", 
+        "what's up", "bye", "goodbye", "good night"
+    }
+    if text in skip_phrases:
+        return False
+        
+    # 2. Memory recall queries
+    memory_queries = ["what is my name", "do you remember me", "who am i", "do you remember my name"]
+    if any(q in text for q in memory_queries):
+        return False
+        
+    # 3. Emotional presence mode
+    if detect_emotional_presence_mode(user_message):
+        return False
+        
+    # 4. Semantic topics keywords
+    trigger_keywords = {
+        "coping", "anxiety", "depression", "grounding", "breathing",
+        "cbt", "dbt", "panic", "stress", "therapy", "technique", "exercise"
+    }
+    has_trigger = any(kw in text for kw in trigger_keywords)
+    
+    # 5. Crisis mode
+    if is_crisis_active(user_message, history):
+        # Skip retrieval unless discussing coping methods
+        return has_trigger
+        
+    return has_trigger
+
+
 def is_crisis_active(message: str, history: list[dict] = None) -> bool:
     """Helper to check if crisis mode is active for the current message or recent session."""
     history = history or []
     matched_trigger = safety_check(message)
     if matched_trigger:
         return True
-    llm_class = llm_safety_classify(message)
-    if llm_class in ("HIGH", "CRISIS"):
-        return True
+    
+    # Task 11: Only run classifier conditionally
+    if should_run_safety_classifier(message):
+        llm_class = llm_safety_classify(message)
+        if llm_class in ("HIGH", "CRISIS"):
+            return True
+            
     if check_recent_crisis(history):
         return True
     return False
@@ -494,6 +547,143 @@ def _llm_call(
     return "I'm having trouble responding right now."
 
 
+def _llm_call_stream(
+    user_message,
+    history=None,
+    context="",
+    pattern_signal=None,
+    session_summary=None,
+    recurring_themes=None,
+    emotional_presence_mode=False,
+    preferred_name="",
+    crisis_mode=False,
+):
+    """Streaming LLM call — internal use only."""
+    history = history or []
+
+    prompt_sections = [SYSTEM_PROMPT.rstrip()]
+
+    # 1. Safety Overrides (if active)
+    if crisis_mode:
+        prompt_sections.append(ACTIVE_SAFETY_OVERRIDE)
+
+    # 2. Memory (Preferred Name)
+    memory_section = ["### USER MEMORY\n"]
+    if preferred_name:
+        memory_section.append(
+            f"The user's preferred name is: {preferred_name}\n"
+            "Treat this as trusted conversational memory. "
+            "Use the name naturally — after emotionally expressive messages, "
+            "during reassurance, encouragement, or when welcoming them back. "
+            "Do not use the name in every reply. Never invent another name."
+        )
+    else:
+        memory_section.append(
+            "The user's preferred name is not yet known. "
+            "If asked what their name is, say you do not know their name yet."
+        )
+    prompt_sections.append("\n".join(memory_section))
+
+    # 3. Memory Summaries & Theme Contexts
+    if session_summary:
+        prompt_sections.append(
+            "### RETURNING USER CONTEXT\n\n"
+            "Summary of prior sessions:\n\n"
+            f"{_format_prompt_context(session_summary)}\n\n"
+            "Use this context naturally.\n"
+            "Do not quote it verbatim.\n"
+            "Do not reveal internal memory mechanisms."
+        )
+
+    if recurring_themes:
+        prompt_sections.append(
+            "### LONG-TERM EMOTIONAL THEMES\n\n"
+            "The following themes have appeared repeatedly across the user's history:\n\n"
+            f"{_format_prompt_context(recurring_themes)}\n\n"
+            "Use this only as soft contextual awareness.\n"
+            "Do not mention memory, tracking, or recurring themes explicitly.\n"
+            "Do not assume the user currently feels these emotions."
+        )
+
+    if pattern_signal:
+        prompt_sections.append(
+            "### PATTERN AWARENESS\n\n"
+            "The user has shown recurring themes across previous conversations:\n\n"
+            f"{_format_prompt_context(pattern_signal)}\n\n"
+            "Use this only as supporting context.\n"
+            "Do not mention that patterns were detected.\n"
+            "Do not sound repetitive or deterministic.\n"
+            "Treat the user as an individual in the current moment."
+        )
+
+    if emotional_presence_mode:
+        prompt_sections.append(
+            "### EMOTIONAL PRESENCE MODE\n\n"
+            "The user is emotionally venting or seeking presence rather than solutions.\n"
+            "Prioritize listening, emotional reflection, warmth, and conversational calmness.\n"
+            "Avoid coping strategies, structured advice, self-help style suggestions, or problem-solving unless explicitly requested.\n"
+            "Keep responses gentle, human, and emotionally present."
+        )
+
+    behavior_examples = load_behavior_examples()
+    if behavior_examples:
+        prompt_sections.append(
+            "### Examples of emotionally natural conversational behavior:\n\n"
+            f"{behavior_examples}"
+        )
+
+    # 4. RAG Context (Retrieved Clinical Context)
+    if context:
+        prompt_sections.append(
+            "### RETRIEVED CLINICAL CONTEXT\n\n"
+            "The following is verified material from psychological first aid manuals.\n"
+            "Use it only if it naturally supports the emotional flow of the conversation.\n"
+            "Do not force frameworks or coping strategies into every reply.\n"
+            "Do not quote it directly.\n"
+            "---\n"
+            f"{context}\n"
+            "---"
+        )
+
+    dynamic_prompt = "\n\n".join(prompt_sections)
+
+    messages = [
+        {
+            "role": "system",
+            "content": dynamic_prompt
+        }
+    ]
+
+    # Task 12: Compress history to the last 8 messages (4 turns)
+    compressed_history = history[-8:]
+    for msg in compressed_history:
+        role = "assistant" if msg["role"] == "ai" else msg["role"]
+        messages.append({"role": role, "content": msg["content"]})
+    messages.append({"role": "user", "content": user_message})
+
+    last_error = None
+    for index, client in enumerate(clients):
+        try:
+            completion = _create_completion(client, messages, stream=True)
+            for chunk in completion:
+                content = chunk.choices[0].delta.content
+                if content:
+                    yield content
+            if index > 0:
+                logger.warning("Groq fallback key used for streaming after rate limit on primary key")
+            return
+        except Exception as e:
+            last_error = e
+            if index < len(clients) - 1 and _is_rate_limit_error(e):
+                continue
+            break
+
+    if DEBUG and last_error is not None:
+        yield f"❌ Brain Error: {str(last_error)}"
+    else:
+        yield "I'm having trouble responding right now."
+
+
 def get_response(
     user_message,
     history=None,
@@ -542,6 +732,53 @@ def get_response(
         response_text += "\n\n" + _CACHED_CRISIS_CARD
 
     return response_text
+
+
+def get_response_stream(
+    user_message,
+    history=None,
+    context="",
+    pattern_signal=None,
+    session_summary=None,
+    recurring_themes=None,
+    preferred_name=""
+):
+    history = history or []
+    emotional_presence_mode = detect_emotional_presence_mode(user_message)
+
+    crisis_state = evaluate_crisis_state(user_message, history)
+    crisis_active = crisis_state["crisis_active"]
+    matched_trigger = crisis_state["matched_trigger"]
+    llm_class = crisis_state["llm_class"]
+    card_appended = crisis_state["card_appended"]
+
+    if DEBUG:
+        print(f"[SAFETY DEBUG] Crisis detected: {crisis_active}")
+        print(f"[SAFETY DEBUG] Matched keyword or pattern: {matched_trigger}")
+        print(f"[SAFETY DEBUG] Safety classifier output: {llm_class}")
+        print(f"[SAFETY DEBUG] Crisis resource card appended: {'Yes' if card_appended else 'No'}")
+
+    logger.info("Crisis detected: %s", crisis_active)
+    logger.info("Matched keyword or pattern: %s", matched_trigger)
+    logger.info("Safety classifier output: %s", llm_class)
+    logger.info("Crisis resource card appended: %s", "Yes" if card_appended else "No")
+
+    # Stream the raw LLM output
+    for chunk in _llm_call_stream(
+        user_message,
+        history,
+        context,
+        pattern_signal=pattern_signal,
+        session_summary=session_summary,
+        recurring_themes=recurring_themes,
+        emotional_presence_mode=emotional_presence_mode,
+        preferred_name=preferred_name,
+        crisis_mode=crisis_active,
+    ):
+        yield chunk
+
+    if card_appended:
+        yield "\n\n" + _CACHED_CRISIS_CARD
 
 
 def generate_search_keywords(user_input):

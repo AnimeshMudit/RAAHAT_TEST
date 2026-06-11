@@ -72,10 +72,6 @@ def get_embeddings():
     return _embeddings
 
 
-def _get_embeddings():
-    return get_embeddings()
-
-
 def get_vector_store(path=None):
     """Load and cache the FAISS index globally — never reload per request."""
     global _vector_store, _vector_store_path
@@ -104,6 +100,7 @@ def create_vector_store(documents):
 
 def load_vector_store(path=None):
     return get_vector_store(path)
+
 
 def clean_query(query: str) -> list[str]:
     """
