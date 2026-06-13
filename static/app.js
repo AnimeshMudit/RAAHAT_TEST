@@ -639,6 +639,16 @@ async function bindChatPage() {
         return;
     }
 
+    try {
+        await apiFetch('/api/user-profile?user_id=' + encodeURIComponent(session.user_id));
+    } catch (error) {
+        if (error.status === 400 || error.status === 404 || error.status === 401) {
+            clearSession();
+            navigate('/login');
+            return;
+        }
+    }
+
     if (!session.name || !session.name.trim()) {
         navigate('/onboarding');
         return;

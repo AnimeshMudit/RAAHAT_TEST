@@ -1,7 +1,12 @@
 import os
+import sys
 import time
 import requests
 from datetime import datetime
+
+# Configure sys.stdout to UTF-8 to prevent charmap/UnicodeEncodeError on Windows
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 # ============================================
 # CONFIG

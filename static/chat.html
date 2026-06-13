@@ -1366,7 +1366,11 @@
                 return;
             }
 
-            await loadUserProfile();
+            const profile = await loadUserProfile();
+            if (profile && profile.error === 'session_invalid') {
+                logout();
+                return;
+            }
             setUserUI();
             loadHistory();
 
@@ -1413,6 +1417,9 @@
         async function loadUserProfile() {
             try {
                 const res = await fetch(`${API_BASE}/api/user-profile?user_id=${encodeURIComponent(userId)}`);
+                if (res.status === 400 || res.status === 404 || res.status === 401) {
+                    return { error: 'session_invalid' };
+                }
                 const data = await res.json().catch(() => ({}));
 
                 if (!res.ok) {
@@ -1668,6 +1675,14 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: userId, message: text, preferred_name: preferredName || sessionObj.name || '' })
                 });
+
+                if (res.status === 400 || res.status === 404 || res.status === 401) {
+                    const errorData = await res.json().catch(() => ({}));
+                    if (errorData.detail === "User not found.") {
+                        logout();
+                        return;
+                    }
+                }
 
                 const data = await res.json();
                 hideTyping();
