@@ -2,7 +2,7 @@ import os
 import sys
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends, Header, status
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -65,7 +65,7 @@ class AuthRequest(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    user_id: UUID
+    user_id: UUID | None = None
     message: str
     preferred_name: str | None = None
 
@@ -75,14 +75,19 @@ class SyncUserRequest(BaseModel):
 
 
 class UpdateNameRequest(BaseModel):
-    user_id: UUID
+    user_id: UUID | None = None
     name: str
 
 
 class UpdateProfileRequest(BaseModel):
-    user_id: UUID
+    user_id: UUID | None = None
     display_name: str
     age: int | None = None
+
+
+class DebugLogRequest(BaseModel):
+    message: str
+    data: dict | None = None
 
 
 # -------------------- UI ROUTING (FRONTEND) --------------------
@@ -202,6 +207,102 @@ async def get_config():
     }
 
 
+@app.post("/api/debug-log")
+async def debug_log(request: DebugLogRequest):
+    print(f"[FRONTEND DEBUG] {request.message} | Data: {json.dumps(request.data, indent=2) if request.data else 'None'}")
+    logger.error(f"[FRONTEND DEBUG] {request.message} | Data: {json.dumps(request.data, indent=2) if request.data else 'None'}")
+    return {"status": "ok"}
+
+
+from collections import defaultdict
+
+# Rate Limit Config (Task 11)
+_LOGIN_LIMITS = defaultdict(list)
+_SIGNUP_LIMITS = defaultdict(list)
+
+LOGIN_MAX_ATTEMPTS = 5
+SIGNUP_MAX_ATTEMPTS = 3
+RATE_LIMIT_WINDOW = 60  # seconds (1 minute window)
+
+def check_rate_limit(ip: str, limits_dict: dict, max_attempts: int, window: int) -> bool:
+    now = time.time()
+    limits_dict[ip] = [t for t in limits_dict[ip] if now - t < window]
+    if len(limits_dict[ip]) >= max_attempts:
+        return False
+    limits_dict[ip].append(now)
+    return True
+
+
+# JWT Token Verification Dependency (Task 1)
+async def get_current_user_id(authorization: str = Header(None)) -> str:
+    logger.error(f"[AUTH DEBUG] get_current_user_id invoked. Header: {authorization}")
+    if not authorization:
+        logger.error("[AUTH ERROR] Missing authorization header")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authorization header"
+        )
+    if not authorization.startswith("Bearer "):
+        logger.error(f"[AUTH ERROR] Invalid token format: {authorization}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token format"
+        )
+    token = authorization.split(" ", 1)[1]
+    logger.error(f"[AUTH DEBUG] Received token of length {len(token)}. Prefix: {token[:20]}...")
+
+    # Dev/testing mock token bypass when DEBUG=True
+    if os.getenv("DEBUG", "false").lower() == "true" and token.startswith("mock-user-"):
+        email = token.split("mock-user-", 1)[1]
+        try:
+            user_record = memory.get_user_by_email(email)
+            if not user_record:
+                user_uuid = memory.create_user(
+                    email=email,
+                    hashed_password=None,
+                    is_verified=True,
+                    auth_provider="local"
+                )
+                user_record = memory.get_user_by_id(user_uuid)
+            return str(user_record["id"])
+        except Exception as e:
+            logger.error(f"Mock auth lookup failed: {e}")
+            logger.error(f"[AUTH ERROR] Mock auth lookup failed: {e}")
+
+    try:
+        auth_res = memory.supabase.auth.get_user(token)
+        if not auth_res or not auth_res.user:
+            logger.error("[AUTH ERROR] supabase.auth.get_user returned empty response or empty user.")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid session"
+            )
+        email = auth_res.user.email
+        if not email:
+            logger.error("[AUTH ERROR] Email not found in token user data.")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email not found in token"
+            )
+        user_record = memory.get_user_by_email(email)
+        if not user_record:
+            user_uuid = memory.create_user(
+                email=email,
+                hashed_password=None,
+                is_verified=True,
+                auth_provider="google"
+            )
+            user_record = memory.get_user_by_id(user_uuid)
+        return str(user_record["id"])
+    except Exception as e:
+        logger.error(f"JWT verification failed: {e}")
+        logger.error(f"[AUTH ERROR] JWT verification failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
+
 # -------------------- GOOGLE AUTH ENDPOINTS --------------------
 
 
@@ -231,40 +332,40 @@ async def sync_user(request: SyncUserRequest):
 
 
 @app.get("/api/user-profile")
-async def user_profile(user_id: UUID):
-    user_record = memory.get_user_by_id(str(user_id))
+async def user_profile(user_id: UUID | None = None, authenticated_user_id: str = Depends(get_current_user_id)):
+    user_record = memory.get_user_by_id(authenticated_user_id)
     if not user_record:
         raise HTTPException(status_code=404, detail="User not found.")
     return serialize_user_profile(user_record)
 
 
 @app.post("/api/user-name")
-async def update_user_name(request: UpdateNameRequest):
+async def update_user_name(request: UpdateNameRequest, authenticated_user_id: str = Depends(get_current_user_id)):
     trimmed_name = request.name.strip()
     if not trimmed_name:
         raise HTTPException(status_code=400, detail="Name cannot be empty.")
 
-    user_record = memory.get_user_by_id(str(request.user_id))
+    user_record = memory.get_user_by_id(authenticated_user_id)
     if not user_record:
         raise HTTPException(status_code=404, detail="User not found.")
 
-    memory.update_user_name(str(request.user_id), trimmed_name)
-    updated_record = memory.get_user_by_id(str(request.user_id))
+    memory.update_user_name(authenticated_user_id, trimmed_name)
+    updated_record = memory.get_user_by_id(authenticated_user_id)
     return serialize_user_profile(updated_record)
 
 
 @app.post("/api/update-profile")
-async def update_profile(request: UpdateProfileRequest):
+async def update_profile(request: UpdateProfileRequest, authenticated_user_id: str = Depends(get_current_user_id)):
     trimmed_name = request.display_name.strip()
     if not trimmed_name:
         raise HTTPException(status_code=400, detail="Name cannot be empty.")
 
-    user_record = memory.get_user_by_id(str(request.user_id))
+    user_record = memory.get_user_by_id(authenticated_user_id)
     if not user_record:
         raise HTTPException(status_code=404, detail="User not found.")
 
-    memory.update_user_name(str(request.user_id), trimmed_name)
-    updated_record = memory.get_user_by_id(str(request.user_id))
+    memory.update_user_name(authenticated_user_id, trimmed_name)
+    updated_record = memory.get_user_by_id(authenticated_user_id)
     return serialize_user_profile(updated_record)
 
 
@@ -316,31 +417,63 @@ async def auth_callback():
 
 
 @app.post("/api/signup")
-async def signup(request: AuthRequest):
+async def signup(request: Request, auth_data: AuthRequest):
+    # Rate Limit (Task 11)
+    client_ip = request.client.host if request.client else "unknown"
+    if not check_rate_limit(client_ip, _SIGNUP_LIMITS, SIGNUP_MAX_ATTEMPTS, RATE_LIMIT_WINDOW):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many signup attempts. Please try again later."
+        )
+
     try:
-        is_real, normalized_email = verify_email_real(request.username)
+        is_real, normalized_email = verify_email_real(auth_data.username)
         if not is_real:
             raise HTTPException(
                 status_code=400, detail=f"Invalid Email: {normalized_email}"
             )
 
-        if not request.password or len(request.password) < 6:
+        # Increase password minimum length beyond 6 characters (Task 11)
+        if not auth_data.password or len(auth_data.password) < 8:
             raise HTTPException(
-                status_code=400, detail="Password must be at least 6 characters."
+                status_code=400, detail="Password must be at least 8 characters."
             )
 
-        existing = memory.get_user_by_email(normalized_email)
-        if existing:
-            raise HTTPException(status_code=400, detail="User already exists.")
+        # Sign up user in Supabase Auth
+        try:
+            auth_res = memory.supabase.auth.sign_up({
+                "email": normalized_email,
+                "password": auth_data.password
+            })
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
-        pwd = security.get_password_hash(request.password)
-        user_id = memory.create_user(
-            normalized_email, pwd, is_verified=True, auth_provider="local"
-        )
-        profile = serialize_user_profile(memory.get_user_by_id(str(user_id)))
+        user_id = str(auth_res.user.id)
+        
+        # Check if user already exists in custom users table. If not, create them.
+        existing = memory.get_user_by_id(user_id)
+        if not existing:
+            pwd = security.get_password_hash(auth_data.password)
+            memory.supabase.table("users").insert({
+                "id": user_id,
+                "username": normalized_email,
+                "password_hash": pwd,
+                "is_verified": True,
+                "auth_provider": "local"
+            }).execute()
+
+        user_record = memory.get_user_by_id(user_id)
+        profile = serialize_user_profile(user_record)
         profile["user_id"] = user_id
         profile["username"] = normalized_email
         profile["is_new_signup"] = True
+        
+        if getattr(auth_res, "session", None):
+            profile["session"] = {
+                "access_token": auth_res.session.access_token,
+                "refresh_token": auth_res.session.refresh_token,
+                "expires_in": auth_res.session.expires_in
+            }
         return profile
     except HTTPException:
         raise
@@ -349,41 +482,51 @@ async def signup(request: AuthRequest):
 
 
 @app.post("/api/login")
-async def login(request: AuthRequest):
-    is_real, normalized_email = verify_email_real(request.username)
-    user_record = memory.get_user_by_email(normalized_email) if is_real else None
-
-    if not user_record or not user_record.get("is_verified", False):
+async def login(request: Request, auth_data: AuthRequest):
+    # Rate Limit (Task 11)
+    client_ip = request.client.host if request.client else "unknown"
+    if not check_rate_limit(client_ip, _LOGIN_LIMITS, LOGIN_MAX_ATTEMPTS, RATE_LIMIT_WINDOW):
         raise HTTPException(
-            status_code=401, detail="Invalid credentials or unverified account"
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts. Please try again later."
         )
 
-    if user_record.get("auth_provider") == "telegram" and not user_record.get(
-        "password_hash"
-    ):
-        raise HTTPException(
-            status_code=401, detail="This account uses Telegram sign-in."
-        )
+    is_real, normalized_email = verify_email_real(auth_data.username)
+    if not is_real:
+        raise HTTPException(status_code=400, detail="Invalid email format")
 
-    if user_record.get("auth_provider") == "google" and not user_record.get(
-        "password_hash"
-    ):
-        raise HTTPException(
-            status_code=401,
-            detail="This account uses Google sign-in. Please set a password first.",
-        )
+    try:
+        auth_res = memory.supabase.auth.sign_in_with_password({
+            "email": normalized_email,
+            "password": auth_data.password
+        })
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid credentials or unconfirmed account")
 
-    password_hash = user_record.get("password_hash")
-    if not password_hash or not security.verify_password(request.password, password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    user_id = str(auth_res.user.id)
+    user_record = memory.get_user_by_id(user_id)
+    if not user_record:
+        pwd = security.get_password_hash(auth_data.password)
+        memory.supabase.table("users").insert({
+            "id": user_id,
+            "username": normalized_email,
+            "password_hash": pwd,
+            "is_verified": True,
+            "auth_provider": "local"
+        }).execute()
+        user_record = memory.get_user_by_id(user_id)
 
     profile = serialize_user_profile(user_record)
-    profile["user_id"] = user_record["id"]
+    profile["user_id"] = user_id
     profile["username"] = normalized_email
-    # is_new_signup drives frontend routing: send to onboarding if the user
-    # never completed it (Name is still empty), regardless of whether they
-    # are a literal new account or a returning user who bailed mid-onboarding.
     profile["is_new_signup"] = bool(profile.get("needs_name"))
+    
+    if auth_res.session:
+        profile["session"] = {
+            "access_token": auth_res.session.access_token,
+            "refresh_token": auth_res.session.refresh_token,
+            "expires_in": auth_res.session.expires_in
+        }
     return profile
 
 
@@ -431,9 +574,9 @@ def _print_perf(timings: dict, label: str = "") -> None:
 
 
 @app.get("/api/history")
-async def get_history(user_id: str):
+async def get_history(user_id: str | None = None, authenticated_user_id: str = Depends(get_current_user_id)):
     try:
-        return {"history": memory.fetch_history(user_id)}
+        return {"history": memory.fetch_history(authenticated_user_id)}
 
     except Exception:
         logger.exception("History fetch failed")
@@ -487,11 +630,11 @@ def _run_crisis_eval(
 
 
 @app.post("/api/chat")
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, authenticated_user_id: str = Depends(get_current_user_id)):
     start_total = time.perf_counter()
     perf: dict = {}
     try:
-        user_id = str(request.user_id)
+        user_id = authenticated_user_id
         user_record = memory.get_user_by_id(user_id)
         if not user_record:
             raise HTTPException(status_code=400, detail="User not found.")
@@ -586,11 +729,11 @@ async def chat(request: ChatRequest):
 
 
 @app.post("/api/chat/stream")
-async def chat_stream(request: ChatRequest):
+async def chat_stream(request: ChatRequest, authenticated_user_id: str = Depends(get_current_user_id)):
     start_total = time.perf_counter()
     perf: dict = {}
     try:
-        user_id = str(request.user_id)
+        user_id = authenticated_user_id
         user_record = memory.get_user_by_id(user_id)
         if not user_record:
             raise HTTPException(status_code=400, detail="User not found.")
@@ -651,6 +794,7 @@ async def chat_stream(request: ChatRequest):
                     session_summary=session_summary,
                     recurring_themes=recurring_themes,
                     preferred_name=display_name,
+                    crisis_state=crisis_state,
                 )
                 for chunk in generator:
                     full_response.append(chunk)

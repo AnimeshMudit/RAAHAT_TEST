@@ -725,6 +725,9 @@
                         <path d="M3 8h10M9 4l4 4-4 4" />
                     </svg>
                 </button>
+                <div style="margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-faint); text-align: center; border-top: 1px solid var(--sand-dark); padding-top: 1rem;">
+                    RAAHAT is a digital sanctuary for emotional support. It does not provide therapy, clinical advice, or emergency medical services. If you are in crisis or immediate danger, please contact local emergency services or the Kiran Helpline at 14416.
+                </div>
             </div>
 
             <!-- STEP 2: Age + context -->
@@ -778,6 +781,9 @@
                     </svg>
                 </button>
                 <button class="btn-skip" onclick="finish()">Skip for now</button>
+                <div style="margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-faint); text-align: center; border-top: 1px solid var(--sand-dark); padding-top: 1rem;">
+                    RAAHAT is a digital sanctuary for emotional support. It does not provide therapy, clinical advice, or emergency medical services. If you are in crisis or immediate danger, please contact local emergency services or the Kiran Helpline at 14416.
+                </div>
             </div>
 
             <!-- STEP 3: Done -->
@@ -910,23 +916,21 @@
             localStorage.setItem('raahat_reasons', JSON.stringify(userData.reasons));
 
             // POST display_name to API if user is logged in
-            let userId = localStorage.getItem('raahat_user_id');
-            if (!userId) {
-                try {
-                    const session = JSON.parse(localStorage.getItem('raahat_user') || '{}');
-                    if (session && session.user_id) {
-                        userId = session.user_id;
-                    }
-                } catch (e) {
-                    console.warn(e);
-                }
-            }
-            if (userId && userData.name) {
+            let token = '';
+            try {
+                const session = JSON.parse(localStorage.getItem('raahat_user') || '{}');
+                token = session.access_token || '';
+            } catch (e) { }
+
+            if (userData.name) {
                 try {
                     await fetch(`${API_BASE}/api/update-profile`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: userId, display_name: userData.name, age: userData.age })
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ display_name: userData.name, age: userData.age })
                     });
                 } catch (e) {
                     // Non-blocking — continue regardless

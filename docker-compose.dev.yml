@@ -1,0 +1,18 @@
+# Development Docker Compose Configuration for RAAHAT
+# Mounts 'app' and 'static' directories for hot-reloading.
+# Run with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+version: '3.8'
+
+services:
+  web:
+    volumes:
+      - ./app:/app/app
+      - ./static:/app/static
+      # Avoid mounting .git, .env, or the root venv/ directory
+
+  telegram:
+    volumes:
+      - ./app:/app/app
+      - ./static:/app/static
+      # Avoid mounting .git, .env, or the root venv/ directory

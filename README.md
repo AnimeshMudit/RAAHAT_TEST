@@ -99,4 +99,40 @@ python main.py
 
 ---
 
+## 🐳 Docker Deployment & Development
+
+We provide two docker-compose configurations:
+
+1. **Production Configuration (`docker-compose.yml`)**:
+   - Completely isolated, production-hardened container environment.
+   - Code is read directly from the built image context.
+   - **No volume bind-mounts** to prevent unauthorized access or modification to host-level files (such as `.git` or `.env`).
+   - Run:
+     ```bash
+     docker-compose up --build
+     ```
+
+2. **Development Override Configuration (`docker-compose.dev.yml`)**:
+   - Extends the base compose setup with support for local code changes.
+   - **Selectively mounts** only the `app/` and `static/` directories into the container to support uvicorn hot-reloading.
+   - Specifically avoids mounting files like `.env`, `.git`, or the FAISS index files to maintain containment.
+   - Run:
+     ```bash
+     docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+     ```
+
+## 🧪 Testing & Continuous Integration
+
+- **Safety Evaluation Harness**: Run the safety evaluation suite locally to check precision, recall, and regression status on our custom crisis dataset:
+  ```bash
+  python tests/test_safety_evaluation.py
+  ```
+- **End-to-End Smoke Tests**: Run the E2E backend validation tests (requires server to be running on port 8000):
+  ```bash
+  python smoke_test.py
+  ```
+- **CI Pipeline**: A GitHub Actions workflow is defined at `.github/workflows/ci.yml` that automatically runs the safety evaluation harness on every push and pull request, and triggers the live server smoke tests when repository secrets are available.
+
+---
+
 > *"Building a bridge between technology and tranquility."*

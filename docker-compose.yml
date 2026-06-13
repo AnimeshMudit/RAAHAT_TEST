@@ -1,29 +1,22 @@
+# Production Docker Compose Configuration for RAAHAT
+# Code is loaded directly from the built image; no volume bind-mounts are used.
+
+version: '3.8'
+
 services:
   web:
     build: .
     container_name: raahat_web
-
     ports:
       - "8000:8000"
-
     env_file:
       - .env
-
-    volumes:
-      - .:/app
-
     restart: unless-stopped
 
   telegram:
     build: .
     container_name: raahat_telegram
-
     command: python run_bot.py
-
     env_file:
       - .env
-
-    volumes:
-      - .:/app
-
     restart: unless-stopped

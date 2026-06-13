@@ -1297,7 +1297,7 @@
                     </svg>
                 </button>
             </div>
-            <p class="input-hint">RAAHAT listens without judgement · Not a substitute for professional care</p>
+            <p class="input-hint">RAAHAT provides emotional support only · Not therapy or emergency care · For emergencies, contact Kiran Helpline 14416</p>
         </div>
 
     </main>
@@ -1361,6 +1361,31 @@
 
         // ─── INIT ───
         window.onload = async () => {
+            // Log parsed local storage token keys for telemetry/debugging
+            try {
+                const sessionRaw = localStorage.getItem('raahat_user');
+                let parsedSession = null;
+                try {
+                    parsedSession = sessionRaw ? JSON.parse(sessionRaw) : null;
+                } catch (pe) {}
+                
+                await fetch('/api/debug-log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'chat.html onload session state',
+                        data: {
+                            has_raw: !!sessionRaw,
+                            user_id: parsedSession?.user_id || 'none',
+                            username: parsedSession?.username || 'none',
+                            has_access_token: !!parsedSession?.access_token,
+                            access_token_len: parsedSession?.access_token ? parsedSession.access_token.length : 0,
+                            access_token_prefix: parsedSession?.access_token ? parsedSession.access_token.substring(0, 15) : 'none'
+                        }
+                    })
+                });
+            } catch (err) {}
+
             if (!userId) {
                 window.location.href = `${window.location.origin}/login`;
                 return;
@@ -1416,7 +1441,11 @@
 
         async function loadUserProfile() {
             try {
-                const res = await fetch(`${API_BASE}/api/user-profile?user_id=${encodeURIComponent(userId)}`);
+                const headers = {};
+                if (sessionObj.access_token) {
+                    headers["Authorization"] = `Bearer ${sessionObj.access_token}`;
+                }
+                const res = await fetch(`${API_BASE}/api/user-profile`, { headers });
                 if (res.status === 400 || res.status === 404 || res.status === 401) {
                     return { error: 'session_invalid' };
                 }
@@ -1507,17 +1536,25 @@
                 throw new Error("Please enter your name.");
             }
 
+            const headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            };
+            if (sessionObj.access_token) {
+                headers["Authorization"] = `Bearer ${sessionObj.access_token}`;
+            }
             const response = await fetch(`${API_BASE}/api/user-name`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
+                headers,
                 body: JSON.stringify({
-                    user_id: userId,
                     name: trimmed
                 })
             });
+
+            if (response.status === 401) {
+                logout();
+                return;
+            }
 
             if (!response.ok) {
                 throw new Error("Unable to save name.");
@@ -1607,7 +1644,15 @@
         // ─── HISTORY ───
         async function loadHistory() {
             try {
-                const res = await fetch(`${API_BASE}/api/history?user_id=${userId}`);
+                const headers = {};
+                if (sessionObj.access_token) {
+                    headers["Authorization"] = `Bearer ${sessionObj.access_token}`;
+                }
+                const res = await fetch(`${API_BASE}/api/history`, { headers });
+                if (res.status === 401) {
+                    logout();
+                    return;
+                }
                 const data = await res.json();
                 const msgs = data.history || [];
 
@@ -1670,13 +1715,22 @@
             showTyping();
 
             try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (sessionObj.access_token) {
+                    headers['Authorization'] = `Bearer ${sessionObj.access_token}`;
+                }
                 const res = await fetch(`${API_BASE}/api/chat`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId, message: text, preferred_name: preferredName || sessionObj.name || '' })
+                    headers,
+                    body: JSON.stringify({ message: text, preferred_name: preferredName || sessionObj.name || '' })
                 });
 
-                if (res.status === 400 || res.status === 404 || res.status === 401) {
+                if (res.status === 401) {
+                    logout();
+                    return;
+                }
+
+                if (res.status === 400 || res.status === 404) {
                     const errorData = await res.json().catch(() => ({}));
                     if (errorData.detail === "User not found.") {
                         logout();

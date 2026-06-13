@@ -89,45 +89,55 @@ Output ONLY: SAFE, LOW, HIGH, or CRISIS.
 
 _SAFETY_PATTERNS = [
     ("suicidal", re.compile(r"\bsuicidal\b", re.IGNORECASE)),
-    ("I should die", re.compile(r"\bi\b.*\bshould\b.*\bdie\b", re.IGNORECASE)),
-    ("I want to end my life", re.compile(r"\bi\b.*\bwant\b.*\b(to\b.*\b)?end\b.*\b(my\b.*\b)?life\b", re.IGNORECASE)),
-    ("I don't wish to live anymore", re.compile(r"\bi\b.*\bdon'?t\b.*\bwish\b.*\bto\b.*\blive\b", re.IGNORECASE)),
-    ("goodbye everyone", re.compile(r"\bgoodbye\b.*\beveryone\b", re.IGNORECASE)),
-    ("goodbye mate", re.compile(r"\bgoodbye\b.*\bmate\b", re.IGNORECASE)),
-    ("take the wrong step", re.compile(r"\btake\b.*\b(the\b.*\b)?wrong\b.*\bstep\b", re.IGNORECASE)),
-    ("everyone would be better without me", re.compile(r"\b(everyone\b.*\bbetter\b.*\bwithout\b.*\bme\b|better\b.*\boff\b.*\bwithout\b.*\bme\b)", re.IGNORECASE)),
-    ("no reason to continue", re.compile(r"\bno\b.*\breason\b.*\b(to\b.*\b)?continue\b", re.IGNORECASE)),
-    ("wish I were dead", re.compile(r"\bwish\b.*\bi\b.*\b(were|was)\b.*\bdead\b", re.IGNORECASE)),
+    ("I should die", re.compile(r"\bi\b\s+(?:really\s+)?should\s+die\b", re.IGNORECASE)),
+    ("I want to end my life", re.compile(r"\bi\b\s+(?:really\s+)?want\s+to\s+end\s+my\s+life\b", re.IGNORECASE)),
+    ("I don't wish to live anymore", re.compile(r"\bi\b\s+(?:do\s+not|don'?t)\s+wish\s+to\s+live\s+(?:anymore)?\b", re.IGNORECASE)),
+    ("goodbye everyone", re.compile(r"\bgoodbye\s+(?:everyone|mate)\b", re.IGNORECASE)),
+    ("take the wrong step", re.compile(r"\btake\s+(?:the\s+)?wrong\s+step\b", re.IGNORECASE)),
+    ("everyone would be better without me", re.compile(r"\b(?:everyone|people)\s+(?:would|will)\s+be\s+better\s+(?:off\s+)?without\s+me\b", re.IGNORECASE)),
+    ("no reason to continue", re.compile(r"\bno\s+(?:real\s+)?reason\s+to\s+continue\b", re.IGNORECASE)),
+    ("wish I were dead", re.compile(r"\bwish\s+i\s+(?:was|were)\s+dead\b", re.IGNORECASE)),
     ("suicide", re.compile(r"\bsuicide\b", re.IGNORECASE)),
-    ("kill myself", re.compile(r"\bkill\b.*\bmyself\b", re.IGNORECASE)),
-    ("killing myself", re.compile(r"\bkilling\b.*\bmyself\b", re.IGNORECASE)),
-    ("want to die", re.compile(r"\bwant\b.*\bto\b.*\bdie\b", re.IGNORECASE)),
-    ("wanted to die", re.compile(r"\bwanted\b.*\bto\b.*\bdie\b", re.IGNORECASE)),
-    ("better off dead", re.compile(r"\bbetter\b.*\boff\b.*\bdead\b", re.IGNORECASE)),
-    ("don't want to live", re.compile(r"\bdon'?t\b.*\bwant\b.*\bto\b.*\blive\b", re.IGNORECASE)),
-    ("do not want to live", re.compile(r"\bdo\b.*\bnot\b.*\bwant\b.*\bto\b.*\blive\b", re.IGNORECASE)),
-    ("no reason to live", re.compile(r"\bno\b.*\breason\b.*\bto\b.*\blive\b", re.IGNORECASE)),
-    ("no reason to be alive", re.compile(r"\bno\b.*\breason\b.*\bto\b.*\bbe\b.*\balive\b", re.IGNORECASE)),
-    ("end it all", re.compile(r"\bend\b.*\bit\b.*\ball\b", re.IGNORECASE)),
-    ("take my life", re.compile(r"\btake\b.*\bmy\b.*\blife\b", re.IGNORECASE)),
-    ("goodbye forever", re.compile(r"\bgoodbye\b.*\bforever\b", re.IGNORECASE)),
-    ("no point going on", re.compile(r"\bno\b.*\bpoint\b.*\bgoing\b.*\bon\b", re.IGNORECASE)),
-    ("no point in going on", re.compile(r"\bno\b.*\bpoint\b.*\bin\b.*\bgoing\b.*\bon\b", re.IGNORECASE)),
-    ("can't go on", re.compile(r"\bcan'?t\b.*\bgo\b.*\bon\b", re.IGNORECASE)),
-    ("cannot go on", re.compile(r"\bcannot\b.*\bgo\b.*\bon\b", re.IGNORECASE)),
-    ("done with life", re.compile(r"\bdone\b.*\bwith\b.*\blife\b", re.IGNORECASE)),
-    ("i'm done with life", re.compile(r"\bi'?m\b.*\bdone\b.*\bwith\b.*\blife\b", re.IGNORECASE)),
-    ("done with everything", re.compile(r"\bdone\b.*\bwith\b.*\beverything\b", re.IGNORECASE)),
-    ("won't be here anymore", re.compile(r"\bwon'?t\b.*\bbe\b.*\bhere\b.*\banymore\b", re.IGNORECASE)),
-    ("won't be around much longer", re.compile(r"\bwon'?t\b.*\bbe\b.*\baround\b.*\blonger\b", re.IGNORECASE)),
-    ("last time talking", re.compile(r"\blast\b.*\btime\b.*\btalking\b", re.IGNORECASE)),
-    ("nobody would miss me", re.compile(r"\bnobody\b.*\bmiss\b.*\bme\b", re.IGNORECASE)),
-    ("better off without me", re.compile(r"\bbetter\b.*\boff\b.*\bwithout\b.*\bme\b", re.IGNORECASE)),
-    ("want to disappear", re.compile(r"\bwant\b.*\bto\b.*\bdisappear\b", re.IGNORECASE)),
-    ("want to vanish", re.compile(r"\bwant\b.*\bto\b.*\bvanish\b", re.IGNORECASE)),
+    ("kill myself", re.compile(r"\b(?:kill|killing)\s+myself\b", re.IGNORECASE)),
+    ("want to die", re.compile(r"\b(?:want|wanted)\s+to\s+die\b", re.IGNORECASE)),
+    ("better off dead", re.compile(r"\bbetter\s+off\s+dead\b", re.IGNORECASE)),
+    ("don't want to live", re.compile(r"\b(?:don'?t|do\s+not)\s+want\s+to\s+live\b", re.IGNORECASE)),
+    ("no reason to live", re.compile(r"\bno\s+reason\s+to\s+(?:live|be\s+alive)\b", re.IGNORECASE)),
+    ("end it all", re.compile(r"\bend\s+it\s+all\b", re.IGNORECASE)),
+    ("take my life", re.compile(r"\btake\s+my\s+life\b", re.IGNORECASE)),
+    ("goodbye forever", re.compile(r"\bgoodbye\s+forever\b", re.IGNORECASE)),
+    ("no point going on", re.compile(r"\bno\s+point\s+(?:in\s+)?going\s+on\b", re.IGNORECASE)),
+    ("can't go on", re.compile(r"\b(?:can'?t|cannot)\s+go\s+on\b", re.IGNORECASE)),
+    ("done with life", re.compile(r"\b(?:i'?m\s+)?done\s+with\s+(?:life|everything)\b", re.IGNORECASE)),
+    ("won't be here anymore", re.compile(r"\b(?:won'?t|will\s+not)\s+be\s+(?:here|around)\s+(?:anymore|much\s+longer)\b", re.IGNORECASE)),
+    ("last time talking", re.compile(r"\blast\s+time\s+talking\b", re.IGNORECASE)),
+    ("nobody would miss me", re.compile(r"\bnobody\s+would\s+miss\s+me\b", re.IGNORECASE)),
+    ("want to disappear", re.compile(r"\bwant\s+to\s+(?:disappear|vanish)\b", re.IGNORECASE)),
     ("hopeless", re.compile(r"\bhopeless\b", re.IGNORECASE)),
-    ("can't take it anymore", re.compile(r"\bcan'?t\b.*\btake\b.*\bit\b.*\banymore\b", re.IGNORECASE)),
-    ("life is not worth it", re.compile(r"\blife\b.*\bnot\b.*\bworth\b.*\bit\b", re.IGNORECASE)),
+    ("can't take it anymore", re.compile(r"\b(?:can'?t|cannot)\s+take\s+it\s+anymore\b", re.IGNORECASE)),
+    ("life is not worth it", re.compile(r"\blife\s+is\s+not\s+worth\s+it\b", re.IGNORECASE)),
+    
+    # Hindi (Devanagari)
+    ("hindi_marna", re.compile(r"मरना\s+(चाहता|चाहती)", re.IGNORECASE)),
+    ("hindi_jeena_nahi", re.compile(r"जीना\s+नहीं\s+(चाहता|चाहती)", re.IGNORECASE)),
+    ("hindi_jeene_ka_mann", re.compile(r"जीने\s+का\s+.{0,15}मन\s+नहीं", re.IGNORECASE)),
+    ("hindi_aatmahatya", re.compile(r"(आत्महत्या|खुदकुशी)", re.IGNORECASE)),
+    ("hindi_sab_khatam", re.compile(r"सब\s+खत्म\s+करना", re.IGNORECASE)),
+    ("hindi_jaan_de", re.compile(r"जान\s+(दे\s+दूंगा|दे\s+दूंगी|देना)", re.IGNORECASE)),
+    ("hindi_nuksan", re.compile(r"खुद\s+को\s+नुकसान", re.IGNORECASE)),
+    
+    # Romanized Hinglish
+    ("hinglish_marne_ka_mann", re.compile(r"mar+ne\s+ka\s+man+", re.IGNORECASE)),
+    ("hinglish_mar_jana", re.compile(r"mar\s+ja*na\s+cha*h?t[ai]", re.IGNORECASE)),
+    ("hinglish_jeene_nahi", re.compile(r"je+ne\s+ka\s+man+\s+nah?i", re.IGNORECASE)),
+    ("hinglish_sab_khatam", re.compile(r"sab\s+khat+am\b", re.IGNORECASE)),
+    ("hinglish_khud_ko_maar", re.compile(r"khud\s+ko\s+(?:maar\w*|mar\w*)", re.IGNORECASE)),
+    ("hinglish_sucide", re.compile(r"su+cide", re.IGNORECASE)),
+    ("hinglish_apni_jaan", re.compile(r"apni\s+ja+n\b", re.IGNORECASE)),
+    ("hinglish_khudkushi", re.compile(r"khud\s*ku[sh]+i", re.IGNORECASE)),
+    ("hinglish_zindagi_khatam", re.compile(r"zin+dag[ii]\s+khat+am", re.IGNORECASE)),
+    ("hinglish_marna_chahta", re.compile(r"mar+na\s+cha+h?t[ai]", re.IGNORECASE)),
+    ("hinglish_jeena_nahi", re.compile(r"je+na\s+nah?i\s+(?:cha*h?t[ai])?", re.IGNORECASE)),
 ]
 
 _CACHED_CLASSIFIER_PROMPT = _compress_whitespace(CLASSIFIER_SYSTEM_PROMPT)
@@ -224,7 +234,13 @@ def llm_safety_classify(user_message: str) -> str:
                 continue
             break
     logger.error("LLM Safety Classifier failed: %s", last_error)
-    return "SAFE"
+    # Fail-safe policy:
+    # Classifier Failure + Regex Positive -> CRISIS
+    # Classifier Failure + Regex Negative -> HIGH (conservative fallback)
+    matched = safety_check(user_message)
+    if matched:
+        return "CRISIS"
+    return "HIGH"
 
 
 def check_recent_crisis(history) -> bool:
@@ -294,11 +310,7 @@ def is_crisis_active(message: str, history: list[dict] = None) -> bool:
     
     # Task 11: Only run classifier conditionally
     if should_run_safety_classifier(message):
-        llm_class = (
-            llm_safety_classify(message)
-            if should_run_safety_classifier(message)
-            else "SAFE"
-        )
+        llm_class = llm_safety_classify(message)
         if llm_class in ("HIGH", "CRISIS"):
             return True
             
@@ -576,94 +588,15 @@ def _llm_call_stream(
     preferred_name="",
     crisis_mode=False,
 ):
-    """Streaming LLM call — internal use only."""
-    history = history or []
-
-    prompt_sections = [SYSTEM_PROMPT.rstrip()]
-
-    # 1. Safety Overrides (if active)
-    if crisis_mode:
-        prompt_sections.append(ACTIVE_SAFETY_OVERRIDE)
-
-    # 2. Memory (Preferred Name)
-    memory_section = ["### USER MEMORY\n"]
-    if preferred_name:
-        memory_section.append(
-            f"The user's preferred name is: {preferred_name}\n"
-            "Treat this as trusted conversational memory. "
-            "Use the name naturally — after emotionally expressive messages, "
-            "during reassurance, encouragement, or when welcoming them back. "
-            "Do not use the name in every reply. Never invent another name."
-        )
-    else:
-        memory_section.append(
-            "The user's preferred name is not yet known. "
-            "If asked what their name is, say you do not know their name yet."
-        )
-    prompt_sections.append("\n".join(memory_section))
-
-    # 3. Memory Summaries & Theme Contexts
-    if session_summary:
-        prompt_sections.append(
-            "### RETURNING USER CONTEXT\n\n"
-            "Summary of prior sessions:\n\n"
-            f"{_format_prompt_context(session_summary)}\n\n"
-            "Use this context naturally.\n"
-            "Do not quote it verbatim.\n"
-            "Do not reveal internal memory mechanisms."
-        )
-
-    if recurring_themes:
-        prompt_sections.append(
-            "### LONG-TERM EMOTIONAL THEMES\n\n"
-            "The following themes have appeared repeatedly across the user's history:\n\n"
-            f"{_format_prompt_context(recurring_themes)}\n\n"
-            "Use this only as soft contextual awareness.\n"
-            "Do not mention memory, tracking, or recurring themes explicitly.\n"
-            "Do not assume the user currently feels these emotions."
-        )
-
-    if pattern_signal:
-        prompt_sections.append(
-            "### PATTERN AWARENESS\n\n"
-            "The user has shown recurring themes across previous conversations:\n\n"
-            f"{_format_prompt_context(pattern_signal)}\n\n"
-            "Use this only as supporting context.\n"
-            "Do not mention that patterns were detected.\n"
-            "Do not sound repetitive or deterministic.\n"
-            "Treat the user as an individual in the current moment."
-        )
-
-    if emotional_presence_mode:
-        prompt_sections.append(
-            "### EMOTIONAL PRESENCE MODE\n\n"
-            "The user is emotionally venting or seeking presence rather than solutions.\n"
-            "Prioritize listening, emotional reflection, warmth, and conversational calmness.\n"
-            "Avoid coping strategies, structured advice, self-help style suggestions, or problem-solving unless explicitly requested.\n"
-            "Keep responses gentle, human, and emotionally present."
-        )
-
-    behavior_examples = load_behavior_examples()
-    if behavior_examples:
-        prompt_sections.append(
-            "### Examples of emotionally natural conversational behavior:\n\n"
-            f"{behavior_examples}"
-        )
-
-    # 4. RAG Context (Retrieved Clinical Context)
-    if context:
-        prompt_sections.append(
-            "### RETRIEVED CLINICAL CONTEXT\n\n"
-            "The following is verified material from psychological first aid manuals.\n"
-            "Use it only if it naturally supports the emotional flow of the conversation.\n"
-            "Do not force frameworks or coping strategies into every reply.\n"
-            "Do not quote it directly.\n"
-            "---\n"
-            f"{context}\n"
-            "---"
-        )
-
-    dynamic_prompt = "\n\n".join(prompt_sections)
+    dynamic_prompt = _build_system_prompt(
+        crisis_mode=crisis_mode,
+        preferred_name=preferred_name,
+        session_summary=session_summary,
+        recurring_themes=recurring_themes,
+        pattern_signal=pattern_signal,
+        emotional_presence_mode=emotional_presence_mode,
+        context_text=context,
+    )
 
     messages = [
         {
@@ -761,12 +694,14 @@ def get_response_stream(
     pattern_signal=None,
     session_summary=None,
     recurring_themes=None,
-    preferred_name=""
+    preferred_name="",
+    crisis_state=None
 ):
     history = history or []
     emotional_presence_mode = detect_emotional_presence_mode(user_message)
 
-    crisis_state = evaluate_crisis_state(user_message, history)
+    if crisis_state is None:
+        crisis_state = evaluate_crisis_state(user_message, history)
     crisis_active = crisis_state["crisis_active"]
     matched_trigger = crisis_state["matched_trigger"]
     llm_class = crisis_state["llm_class"]

@@ -2,7 +2,20 @@ const API_BASE = window.location.origin;
 const SESSION_KEY = 'raahat_user';
 let supabaseClient = null;
 
-function apiFetch(path, { method = 'GET', body = null, timeout = 15000 } = {}) {
+async function apiFetch(path, { method = 'GET', body = null, timeout = 15000 } = {}) {
+    let token = null;
+    if (path !== '/api/config' && path !== '/api/login' && path !== '/api/signup') {
+        try {
+            if (typeof supabase !== 'undefined' && typeof supabase.createClient === 'function') {
+                const client = await getSupabaseClient();
+                const { data } = await client.auth.getSession();
+                token = data?.session?.access_token;
+            }
+        } catch (err) {
+            console.warn('Could not fetch token for API request:', err);
+        }
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     const options = {
@@ -12,6 +25,10 @@ function apiFetch(path, { method = 'GET', body = null, timeout = 15000 } = {}) {
         },
         signal: controller.signal,
     };
+
+    if (token) {
+        options.headers['Authorization'] = `Bearer ${token}`;
+    }
 
     if (body !== null) {
         options.headers['Content-Type'] = 'application/json';
@@ -52,6 +69,23 @@ function saveSession(user) {
     if (user && user.user_id) {
         localStorage.setItem('raahat_user_id', user.user_id);
     }
+    // Log this to backend
+    try {
+        fetch('/api/debug-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: 'saveSession called',
+                data: {
+                    user_id: user?.user_id,
+                    username: user?.username,
+                    has_access_token: !!user?.access_token,
+                    access_token_len: user?.access_token ? user.access_token.length : 0,
+                    access_token_prefix: user?.access_token ? user.access_token.substring(0, 15) : 'none'
+                }
+            })
+        });
+    } catch (e) {}
 }
 
 function loadSession() {
@@ -91,7 +125,29 @@ async function completeOAuthLogin() {
         const { data, error } = await client.auth.exchangeCodeForSession(code);
         if (error) throw error;
 
-        const email = data?.session?.user?.email || data?.session?.user?.user_metadata?.email;
+        // Retrieve session dynamically to ensure we get the fresh tokens
+        const sessionRes = await client.auth.getSession();
+        const session = sessionRes.data?.session || data?.session;
+
+        // Log this session info to backend
+        try {
+            await fetch('/api/debug-log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: 'OAuth complete: session retrieved',
+                    data: {
+                        has_session: !!session,
+                        access_token_len: session?.access_token ? session.access_token.length : 0,
+                        access_token_prefix: session?.access_token ? session.access_token.substring(0, 15) : 'none',
+                        user_id: session?.user?.id,
+                        email: session?.user?.email,
+                    }
+                })
+            });
+        } catch (e) {}
+
+        const email = session?.user?.email || session?.user?.user_metadata?.email;
         if (!email) {
             throw new Error('Google sign-in did not return an email address.');
         }
@@ -110,6 +166,8 @@ async function completeOAuthLogin() {
             user_id: syncResult.user_id,
             username: syncResult.username || email,
             name: syncResult.name || '',
+            access_token: session?.access_token,
+            refresh_token: session?.refresh_token,
         });
 
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -135,7 +193,8 @@ async function restoreSessionFromSupabase() {
 
         const client = await getSupabaseClient();
         const { data, error } = await client.auth.getSession();
-        const email = data?.session?.user?.email;
+        const session = data?.session;
+        const email = session?.user?.email;
 
         if (error || !email) {
             return null;
@@ -153,6 +212,8 @@ async function restoreSessionFromSupabase() {
                     user_id: syncResult.user_id,
                     username: syncResult.username || email,
                     name: syncResult.name || '',
+                    access_token: session?.access_token,
+                    refresh_token: session?.refresh_token,
                 };
                 saveSession(sessionRecord);
                 return sessionRecord;
@@ -359,6 +420,8 @@ function bindLoginForm() {
                     user_id: result.user_id,
                     username: result.username || email,
                     name: result.name || '',
+                    access_token: result.session?.access_token,
+                    refresh_token: result.session?.refresh_token,
                 });
                 if (result && result.is_new_signup) {
                     navigate('/onboarding');
@@ -393,8 +456,8 @@ function bindSignupForm() {
             showStatus('Enter a valid email address.', 'error');
             return;
         }
-        if (password.length < 6) {
-            showStatus('Password must be at least 6 characters.', 'error');
+        if (password.length < 8) {
+            showStatus('Password must be at least 8 characters.', 'error');
             return;
         }
 
@@ -410,6 +473,8 @@ function bindSignupForm() {
                     user_id: result.user_id,
                     username: result.username || email,
                     name: result.name || '',
+                    access_token: result.session?.access_token,
+                    refresh_token: result.session?.refresh_token,
                 });
                 if (result && result.is_new_signup) {
                     navigate('/onboarding');
@@ -465,6 +530,22 @@ async function getSupabaseClient() {
     }
 
     supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+
+    try {
+        const { data: activeSession } = await supabaseClient.auth.getSession();
+        if (!activeSession?.session) {
+            const localSession = loadSession();
+            if (localSession && localSession.access_token) {
+                await supabaseClient.auth.setSession({
+                    access_token: localSession.access_token,
+                    refresh_token: localSession.refresh_token || '',
+                });
+            }
+        }
+    } catch (err) {
+        console.warn('Failed to sync session to Supabase Client:', err);
+    }
+
     return supabaseClient;
 }
 
