@@ -82,7 +82,7 @@ You can view the Interactive API documentation at `http://127.0.0.1:8000/docs`.
 
 ### 3. Launch the Interface
 
-- **Modern Web UI:** Open `dashboard.html` in your browser. *(We recommend using the VS Code Live Server extension.)*
+- **Modern Web UI:** Open `http://127.0.0.1:8000` in your browser. *(Alternatively, you can open `static/landingpage.html` using a local server like VS Code Live Server; the app is configured to dynamically communicate with the backend running on port 8000).*
 - **Legacy CLI Mode:** For a terminal-only experience, run:
 
 ```bash

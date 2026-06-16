@@ -1,4 +1,5 @@
-const API_BASE = window.location.origin;
+const IS_DEV_SERVER = window.location.port !== '8000';
+const API_BASE = IS_DEV_SERVER ? 'http://127.0.0.1:8000' : window.location.origin;
 const SESSION_KEY = 'raahat_user';
 let supabaseClient = null;
 
@@ -68,6 +69,7 @@ function saveSession(user) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
     if (user && user.user_id) {
         localStorage.setItem('raahat_user_id', user.user_id);
+    }
 }
 
 function loadSession() {
@@ -85,15 +87,12 @@ function clearSession() {
 }
 
 async function completeOAuthLogin() {
-    if (window.location.pathname !== '/login') {
-        return false;
-    }
-
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const errorDescription = params.get('error_description') || params.get('error');
+    const hasHashToken = window.location.hash.includes('access_token=');
 
-    if (!code && !errorDescription) {
+    if (!code && !errorDescription && !hasHashToken) {
         return false;
     }
 
@@ -104,12 +103,20 @@ async function completeOAuthLogin() {
 
     try {
         const client = await getSupabaseClient();
-        const { data, error } = await client.auth.exchangeCodeForSession(code);
-        if (error) throw error;
+        
+        if (code) {
+            const { data, error } = await client.auth.exchangeCodeForSession(code);
+            if (error) throw error;
+        } else if (hasHashToken) {
+            const { data, error } = await client.auth.getSession();
+            if (error) throw error;
+            if (!data.session) {
+                throw new Error('Supabase session not established from hash.');
+            }
+        }
 
-        // Retrieve session dynamically to ensure we get the fresh tokens
         const sessionRes = await client.auth.getSession();
-        const session = sessionRes.data?.session || data?.session;
+        const session = sessionRes.data?.session;
 
         const email = session?.user?.email || session?.user?.user_metadata?.email;
         if (!email) {
@@ -126,15 +133,21 @@ async function completeOAuthLogin() {
             throw new Error('Unable to create a local session.');
         }
 
-        saveSession({
+        const sessionRecord = {
             user_id: syncResult.user_id,
             username: syncResult.username || email,
             name: syncResult.name || '',
             access_token: session?.access_token,
             refresh_token: session?.refresh_token,
-        });
+        };
+        saveSession(sessionRecord);
 
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const url = new URL(window.location.href);
+        url.search = '';
+        url.hash = '';
+        window.history.replaceState({}, document.title, url.pathname + url.search);
+
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         if (syncResult && (syncResult.is_new_signup || syncResult.needs_name)) {
             navigate('/onboarding');
@@ -145,6 +158,11 @@ async function completeOAuthLogin() {
     } catch (error) {
         console.error('OAuth completion failed:', error);
         showStatus(error.message || 'Google sign-in failed.', 'error');
+        
+        const url = new URL(window.location.href);
+        url.search = '';
+        url.hash = '';
+        window.history.replaceState({}, document.title, url.pathname + url.search);
         return true;
     }
 }
@@ -238,7 +256,20 @@ function hideStatus() {
 }
 
 function navigate(path) {
-    window.location.href = `${window.location.origin}${path}`;
+    if (IS_DEV_SERVER) {
+        const devPaths = {
+            '/': '/static/landingpage.html',
+            '/landing': '/static/landingpage.html',
+            '/login': '/static/login.html',
+            '/chat': '/static/chat.html',
+            '/dashboard': '/static/chat.html',
+            '/onboarding': '/static/onboarding.html'
+        };
+        const mapped = devPaths[path] || path;
+        window.location.href = `${window.location.origin}${mapped}`;
+    } else {
+        window.location.href = `${window.location.origin}${path}`;
+    }
 }
 
 function bindTextControl(selector, labelText, handler) {
@@ -573,11 +604,11 @@ function bindGoogleAuth() {
 
 function bindLandingPage() {
     const session = loadSession();
-    const heroStart = document.getElementById('landing-hero-start');
-    const navStart = document.getElementById('landing-start-venting');
-    const howItWorks = document.getElementById('landing-how-it-works');
+    const heroStart = document.getElementById('landing-hero-start') || document.querySelector('.btn-primary');
+    const navStart = document.getElementById('landing-start-venting') || document.querySelector('.nav-cta');
+    const howItWorks = document.getElementById('landing-how-it-works') || document.querySelector('.btn-ghost');
     const privacyButton = document.getElementById('landing-privacy');
-    const features = document.getElementById('landing-features');
+    const features = document.getElementById('landing-features') || document.getElementById('features');
 
     const goToPrimaryDestination = () => {
         navigate(session ? '/dashboard' : '/login');
@@ -585,17 +616,22 @@ function bindLandingPage() {
 
     [heroStart, navStart].forEach((button) => {
         if (!button) return;
-        button.addEventListener('click', goToPrimaryDestination);
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            goToPrimaryDestination();
+        });
     });
 
     if (howItWorks && features) {
-        howItWorks.addEventListener('click', () => {
+        howItWorks.addEventListener('click', (event) => {
+            event.preventDefault();
             features.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     }
 
     if (privacyButton) {
-        privacyButton.addEventListener('click', () => {
+        privacyButton.addEventListener('click', (event) => {
+            event.preventDefault();
             document.querySelector('footer')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     }
@@ -954,6 +990,12 @@ async function bindGeneralRouting() {
     const session = loadSession();
     const loginForm = document.getElementById('login-form');
 
+    // 1. Process OAuth callback on ANY page if present in URL search/hash
+    const oauthHandled = await completeOAuthLogin();
+    if (oauthHandled) {
+        return; // Stop processing further routing as page will redirect
+    }
+
     if (loginForm) {
         ensureAuthViews();
         bindLoginForm();
@@ -961,12 +1003,7 @@ async function bindGeneralRouting() {
         bindGoogleAuth();
     }
 
-    if (window.location.pathname === '/login') {
-        const oauthHandled = await completeOAuthLogin();
-        if (oauthHandled) {
-            return;
-        }
-
+    if (window.location.pathname === '/login' || window.location.pathname.endsWith('/login.html')) {
         if (session && session.user_id) {
             if (!session.name || !session.name.trim()) {
                 navigate('/onboarding');
@@ -1000,7 +1037,7 @@ async function bindGeneralRouting() {
         return;
     }
 
-    if (document.getElementById('landing-hero-start') || document.getElementById('landing-start-venting')) {
+    if (document.getElementById('landing-hero-start') || document.getElementById('landing-start-venting') || window.location.pathname === '/' || window.location.pathname.endsWith('/landingpage.html') || window.location.pathname.endsWith('/landing.html')) {
         bindLandingPage();
     }
 
