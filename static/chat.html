@@ -1361,30 +1361,6 @@
 
         // ─── INIT ───
         window.onload = async () => {
-            // Log parsed local storage token keys for telemetry/debugging
-            try {
-                const sessionRaw = localStorage.getItem('raahat_user');
-                let parsedSession = null;
-                try {
-                    parsedSession = sessionRaw ? JSON.parse(sessionRaw) : null;
-                } catch (pe) {}
-                
-                await fetch('/api/debug-log', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: 'chat.html onload session state',
-                        data: {
-                            has_raw: !!sessionRaw,
-                            user_id: parsedSession?.user_id || 'none',
-                            username: parsedSession?.username || 'none',
-                            has_access_token: !!parsedSession?.access_token,
-                            access_token_len: parsedSession?.access_token ? parsedSession.access_token.length : 0,
-                            access_token_prefix: parsedSession?.access_token ? parsedSession.access_token.substring(0, 15) : 'none'
-                        }
-                    })
-                });
-            } catch (err) {}
 
             if (!userId) {
                 window.location.href = `${window.location.origin}/login`;

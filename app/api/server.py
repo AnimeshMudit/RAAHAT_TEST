@@ -85,11 +85,6 @@ class UpdateProfileRequest(BaseModel):
     age: int | None = None
 
 
-class DebugLogRequest(BaseModel):
-    message: str
-    data: dict | None = None
-
-
 # -------------------- UI ROUTING (FRONTEND) --------------------
 
 
@@ -207,12 +202,6 @@ async def get_config():
     }
 
 
-@app.post("/api/debug-log")
-async def debug_log(request: DebugLogRequest):
-    print(f"[FRONTEND DEBUG] {request.message} | Data: {json.dumps(request.data, indent=2) if request.data else 'None'}")
-    logger.error(f"[FRONTEND DEBUG] {request.message} | Data: {json.dumps(request.data, indent=2) if request.data else 'None'}")
-    return {"status": "ok"}
-
 
 from collections import defaultdict
 
@@ -233,53 +222,70 @@ def check_rate_limit(ip: str, limits_dict: dict, max_attempts: int, window: int)
     return True
 
 
-# JWT Token Verification Dependency (Task 1)
-async def get_current_user_id(authorization: str = Header(None)) -> str:
-    logger.error(f"[AUTH DEBUG] get_current_user_id invoked. Header: {authorization}")
+# JWT Token Verification Dependency (Task 1 & Task 3)
+async def get_current_user_id(request: Request, authorization: str = Header(None)) -> str:
+    logger.debug("get_current_user_id dependency invoked")
     if not authorization:
-        logger.error("[AUTH ERROR] Missing authorization header")
+        logger.debug("Missing authorization header")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing authorization header"
         )
     if not authorization.startswith("Bearer "):
-        logger.error(f"[AUTH ERROR] Invalid token format: {authorization}")
+        logger.debug("Invalid token format in authorization header")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token format"
         )
     token = authorization.split(" ", 1)[1]
-    logger.error(f"[AUTH DEBUG] Received token of length {len(token)}. Prefix: {token[:20]}...")
 
-    # Dev/testing mock token bypass when DEBUG=True
-    if os.getenv("DEBUG", "false").lower() == "true" and token.startswith("mock-user-"):
-        email = token.split("mock-user-", 1)[1]
-        try:
-            user_record = memory.get_user_by_email(email)
-            if not user_record:
-                user_uuid = memory.create_user(
-                    email=email,
-                    hashed_password=None,
-                    is_verified=True,
-                    auth_provider="local"
+    # Dev/testing mock token bypass under strict conditions
+    if token.startswith("mock-user-"):
+        env = os.getenv("ENVIRONMENT", "production").lower()
+        enable_test_auth = os.getenv("ENABLE_TEST_AUTH", "false").lower() == "true"
+        client_ip = request.client.host if request.client else "unknown"
+        is_localhost = client_ip in ("127.0.0.1", "::1", "localhost")
+
+        if env == "development" and enable_test_auth and is_localhost:
+            email = token.split("mock-user-", 1)[1]
+            try:
+                user_record = memory.get_user_by_email(email)
+                if not user_record:
+                    user_uuid = memory.create_user(
+                        email=email,
+                        hashed_password=None,
+                        is_verified=True,
+                        auth_provider="local"
+                    )
+                    user_record = memory.get_user_by_id(user_uuid)
+                return str(user_record["id"])
+            except Exception as e:
+                logger.error("Mock auth lookup failed: %s", e)
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Mock authentication failed"
                 )
-                user_record = memory.get_user_by_id(user_uuid)
-            return str(user_record["id"])
-        except Exception as e:
-            logger.error(f"Mock auth lookup failed: {e}")
-            logger.error(f"[AUTH ERROR] Mock auth lookup failed: {e}")
+        else:
+            logger.warning(
+                "Rejected mock token request. Conditions not met: env=%s, enable_test_auth=%s, localhost=%s",
+                env, enable_test_auth, is_localhost
+            )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Mock authentication bypass not allowed in this environment"
+            )
 
     try:
         auth_res = memory.supabase.auth.get_user(token)
         if not auth_res or not auth_res.user:
-            logger.error("[AUTH ERROR] supabase.auth.get_user returned empty response or empty user.")
+            logger.debug("supabase.auth.get_user returned empty response or empty user")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid session"
             )
         email = auth_res.user.email
         if not email:
-            logger.error("[AUTH ERROR] Email not found in token user data.")
+            logger.debug("Email not found in token user data")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Email not found in token"
@@ -295,8 +301,7 @@ async def get_current_user_id(authorization: str = Header(None)) -> str:
             user_record = memory.get_user_by_id(user_uuid)
         return str(user_record["id"])
     except Exception as e:
-        logger.error(f"JWT verification failed: {e}")
-        logger.error(f"[AUTH ERROR] JWT verification failed: {e}")
+        logger.error("JWT verification failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token"
@@ -453,11 +458,10 @@ async def signup(request: Request, auth_data: AuthRequest):
         # Check if user already exists in custom users table. If not, create them.
         existing = memory.get_user_by_id(user_id)
         if not existing:
-            pwd = security.get_password_hash(auth_data.password)
             memory.supabase.table("users").insert({
                 "id": user_id,
                 "username": normalized_email,
-                "password_hash": pwd,
+                "password_hash": None,
                 "is_verified": True,
                 "auth_provider": "local"
             }).execute()
@@ -506,11 +510,10 @@ async def login(request: Request, auth_data: AuthRequest):
     user_id = str(auth_res.user.id)
     user_record = memory.get_user_by_id(user_id)
     if not user_record:
-        pwd = security.get_password_hash(auth_data.password)
         memory.supabase.table("users").insert({
             "id": user_id,
             "username": normalized_email,
-            "password_hash": pwd,
+            "password_hash": None,
             "is_verified": True,
             "auth_provider": "local"
         }).execute()
@@ -535,6 +538,16 @@ async def login(request: Request, auth_data: AuthRequest):
 
 @app.on_event("startup")
 async def warmup_on_startup():
+    # Strict fail-fast check for test authentication backdoor (Task 1)
+    env = os.getenv("ENVIRONMENT", "production").lower()
+    enable_test_auth = os.getenv("ENABLE_TEST_AUTH", "false").lower() == "true"
+    if enable_test_auth:
+        if env != "development":
+            logger.critical("FATAL: ENABLE_TEST_AUTH is enabled but ENVIRONMENT is '%s'. Test authentication bypass is strictly prohibited outside development environment.", env)
+            sys.exit("CRITICAL CONFIGURATION ERROR: ENABLE_TEST_AUTH cannot be enabled outside development environment.")
+        else:
+            logger.warning("WARNING: ENABLE_TEST_AUTH is enabled. This developer backdoor must only be used in local development.")
+
     loop = asyncio.get_running_loop()
 
     # Launch warmup asynchronously

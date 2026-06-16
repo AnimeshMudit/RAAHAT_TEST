@@ -68,24 +68,6 @@ function saveSession(user) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
     if (user && user.user_id) {
         localStorage.setItem('raahat_user_id', user.user_id);
-    }
-    // Log this to backend
-    try {
-        fetch('/api/debug-log', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: 'saveSession called',
-                data: {
-                    user_id: user?.user_id,
-                    username: user?.username,
-                    has_access_token: !!user?.access_token,
-                    access_token_len: user?.access_token ? user.access_token.length : 0,
-                    access_token_prefix: user?.access_token ? user.access_token.substring(0, 15) : 'none'
-                }
-            })
-        });
-    } catch (e) {}
 }
 
 function loadSession() {
@@ -128,24 +110,6 @@ async function completeOAuthLogin() {
         // Retrieve session dynamically to ensure we get the fresh tokens
         const sessionRes = await client.auth.getSession();
         const session = sessionRes.data?.session || data?.session;
-
-        // Log this session info to backend
-        try {
-            await fetch('/api/debug-log', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: 'OAuth complete: session retrieved',
-                    data: {
-                        has_session: !!session,
-                        access_token_len: session?.access_token ? session.access_token.length : 0,
-                        access_token_prefix: session?.access_token ? session.access_token.substring(0, 15) : 'none',
-                        user_id: session?.user?.id,
-                        email: session?.user?.email,
-                    }
-                })
-            });
-        } catch (e) {}
 
         const email = session?.user?.email || session?.user?.user_metadata?.email;
         if (!email) {

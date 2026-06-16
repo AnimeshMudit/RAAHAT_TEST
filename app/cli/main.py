@@ -6,7 +6,6 @@ import getpass
 from app.core import memory
 from app.core import brain
 from app.core import knowledge
-from app.core import security
 
 
 def main():
@@ -48,25 +47,46 @@ def main():
         ).strip()
         password = getpass.getpass(
             Fore.YELLOW + "Enter your password: " + Style.RESET_ALL
-        )  # need to know the working
+        )
 
-        user_record = memory.get_user_by_email(user_name)
-        if user_record:
-            if user_record.get("telegram_id"):
-                user_id = None
-            elif security.verify_password(password, user_record["password_hash"]):
-                user_id = user_record["id"]
-            else:
-                user_id = None
-        else:
-            hashed_password = security.get_password_hash(password)
-            # Auto-verify CLI-created local accounts.
-            user_id = memory.create_user(
-                user_name, 
-                hashed_password, 
-                is_verified=True,
-                auth_provider="local"
-            )
+        user_id = None
+        # Try logging in with Supabase Auth (central source of truth)
+        try:
+            auth_res = memory.supabase.auth.sign_in_with_password({
+                "email": user_name,
+                "password": password
+            })
+            user_id = str(auth_res.user.id)
+            
+            # Ensure local DB user profile record exists
+            user_record = memory.get_user_by_id(user_id)
+            if not user_record:
+                memory.supabase.table("users").insert({
+                    "id": user_id,
+                    "username": user_name,
+                    "is_verified": True,
+                    "auth_provider": "local"
+                }).execute()
+        except Exception:
+            # Login failed; try to register as a new local account via Supabase Auth
+            user_record = memory.get_user_by_email(user_name)
+            if not user_record:
+                try:
+                    auth_res = memory.supabase.auth.sign_up({
+                        "email": user_name,
+                        "password": password
+                    })
+                    user_id = str(auth_res.user.id)
+                    # Create custom table user record (no password_hash stored locally)
+                    memory.supabase.table("users").insert({
+                        "id": user_id,
+                        "username": user_name,
+                        "is_verified": True,
+                        "auth_provider": "local"
+                    }).execute()
+                    print(Fore.GREEN + "✅ Account successfully created in Supabase Auth!")
+                except Exception:
+                    pass
 
         if user_id:
             print(
@@ -75,7 +95,7 @@ def main():
             )
             break
         else:
-            print(Fore.RED + "❌ Login failed. Wrong username or password.")
+            print(Fore.RED + "❌ Authentication failed. Incorrect credentials or unconfirmed account.")
 
     # greeting message
     print(Fore.CYAN + "—" * 60)
