@@ -117,6 +117,19 @@ _SAFETY_PATTERNS = [
     ("can't take it anymore", re.compile(r"\b(?:can'?t|cannot)\s+take\s+it\s+anymore\b", re.IGNORECASE)),
     ("life is not worth it", re.compile(r"\blife\s+is\s+not\s+worth\s+it\b", re.IGNORECASE)),
     
+    # English additional crisis phrases
+    ("standing_on_edge", re.compile(r"\bstanding\s+(?:on|at)\s+the\s+edge\b", re.IGNORECASE)),
+    ("want_to_jump", re.compile(r"\bwant\s+to\s+jump\b", re.IGNORECASE)),
+    ("jump_off_from", re.compile(r"\bjump\s+(?:off|from)\s+(?:bridge|roof|building)?\b", re.IGNORECASE)),
+    ("throw_myself", re.compile(r"\bthrow\s+myself\b", re.IGNORECASE)),
+    ("end_my_life_existence", re.compile(r"\bend\s+my\s+(?:life|existence)\b", re.IGNORECASE)),
+    ("no_reason_to_live", re.compile(r"\bno\s+reason\s+to\s+live\b", re.IGNORECASE)),
+    ("cant_go_on_anymore", re.compile(r"\b(?:can'?t|cannot)\s+go\s+on\s+anymore\b", re.IGNORECASE)),
+    ("dont_want_to_exist", re.compile(r"\b(?:don'?t|do\s+not)\s+want\s+to\s+exist\b", re.IGNORECASE)),
+    ("disappear_forever", re.compile(r"\bdisappear\s+forever\b", re.IGNORECASE)),
+    ("end_everything", re.compile(r"\bend\s+everything\b", re.IGNORECASE)),
+    ("life_not_worth_living", re.compile(r"\blife\s+(?:isn'?t|is\s+not)\s+worth\s+living\b", re.IGNORECASE)),
+    
     # Hindi (Devanagari)
     ("hindi_marna", re.compile(r"मरना\s+(चाहता|चाहती)", re.IGNORECASE)),
     ("hindi_jeena_nahi", re.compile(r"जीना\s+नहीं\s+(चाहता|चाहती)", re.IGNORECASE)),
@@ -125,6 +138,12 @@ _SAFETY_PATTERNS = [
     ("hindi_sab_khatam", re.compile(r"सब\s+खत्म\s+करना", re.IGNORECASE)),
     ("hindi_jaan_de", re.compile(r"जान\s+(दे\s+दूंगा|दे\s+दूंगी|देना)", re.IGNORECASE)),
     ("hindi_nuksan", re.compile(r"खुद\s+को\s+नुकसान", re.IGNORECASE)),
+    
+    # Hindi additional crisis phrases
+    ("hindi_jeena_nahi_broad", re.compile(r"जीना\s+नहीं\s+(?:है|था|चाहता|चाहती)", re.IGNORECASE)),
+    ("hindi_jeene_ka_mann_broad", re.compile(r"जीने\s+का\s+(?:अब\s+)?मन\s+नहीं", re.IGNORECASE)),
+    ("hindi_mar_jana_broad", re.compile(r"मर\s+जाना\s+(?:चाहता|चाहती)", re.IGNORECASE)),
+    ("hindi_jaan_dena_broad", re.compile(r"जान\s+(?:देना|दे\s+दूंगा|दे\s+दूंगी)", re.IGNORECASE)),
     
     # Romanized Hinglish
     ("hinglish_marne_ka_mann", re.compile(r"mar+ne\s+ka\s+man+", re.IGNORECASE)),
@@ -138,6 +157,13 @@ _SAFETY_PATTERNS = [
     ("hinglish_zindagi_khatam", re.compile(r"zin+dag[ii]\s+khat+am", re.IGNORECASE)),
     ("hinglish_marna_chahta", re.compile(r"mar+na\s+cha+h?t[ai]", re.IGNORECASE)),
     ("hinglish_jeena_nahi", re.compile(r"je+na\s+nah?i\s+(?:cha*h?t[ai])?", re.IGNORECASE)),
+    
+    # Hinglish additional crisis phrases
+    ("hinglish_jeena_nahi_broad", re.compile(r"\bje+na\s+nah?i\b", re.IGNORECASE)),
+    ("hinglish_jeene_ka_mann_broad", re.compile(r"\bje+ne\s+ka\s+man+\s+nah?i\b", re.IGNORECASE)),
+    ("hinglish_mar_jana_broad", re.compile(r"\bmar\s+ja*na\s+(?:cha*h?t[ai]|better)\b", re.IGNORECASE)),
+    ("hinglish_jump_kar", re.compile(r"\bjump\s+kar\b", re.IGNORECASE)),
+    ("hinglish_zindagi_khatam_broad", re.compile(r"\bzindagi\s+khat+am\b", re.IGNORECASE)),
 ]
 
 _CACHED_CLASSIFIER_PROMPT = _compress_whitespace(CLASSIFIER_SYSTEM_PROMPT)
@@ -260,7 +286,11 @@ def should_run_safety_classifier(text: str) -> bool:
         "worthless", "empty", "alone", "lonely", "die", "kill", "end",
         "goodbye", "live", "world", "life", "cruel", "better", "without",
         "step", "reason", "continue", "going on", "go on", "disappear", "vanish",
-        "suicide", "suicidal", "myself", "dead", "point"
+        "suicide", "suicidal", "myself", "dead", "point",
+        # New keywords
+        "edge", "jump", "throw", "exist", "existence", "disappear", "forever",
+        "जीना", "जीने", "मरना", "मर", "खुदकुशी", "आत्महत्या", "जान", "खत्म",
+        "jeena", "jeene", "marna", "mar", "zindagi", "khatam", "jaan"
     }
     return any(word in text_lower for word in high_risk_words)
 
@@ -330,7 +360,7 @@ def evaluate_crisis_state(message: str, history: list[dict] | None = None) -> di
     )
     recent_crisis = check_recent_crisis(history)
     crisis_active = bool(matched_trigger) or (llm_class in ("HIGH", "CRISIS")) or recent_crisis
-    card_appended = bool(matched_trigger) or llm_class in ("HIGH", "CRISIS")
+    card_appended = crisis_active
     return {
         "crisis_active": crisis_active,
         "matched_trigger": matched_trigger,
