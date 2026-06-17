@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from uuid import UUID
+import uuid
 from dotenv import load_dotenv
 import logging
 import time
@@ -64,6 +65,13 @@ for env_var in ["SUPABASE_KEY", "SUPABASE_SERVICE_ROLE", "SERVICE_ROLE_KEY", "SE
 from app.core import memory, brain, knowledge, security, session
 from app.core.security import verify_email_real
 from app.core.google_auth import get_google_auth_url
+from app.core.metrics import (
+    record_request,
+    get_metrics,
+    record_safety_trigger,
+    record_retrieval_trigger,
+    record_llm_error,
+)
 
 # -------------------- APP INITIALIZATION --------------------
 app = FastAPI(title="RAAHAT API")
@@ -250,6 +258,22 @@ async def get_config():
         "supabase_url": supabase_url,
         "supabase_anon_key": supabase_anon_key,
     }
+
+
+@app.get("/health")
+async def health():
+    metrics_snapshot = get_metrics()
+    return {
+        "status": "healthy",
+        "uptime_seconds": metrics_snapshot["uptime_seconds"],
+        "faiss_directory_exists": os.path.exists(FAISS_DIR),
+        "performance_logging_enabled": _perf_enabled()
+    }
+
+
+@app.get("/metrics")
+async def metrics():
+    return get_metrics()
 
 
 
@@ -694,6 +718,9 @@ def _run_crisis_eval(
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest, authenticated_user_id: str = Depends(get_current_user_id)):
+    request_id = str(uuid.uuid4())[:8]
+    logger.info("[REQ %s] Chat request started", request_id)
+    request_start = time.time()
     start_total = time.perf_counter()
     perf: dict = {}
     try:
@@ -737,8 +764,14 @@ async def chat(request: ChatRequest, authenticated_user_id: str = Depends(get_cu
         perf["retrieval"] = retrieval_perf.get("retrieval", 0.0)
         perf["knowledge_formatting"] = retrieval_perf.get("knowledge_formatting", 0.0)
 
+        if crisis_state["crisis_active"]:
+            record_safety_trigger()
+
         if crisis_state["crisis_active"] and not brain.needs_psychoeducation(request.message):
             context_text = ""
+
+        if context_text:
+            record_retrieval_trigger()
 
         pattern_signal = session.get_pattern_signal(chat_history)
         display_name = memory.get_user_display_name(
@@ -763,6 +796,7 @@ async def chat(request: ChatRequest, authenticated_user_id: str = Depends(get_cu
                 ),
             )
         except Exception:
+            record_llm_error()
             logger.exception("Response generation failed")
             raise HTTPException(
                 status_code=500,
@@ -778,13 +812,30 @@ async def chat(request: ChatRequest, authenticated_user_id: str = Depends(get_cu
         perf["total"] = time.perf_counter() - start_total
 
         if _perf_enabled():
-            _print_perf(perf)
+            _print_perf(
+                perf,
+                label=f"[REQ {request_id}]"
+            )
 
+        record_request(
+            latency=time.time() - request_start,
+            success=True
+        )
+        logger.info("[REQ %s] Chat request completed", request_id)
         return {"response": response_text}
     except HTTPException:
+        record_request(
+            latency=time.time() - request_start,
+            success=False
+        )
+        logger.exception("[REQ %s] Chat request failed", request_id)
         raise
     except Exception:
-        logger.exception("Chat endpoint failed")
+        record_request(
+            latency=time.time() - request_start,
+            success=False
+        )
+        logger.exception("[REQ %s] Chat request failed", request_id)
         raise HTTPException(
             status_code=500,
             detail="Internal server error"
@@ -793,6 +844,9 @@ async def chat(request: ChatRequest, authenticated_user_id: str = Depends(get_cu
 
 @app.post("/api/chat/stream")
 async def chat_stream(request: ChatRequest, authenticated_user_id: str = Depends(get_current_user_id)):
+    request_id = str(uuid.uuid4())[:8]
+    logger.info("[REQ %s] Chat request started", request_id)
+    request_start = time.time()
     start_total = time.perf_counter()
     perf: dict = {}
     try:
@@ -836,8 +890,14 @@ async def chat_stream(request: ChatRequest, authenticated_user_id: str = Depends
         perf["retrieval"] = retrieval_perf.get("retrieval", 0.0)
         perf["knowledge_formatting"] = retrieval_perf.get("knowledge_formatting", 0.0)
 
+        if crisis_state["crisis_active"]:
+            record_safety_trigger()
+
         if crisis_state["crisis_active"] and not brain.needs_psychoeducation(request.message):
             context_text = ""
+
+        if context_text:
+            record_retrieval_trigger()
 
         pattern_signal = session.get_pattern_signal(chat_history)
         display_name = memory.get_user_display_name(
@@ -848,6 +908,7 @@ async def chat_stream(request: ChatRequest, authenticated_user_id: str = Depends
         async def event_generator():
             full_response = []
             start_llm = time.perf_counter()
+            stream_success = True
             try:
                 generator = brain.get_response_stream(
                     user_message=request.message,
@@ -863,6 +924,8 @@ async def chat_stream(request: ChatRequest, authenticated_user_id: str = Depends
                     full_response.append(chunk)
                     yield f"data: {json.dumps({'text': chunk})}\n\n"
             except Exception:
+                stream_success = False
+                record_llm_error()
                 logger.exception("Stream generation failed")
                 yield f"data: {json.dumps({'error': 'Failed to generate response'})}\n\n"
             finally:
@@ -881,13 +944,30 @@ async def chat_stream(request: ChatRequest, authenticated_user_id: str = Depends
                 perf["total"] = time.perf_counter() - start_total
 
                 if _perf_enabled():
-                    _print_perf(perf, label="[STREAMING]")
+                    _print_perf(
+                        perf,
+                        label=f"[STREAMING][REQ {request_id}]"
+                    )
+                logger.info("[REQ %s] Chat request completed", request_id)
+                record_request(
+                    latency=time.time() - request_start,
+                    success=stream_success
+                )
 
         return StreamingResponse(event_generator(), media_type="text/event-stream")
     except HTTPException:
+        record_request(
+            latency=time.time() - request_start,
+            success=False
+        )
+        logger.exception("[REQ %s] Chat request failed", request_id)
         raise
     except Exception:
-        logger.exception("Chat stream setup failed")
+        record_request(
+            latency=time.time() - request_start,
+            success=False
+        )
+        logger.exception("[REQ %s] Chat request failed", request_id)
         raise HTTPException(
             status_code=500,
             detail="Internal server error",
