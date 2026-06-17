@@ -2,8 +2,8 @@ import os
 import sys
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from fastapi import FastAPI, HTTPException, Request, Depends, Header, status
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException, Request, Depends, Header, status, Response
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -274,6 +274,162 @@ async def health():
 @app.get("/metrics")
 async def metrics():
     return get_metrics()
+
+
+import secrets
+
+dashboard_sessions: dict[str, float] = {}
+
+
+def render_metrics_dashboard(
+    login_display: str = "none",
+    metrics_display: str = "none",
+    error_display: str = "none",
+    error_message: str = ""
+) -> HTMLResponse:
+    template_path = os.path.join(BASE_DIR, "app/templates/metrics_dashboard.html")
+    if not os.path.exists(template_path):
+        return HTMLResponse(content="Dashboard template not found", status_code=500)
+
+    with open(template_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    metrics_snapshot = get_metrics()
+
+    total = metrics_snapshot.get("total_requests", 0)
+    success = metrics_snapshot.get("successful_requests", 0)
+    failure = metrics_snapshot.get("failed_requests", 0)
+
+    if total > 0:
+        success_rate = round((success / total) * 100, 2)
+        failure_rate = round((failure / total) * 100, 2)
+    else:
+        success_rate = 0.0
+        failure_rate = 0.0
+
+    uptime = metrics_snapshot.get("uptime_seconds", 0.0)
+    if uptime > 3600:
+        hours = int(uptime // 3600)
+        minutes = int((uptime % 3600) // 60)
+        seconds = int(uptime % 60)
+        uptime_formatted = f"{hours}h {minutes}m {seconds}s"
+    elif uptime > 60:
+        minutes = int(uptime // 60)
+        seconds = int(uptime % 60)
+        uptime_formatted = f"{minutes}m {seconds}s"
+    else:
+        uptime_formatted = f"{round(uptime, 2)}s"
+
+    replacements = {
+        "login_display": login_display,
+        "metrics_display": metrics_display,
+        "error_display": error_display,
+        "error_message": error_message,
+        "uptime_formatted": uptime_formatted,
+        "total_requests": str(total),
+        "successful_requests": str(success),
+        "failed_requests": str(failure),
+        "success_rate": f"{success_rate:.2f}",
+        "failure_rate": f"{failure_rate:.2f}",
+        "average_response_time": f"{metrics_snapshot.get('average_response_time', 0.0):.3f}",
+        "safety_triggers": str(metrics_snapshot.get("safety_triggers", 0)),
+        "retrieval_triggers": str(metrics_snapshot.get("retrieval_triggers", 0)),
+        "llm_errors": str(metrics_snapshot.get("llm_errors", 0)),
+        "recent_request_count": str(metrics_snapshot.get("recent_request_count", 0)),
+    }
+
+    for placeholder, value in replacements.items():
+        content = content.replace(f"{{{{ {placeholder} }}}}", value)
+        content = content.replace(f"{{{{{placeholder}}}}}", value)
+
+    return HTMLResponse(
+        content=content,
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+    )
+
+
+@app.get("/dashboard/metrics")
+async def get_dashboard_metrics(request: Request, error: str | None = None):
+    session_token = request.cookies.get("dashboard_session")
+    admin_password = os.getenv("ADMIN_DASHBOARD_PASSWORD")
+
+    # Optional token expiry cleanup
+    if session_token in dashboard_sessions:
+        session_time = dashboard_sessions[session_token]
+        if time.time() - session_time > 3600:
+            del dashboard_sessions[session_token]
+            session_token = None
+
+    if not admin_password or not session_token or session_token not in dashboard_sessions:
+        error_msg = ""
+        if error == "Invalid dashboard password":
+            error_msg = "Invalid dashboard password"
+        elif error == "Dashboard password not configured":
+            error_msg = "Dashboard password not configured"
+        error_display = "block" if error_msg else "none"
+
+        return render_metrics_dashboard(
+            login_display="block",
+            metrics_display="none",
+            error_display=error_display,
+            error_message=error_msg
+        )
+
+    # Refresh session activity time
+    dashboard_sessions[session_token] = time.time()
+
+    return render_metrics_dashboard(
+        login_display="none",
+        metrics_display="block"
+    )
+
+
+@app.post("/dashboard/metrics/login")
+async def post_dashboard_login(request: Request):
+    body = await request.body()
+    body_str = body.decode("utf-8")
+    from urllib.parse import parse_qs
+    params = parse_qs(body_str)
+    passwords = params.get("password", [])
+    password = passwords[0] if passwords else ""
+
+    admin_password = os.getenv("ADMIN_DASHBOARD_PASSWORD")
+    if not admin_password:
+        return RedirectResponse(
+            url="/dashboard/metrics?error=Dashboard+password+not+configured",
+            status_code=303
+        )
+
+    if secrets.compare_digest(password, admin_password):
+        session_token = secrets.token_urlsafe(32)
+        dashboard_sessions[session_token] = time.time()
+        
+        response = RedirectResponse(url="/dashboard/metrics", status_code=303)
+        response.set_cookie(
+            key="dashboard_session",
+            value=session_token,
+            httponly=True,
+            samesite="lax",
+            secure=True,
+            max_age=3600
+        )
+        return response
+    else:
+        return RedirectResponse(
+            url="/dashboard/metrics?error=Invalid+dashboard+password",
+            status_code=303
+        )
+
+
+@app.get("/dashboard/logout")
+async def get_dashboard_logout(request: Request):
+    session_token = request.cookies.get("dashboard_session")
+    if session_token and session_token in dashboard_sessions:
+        del dashboard_sessions[session_token]
+        
+    response = RedirectResponse(url="/dashboard/metrics", status_code=303)
+    response.delete_cookie("dashboard_session")
+    return response
 
 
 

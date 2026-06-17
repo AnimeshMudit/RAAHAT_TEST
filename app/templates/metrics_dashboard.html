@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAAHAT Internal Metrics Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.15) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            background: linear-gradient(135deg, #a78bfa 0%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.025em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            font-size: 1.1rem;
+        }
+
+        /* Login Form Styles */
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 0.85rem;
+            border-radius: 12px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border-radius: 12px;
+            padding: 0.85rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        /* Dashboard Grid Styles */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.015);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .metric-title {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .metric-value.highlight-success {
+            color: var(--success);
+        }
+
+        .metric-value.highlight-danger {
+            color: var(--danger);
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1rem;
+        }
+
+        .dashboard-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border-color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- LOGIN CARD -->
+        <div class="card" style="display: {{ login_display }}; max-width: 450px; margin: 0 auto;">
+            <h1>RAAHAT Maintainers</h1>
+            <p class="subtitle">Please sign in to access the metrics dashboard</p>
+            
+            <div class="error-message" style="display: {{ error_display }};">
+                {{ error_message }}
+            </div>
+
+            <form action="/dashboard/metrics/login" method="POST" class="login-form">
+                <div class="form-group">
+                    <label for="password">Dashboard Password</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required autofocus>
+                </div>
+                <button type="submit" class="btn">Sign In</button>
+            </form>
+        </div>
+
+        <!-- DASHBOARD CARD -->
+        <div class="card" style="display: {{ metrics_display }};">
+            <div class="dashboard-header">
+                <h2>RAAHAT Analytics</h2>
+                <a href="/dashboard/logout" class="logout-btn">Log Out</a>
+            </div>
+
+            <h1>System Metrics</h1>
+            <p class="subtitle">Real-time system health and request analytics</p>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-title">Uptime</div>
+                    <div class="metric-value">{{ uptime_formatted }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Total Requests</div>
+                    <div class="metric-value">{{ total_requests }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Successful Requests</div>
+                    <div class="metric-value highlight-success">{{ successful_requests }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Failed Requests</div>
+                    <div class="metric-value highlight-danger">{{ failed_requests }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Success Rate</div>
+                    <div class="metric-value">{{ success_rate }}%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Failure Rate</div>
+                    <div class="metric-value">{{ failure_rate }}%</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Avg Response Time</div>
+                    <div class="metric-value">{{ average_response_time }}s</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Safety Triggers</div>
+                    <div class="metric-value">{{ safety_triggers }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Retrieval Triggers</div>
+                    <div class="metric-value">{{ retrieval_triggers }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">LLM Errors</div>
+                    <div class="metric-value highlight-danger">{{ llm_errors }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Recent Requests (1k)</div>
+                    <div class="metric-value">{{ recent_request_count }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
