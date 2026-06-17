@@ -711,6 +711,13 @@ def get_response(
         perf_out=perf_out,
     )
 
+    if response_text and len(response_text) <= 20:
+        cleaned_msg = user_message.lower().strip().strip(".,!?")
+        if "thank" in cleaned_msg:
+            response_text = "You are very welcome! I'm glad I could be of some help to you today."
+        elif "hello" in cleaned_msg or "hi" in cleaned_msg or "hey" in cleaned_msg:
+            response_text = "Hello there! I am Raahat, your companion. How are you feeling today?"
+
     if card_appended:
         response_text += "\n\n" + _CACHED_CRISIS_CARD
 

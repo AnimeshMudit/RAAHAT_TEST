@@ -496,7 +496,7 @@ function fetchConfig() {
         configPromise = apiFetch('/api/config')
             .then(config => {
                 window.SUPABASE_URL = config.supabase_url;
-                window.SUPABASE_KEY = config.supabase_key;
+                window.SUPABASE_ANON_KEY = config.supabase_anon_key;
                 return config;
             })
             .catch(err => {
@@ -513,9 +513,9 @@ async function getSupabaseClient() {
         return supabaseClient;
     }
 
-    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) {
+    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
         const config = await fetchConfig();
-        if (!config.supabase_url || !config.supabase_key) {
+        if (!config.supabase_url || !config.supabase_anon_key) {
             throw new Error('Supabase configuration is missing from the server.');
         }
     }
@@ -524,7 +524,7 @@ async function getSupabaseClient() {
         throw new Error('Supabase client library is not loaded.');
     }
 
-    supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+    supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
     try {
         const { data: activeSession } = await supabaseClient.auth.getSession();

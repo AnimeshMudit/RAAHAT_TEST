@@ -28,6 +28,38 @@ if BASE_DIR not in sys.path:
 
 load_dotenv()
 
+def is_service_role_key(token: str) -> bool:
+    try:
+        parts = token.split('.')
+        if len(parts) != 3:
+            return False
+        payload = parts[1]
+        payload += '=' * (4 - len(payload) % 4)
+        import base64
+        data = json.loads(base64.b64decode(payload).decode('utf-8'))
+        return data.get("role") == "service_role"
+    except Exception:
+        return False
+
+# Audit environment configuration for exposed secret role keys
+for env_var in ["SUPABASE_KEY", "SUPABASE_SERVICE_ROLE", "SERVICE_ROLE_KEY", "SERVICE_KEY", "SUPABASE_SERVICE_KEY"]:
+    val = os.getenv(env_var)
+    if val and is_service_role_key(val):
+        logger.critical(
+            "⚠️ SECURITY WARNING: Secret 'service_role' key detected in env var %s. "
+            "Ensure this key is never exposed to the frontend/browser. "
+            "If it has ever been committed or exposed, rotate it immediately in the Supabase Dashboard.",
+            env_var
+        )
+        print(
+            f"\n" + "!" * 80 + "\n"
+            f"⚠️ SECURITY WARNING: Secret 'service_role' key detected in env var {env_var}!\n"
+            "Ensure this key is never exposed to the frontend/browser.\n"
+            "If it has ever been committed or exposed, rotate it immediately in the Supabase Dashboard!\n"
+            "!" * 80 + "\n",
+            file=sys.stderr
+        )
+
 # -------------------- CORE IMPORTS --------------------
 from app.core import memory, brain, knowledge, security, session
 from app.core.security import verify_email_real
@@ -196,9 +228,27 @@ async def onboarding_page():
 
 @app.get("/api/config")
 async def get_config():
+    supabase_url = get_required_env("SUPABASE_URL")
+    supabase_anon_key = os.getenv("SUPABASE_ANON_KEY")
+
+    if not supabase_anon_key:
+        raise HTTPException(
+            status_code=500,
+            detail="SUPABASE_ANON_KEY is missing."
+        )
+        
+    if is_service_role_key(supabase_anon_key):
+        logger.critical(
+            "⚠️ SECURITY VIOLATION: Blocked request to expose 'service_role' key via /api/config."
+        )
+        raise HTTPException(
+            status_code=500,
+            detail="Server configuration error: cannot expose service_role key to client."
+        )
+        
     return {
-        "supabase_url": get_required_env("SUPABASE_URL"),
-        "supabase_key": get_required_env("SUPABASE_KEY"),
+        "supabase_url": supabase_url,
+        "supabase_anon_key": supabase_anon_key,
     }
 
 

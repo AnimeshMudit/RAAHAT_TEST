@@ -37,6 +37,7 @@ sys.modules["supabase"] = MockSupabaseModule
 # Set dummy environment variables to allow local imports without crashing
 os.environ.setdefault("SUPABASE_URL", "https://mock.supabase.co")
 os.environ.setdefault("SUPABASE_KEY", "mock-supabase-key")
+os.environ.setdefault("SUPABASE_ANON_KEY", "mock-supabase-key")
 os.environ.setdefault("ENVIRONMENT", "development")
 os.environ.setdefault("ENABLE_TEST_AUTH", "true")
 
@@ -181,7 +182,21 @@ def test_phase1():
     # 7. Streaming response function
     assert hasattr(brain, "get_response_stream"), "brain.get_response_stream missing"
     
-    print("✅ All required entrypoints and function signatures exist.")
+    # 8. Verify FastAPI config route response structure
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    config_json = loop.run_until_complete(server.get_config())
+    assert "supabase_url" in config_json, "supabase_url missing in config JSON"
+    assert "supabase_anon_key" in config_json, "supabase_anon_key missing in config JSON"
+    assert "supabase_key" not in config_json, "supabase_key should NOT be in config JSON"
+    assert len(config_json) == 2, f"config JSON has unexpected keys: {list(config_json.keys())}"
+    
+    print("✅ All required entrypoints, function signatures, and secured config endpoint verified.")
     return True
 
 
