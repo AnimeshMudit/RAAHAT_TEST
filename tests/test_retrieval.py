@@ -1,23 +1,31 @@
 import pytest
 from app.core import brain, knowledge
 
-def test_should_retrieve_anxiety():
+@pytest.mark.parametrize(
+    "query, expected_trigger",
+    [
+        # Positive retrieval triggers
+        ("depression", True),
+        ("coping with loneliness", True),
+        ("panic attack", True),
+        ("CBT techniques", True),
+        ("breathing exercise", True),
+        ("grounding methods", True),
+        
+        # Negative retrieval triggers
+        ("hello", False),
+        ("hi", False),
+        ("good morning", False),
+        ("thank you", False),
+        ("bye", False),
+        ("nice weather", False),
+    ]
+)
+def test_retrieval_routing_parameterized(query, expected_trigger):
     """
-    Verify that a mental health query triggers retrieval.
+    Verify retrieval routing logic for positive and negative cases using parameterized tests.
     """
-    # Contains 'anxiety' and 'panic', which are trigger keywords
-    assert brain.should_use_retrieval("I have anxiety and panic attacks") is True
-    # Contains 'coping' and 'stress'
-    assert brain.should_use_retrieval("I need coping methods for my exam stress") is True
-
-def test_should_not_retrieve_hello():
-    """
-    Verify that greetings and simple messages do not trigger retrieval.
-    """
-    assert brain.should_use_retrieval("hello") is False
-    assert brain.should_use_retrieval("hi") is False
-    assert brain.should_use_retrieval("what is my name") is False
-    assert brain.should_use_retrieval("just venting") is False
+    assert brain.should_use_retrieval(query) == expected_trigger
 
 def test_search_knowledge_mocked(mock_vectorstore):
     """

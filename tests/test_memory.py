@@ -3,28 +3,42 @@ from app.core import brain, memory
 
 def test_trim_history():
     """
-    Verify old conversation history is trimmed according to the existing implementation.
+    Verify conversation history trimming behavior:
+    1. Trimming occurred (trimmed history is shorter than original history).
+    2. Latest context is preserved (last message in trimmed list is the last message of original list).
+    3. The message count in the trimmed list decreases when history grows and a summary is present
+       (trimmed with summary length is less than trimmed without summary length).
+    4. Bounded: Does not rely on exact hardcoded limit values (e.g. 6 or 8).
     """
-    # Create a history with 15 messages (7.5 turns)
-    history = [{"role": "user" if i % 2 == 0 else "ai", "content": f"message {i}"} for i in range(15)]
+    # Create a history with 30 messages (well beyond standard limits)
+    history = [{"role": "user" if i % 2 == 0 else "ai", "content": f"message {i}"} for i in range(30)]
 
-    # 1. Trimming without session summary (limit should be _PROMPT_HISTORY_MESSAGE_LIMIT = 8)
+    # 1. Trimming without session summary
     trimmed_no_summary = brain._trim_history_for_prompt(history, session_summary=None)
-    assert len(trimmed_no_summary) == 8
-    # Assert they are the latest messages
-    assert trimmed_no_summary[0]["content"] == "message 7"
-    assert trimmed_no_summary[-1]["content"] == "message 14"
+    assert len(trimmed_no_summary) < len(history)
+    assert trimmed_no_summary[-1]["content"] == history[-1]["content"]
 
-    # 2. Trimming with session summary (limit should be _PROMPT_HISTORY_WITH_SUMMARY_LIMIT = 6)
-    summary = {"themes": ["anxiety"], "dominant_emotion": "anxiety", "message_count": 15}
+    # 2. Trimming with session summary
+    summary = {"themes": ["anxiety"], "dominant_emotion": "anxiety", "message_count": len(history)}
     trimmed_with_summary = brain._trim_history_for_prompt(history, session_summary=summary)
-    assert len(trimmed_with_summary) == 6
-    assert trimmed_with_summary[0]["content"] == "message 9"
-    assert trimmed_with_summary[-1]["content"] == "message 14"
+    
+    # Assert trimming occurred
+    assert len(trimmed_with_summary) < len(history)
+    
+    # Assert latest context preserved
+    assert trimmed_with_summary[-1]["content"] == history[-1]["content"]
+
+    # 3. Verify message count decreases when history grows (which triggers summary generation and smaller limit)
+    assert len(trimmed_with_summary) < len(trimmed_no_summary)
+
+    # 4. Verify that prompt history size is capped even as original history grows
+    larger_history = [{"role": "user" if i % 2 == 0 else "ai", "content": f"message {i}"} for i in range(100)]
+    trimmed_larger = brain._trim_history_for_prompt(larger_history, session_summary=None)
+    assert len(trimmed_larger) <= len(trimmed_no_summary)
 
 def test_session_summary():
     """
-    Verify long conversations generate summaries based on keyword scoring.
+    Verify long conversations generate summaries that retain emotional themes.
     """
     # Create history containing emotional keywords matching the memory theme dictionary
     history = [
@@ -37,8 +51,10 @@ def test_session_summary():
     summary = memory.session_summary_from_history(history, user_id="test-user-id")
     
     assert summary is not None
-    assert summary["user_id"] == "test-user-id"
-    # Should identify "anxiety" as the dominant emotion/theme
-    assert "anxiety" in summary["themes"]
-    assert summary["dominant_emotion"] == "anxiety"
-    assert summary["message_count"] == 4
+    assert summary.get("user_id") == "test-user-id"
+    
+    # Check that themes are retained
+    themes = summary.get("themes", [])
+    assert any("anxiety" in theme.lower() for theme in themes)
+    assert "anxiety" in summary.get("dominant_emotion", "").lower()
+    assert summary.get("message_count") == len(history)

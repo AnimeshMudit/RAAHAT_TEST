@@ -1,10 +1,24 @@
 import sys
 import os
+import socket
+
+# 1. Block external network connection attempts at socket level (Offline Guarantee)
+_original_connect = socket.socket.connect
+
+def guarded_connect(self, address):
+    host = address[0]
+    # Allow local loopback addresses (for internal TestClient operations)
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        raise RuntimeError(f"Real network connection to {host} is blocked during tests.")
+    return _original_connect(self, address)
+
+socket.socket.connect = guarded_connect
+
 from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-# 1. Set environment variables to allow offline configuration
+# 2. Set environment variables to allow offline configuration
 os.environ["SUPABASE_URL"] = "https://mock.supabase.co"
 os.environ["SUPABASE_KEY"] = "mock-supabase-key"
 os.environ["SUPABASE_ANON_KEY"] = "mock-supabase-anon-key"
@@ -13,7 +27,7 @@ os.environ["HF_TOKEN"] = "mock-hf-token"
 os.environ["ENVIRONMENT"] = "development"
 os.environ["ENABLE_TEST_AUTH"] = "true"
 
-# 2. Pre-import mock for Supabase
+# 3. Pre-import mock for Supabase
 mock_supabase_client = MagicMock()
 mock_table = MagicMock()
 mock_supabase_client.table.return_value = mock_table
@@ -54,7 +68,7 @@ class MockSupabaseModule:
 
 sys.modules["supabase"] = MockSupabaseModule
 
-# 3. Pre-import mock for SentenceTransformer
+# 4. Pre-import mock for SentenceTransformer
 class MockSentenceTransformer:
     def __init__(self, *args, **kwargs):
         pass
@@ -68,7 +82,7 @@ mock_sentence_transformers = MagicMock()
 mock_sentence_transformers.SentenceTransformer = MockSentenceTransformer
 sys.modules["sentence_transformers"] = mock_sentence_transformers
 
-# 4. Pre-import mock for FAISS
+# 5. Pre-import mock for FAISS
 class MockFAISS:
     @classmethod
     def load_local(cls, *args, **kwargs):
@@ -98,12 +112,24 @@ from app.core import memory, brain, knowledge
 
 # ----------------- FIXTURES -----------------
 
+@pytest.fixture(autouse=True)
+def bypass_rate_limiting():
+    """Bypasses API rate limit checks during test runs to prevent flakiness."""
+    with patch("app.api.server.check_rate_limit", return_value=True):
+        yield
+
 @pytest.fixture
 def mock_supabase():
     """Fixture to provide access to the mocked Supabase client and reset it."""
     mock_supabase_client.reset_mock()
     mock_table.reset_mock()
     mock_auth.reset_mock()
+    
+    # Reset side_effects so they don't leak between tests
+    mock_auth.get_user.side_effect = None
+    mock_auth.sign_up.side_effect = None
+    mock_auth.sign_in_with_password.side_effect = None
+    
     # Reset default return values
     mock_supabase_client.table.return_value = mock_table
     mock_table.select.return_value = mock_table

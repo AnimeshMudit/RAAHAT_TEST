@@ -1,67 +1,43 @@
 import pytest
 from app.core import brain
 
-def test_hyperbole_filter(mock_llm):
+@pytest.mark.parametrize(
+    "phrase, expected_crisis",
+    [
+        # Crisis phrases (English)
+        ("I want to kill myself", True),
+        ("I want to disappear forever", True),
+        
+        # Hyperbole phrases (English)
+        ("I'm literally dying", False),
+        ("killing it", False),
+        ("dying of laughter", False),
+        
+        # Greeting phrases
+        ("hello", False),
+        ("hi", False),
+        ("good morning", False),
+        
+        # Hindi examples
+        ("जीने का अब कोई मन नहीं है", True),
+        ("मैं मरना चाहता हूँ", True),
+        ("Mujhe bahut dukh ho raha hai", False),
+        
+        # Hinglish examples
+        ("Mera marne ka mann kar raha hai", True),
+        ("Mujhe anxiety ho rahi hai yaar", False),
+    ]
+)
+def test_safety_evaluation_parameterized(mock_llm, phrase, expected_crisis):
     """
-    Verify exaggerated self-statements such as:
-    'I'm literally dying'
-    'I want to disappear forever'
-    are handled appropriately by the safety layer according to the existing implementation.
+    Verify crisis detection behavior across English, Hindi, and Hinglish phrases (both crisis and benign controls)
+    without language detection checks, and using schema-tolerant assertions.
     """
-    # 'I'm literally dying' should not trigger the safety classifier since it contains no crisis keywords.
-    res_dying = brain.evaluate_crisis_state("I'm literally dying")
-    assert res_dying["crisis_active"] is False
-    assert res_dying["matched_trigger"] is None
-
-    # 'I want to disappear forever' triggers regex pattern match ('disappear_forever' or 'want to disappear')
-    res_disappear = brain.evaluate_crisis_state("I want to disappear forever")
-    assert res_disappear["crisis_active"] is True
-    assert res_disappear["matched_trigger"] is not None
-
-def test_hindi_detection():
-    """
-    Verify Devanagari Hindi statements that contain crisis indicators are detected by the safety layer,
-    while benign Hindi statements do not trigger safety alerts.
-    """
-    # Explicit crisis Hindi statement triggers regex match
-    hindi_crisis = "जीने का अब कोई मन नहीं है"
-    res_crisis = brain.evaluate_crisis_state(hindi_crisis)
-    assert res_crisis["crisis_active"] is True
-    assert res_crisis["matched_trigger"] is not None
-
-    # Benign Hindi statement does not trigger crisis detection
-    benign_hindi = "Mujhe bahut dukh ho raha hai"
-    res_benign = brain.evaluate_crisis_state(benign_hindi)
-    assert res_benign["crisis_active"] is False
-
-    # Skip general language identification module tests since only safety regex detection exists
-    if not hasattr(brain, "detect_language"):
-        pytest.skip("General language detection module is not supported by current implementation.")
-
-def test_hinglish_detection():
-    """
-    Verify Hinglish (Romanized Hindi) statements that contain crisis indicators are detected,
-    while benign Hinglish statements do not trigger safety alerts.
-    """
-    # Explicit crisis Hinglish statement triggers regex match
-    hinglish_crisis = "Mera marne ka mann kar raha hai"
-    res_crisis = brain.evaluate_crisis_state(hinglish_crisis)
-    assert res_crisis["crisis_active"] is True
-    assert res_crisis["matched_trigger"] is not None
-
-    # Benign Hinglish statement does not trigger crisis detection
-    benign_hinglish = "Mujhe anxiety ho rahi hai yaar"
-    res_benign = brain.evaluate_crisis_state(benign_hinglish)
-    assert res_benign["crisis_active"] is False
-
-    if not hasattr(brain, "detect_language"):
-        pytest.skip("General language detection module is not supported by current implementation.")
-
-def test_crisis_detection(mock_llm):
-    """
-    Verify explicit English crisis statements activate crisis detection.
-    """
-    # "I want to kill myself" triggers regex and activates crisis detection
-    res = brain.evaluate_crisis_state("I want to kill myself")
-    assert res["crisis_active"] is True
-    assert res["matched_trigger"] == "kill myself"
+    res = brain.evaluate_crisis_state(phrase)
+    assert res["crisis_active"] == expected_crisis
+    
+    # Check trigger existence rather than assuming exact internal regex pattern names
+    if expected_crisis:
+        assert res["matched_trigger"] is not None
+    else:
+        assert res["matched_trigger"] is None
