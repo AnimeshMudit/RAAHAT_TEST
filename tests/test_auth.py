@@ -57,3 +57,61 @@ async def test_missing_jwt(client):
     allowed_phrases = {"Missing authorization header", "Unauthorized", "Not authenticated", "Missing token"}
     has_match = (detail in allowed_phrases) or any(phrase.lower() in detail.lower() for phrase in allowed_phrases)
     assert has_match, f"Unexpected detail message: '{detail}'"
+
+
+@pytest.mark.anyio
+async def test_sync_user_success(client, mock_memory, mock_user):
+    """
+    Verify /api/sync-user succeeds with a verified session and matching email.
+    """
+    mock_user["username"] = "user@example.com"
+    mock_memory["users"][mock_user["id"]] = mock_user
+
+    headers = {"Authorization": "Bearer mock-access-token"}
+    payload = {"email": "user@example.com"}
+    response = client.post("/api/sync-user", json=payload, headers=headers)
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "user_id" in data
+    assert data["username"] == "user@example.com"
+
+
+@pytest.mark.anyio
+async def test_sync_user_missing_token(client):
+    """
+    Verify /api/sync-user rejects requests with missing token (returns 401).
+    """
+    payload = {"email": "user@example.com"}
+    response = client.post("/api/sync-user", json=payload)
+    
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert "detail" in response.json()
+
+
+@pytest.mark.anyio
+async def test_sync_user_mismatched_email(client):
+    """
+    Verify /api/sync-user rejects requests with mismatched email / forged payload (returns 401).
+    """
+    headers = {"Authorization": "Bearer mock-access-token"}
+    payload = {"email": "forged_email@example.com"}
+    response = client.post("/api/sync-user", json=payload, headers=headers)
+    
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert "detail" in response.json()
+
+
+@pytest.mark.anyio
+async def test_sync_user_invalid_token(client, mock_supabase):
+    """
+    Verify /api/sync-user rejects requests with invalid / expired token (returns 401).
+    """
+    mock_supabase.auth.get_user.side_effect = Exception("Invalid session")
+    
+    headers = {"Authorization": "Bearer invalid-token"}
+    payload = {"email": "user@example.com"}
+    response = client.post("/api/sync-user", json=payload, headers=headers)
+    
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert "detail" in response.json()

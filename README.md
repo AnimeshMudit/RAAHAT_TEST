@@ -115,24 +115,25 @@ Safety is the core pillar of RAAHAT. The system features a **dual-layer pre-LLM 
                          │
         ┌────────────────┴────────────────┐
         ▼                                 ▼
-[ Regex Engine ]                [ LLM Classifier ]
-(Multilingual match)           (SAFE/LOW/HIGH/CRISIS)
+[ Semantic Safety Gate ]        [ LLM Classifier ]
+(Multilingual MiniLM Model)    (SAFE/LOW/HIGH/CRISIS)
         │                                 │
         ▼                                 ▼
-   Pattern Match?                 Category Level?
-   Yes ──► CRISIS                 CRISIS/HIGH ──► Active Safety Override
-    No ──► SAFE                      LOW/SAFE ──► Normal Conversational RAG
+   Risk Score >= 0.80             Risk Score >= 0.55?
+   Yes ──► CRISIS                 Yes ──► Run Groq Classifier
+                                   No ──► SAFE (bypass LLM call)
 ```
 
 ### 1. Dual-Layer Verification Flow
-- **Layer 1: Multilingual Regex Scanning:** A highly optimized regular expression scanner scans incoming strings for 40+ explicit patterns in English, Devanagari Hindi, and Hinglish. Regex matches bypass LLM classification entirely for instant crisis state activation.
-- **Layer 2: Groq Llama-3.3 Classifier:** If the regex search is negative, but risk keywords are present, the query is sent to an isolated Llama-3.3-70B instance with a zero-temperature prompt. It classifies the message into one of four states: `SAFE`, `LOW`, `HIGH`, or `CRISIS`.
+- **Layer 1: Universal Semantic Safety Gate:** Uses a multilingual embedding model (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`) to compute the cosine similarity risk score between the user input and a set of predefined crisis/suicide reference phrases. High risk matches (similarity >= 0.80) trigger direct crisis state activation immediately.
+- **Layer 2: Groq Llama-3.3 Classifier:** If the risk score is >= 0.55 (potential crisis or emotional venting), the query is sent to an isolated Llama-3.3-70B instance with a zero-temperature prompt to classify the message into one of four states: `SAFE`, `LOW`, `HIGH`, or `CRISIS`. Otherwise, it bypasses LLM classification entirely to minimize API latency.
 
-### 2. Multi-Lingual Crisis Target Patterns
-To support urban and semi-urban Indian demographics, RAAHAT contains hand-tuned regex patterns:
-- **Devanagari Hindi:** Matches keywords like `मरना चाहता/चाहती` (want to die), `आत्महत्या` / `खुदकुशी` (suicide), `जान दे दूंगा` (will take my life), and `खुद को नुकसान` (harm myself).
-- **Romanized Hinglish:** Captures colloquial typing habits like `marne ka mann`, `khud ko maar`, `zindagi khatam`, and `sucide` (handling common spelling errors).
-- **English:** Flags phrases such as `kill myself`, `better off dead`, `end it all`, `nobody would miss me`, and `last time talking`.
+### 2. Multi-Lingual Safety Coverage
+Because it relies on a multilingual semantic space rather than literal keyword matches, the safety gate works out-of-the-box for:
+- **English** (e.g., "I don't want to live", "I want to kill myself")
+- **Hindi / Devanagari** (e.g., "मैं जीना नहीं चाहता")
+- **Hinglish** (e.g., "Mera marne ka mann kar raha hai")
+- **Tamil, Bengali, Marathi, Telugu, Kannada, Malayalam, and Urdu transliterations** (e.g., "enakku saaga thonuthu", "ami morar kotha bhabchi")
 
 ### 3. Hyperbole Filter
 To prevent false positives, the system implements a hyperbole check. Common idioms such as *"dying of laughter"*, *"killing it at work"*, *"this is a killer design"*, or *"doing a killer job"* are removed or ignored before classification. The classifier uses context to distinguish true psychological distress from metaphorical venting.
@@ -346,7 +347,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 ### Environment Variables
 
-RAAHAT requires several environment keys to run. Copy the template below into a `.env` file:
+RAAHAT requires several environment keys to run. A template `.env.example` has been created with placeholders. Make sure to copy this into a `.env` file and populate it with your own credentials (never commit real secrets).
 
 | Variable | Description | Required | Example Value |
 | :--- | :--- | :--- | :--- |
@@ -354,6 +355,7 @@ RAAHAT requires several environment keys to run. Copy the template below into a 
 | `FALLBACK_KEY` | Secondary Groq API key for rate-limit fallbacks. | No | `gsk_xL9...` |
 | `SUPABASE_URL` | Your Supabase project URL. | Yes | `https://your-proj.supabase.co` |
 | `SUPABASE_KEY` | Your Supabase anon/public key. | Yes | `eyJhbGciOi...` |
+| `SUPABASE_ANON_KEY` | Your Supabase anon key (exposed to client config). | Yes | `eyJhbGciOi...` |
 | `GOOGLE_CLIENT_ID` | OAuth Client ID from Google Cloud Console. | Yes (for Web Auth) | `102938-abc.apps.googleusercontent.com` |
 | `GOOGLE_REDIRECT_URI` | Google Auth redirect callback endpoint. | Yes (for Web Auth) | `http://127.0.0.1:8000/auth/callback` |
 | `ALLOWED_ORIGINS` | Allowed CORS origins (comma-separated). | Yes | `http://127.0.0.1:8000,http://localhost:8000` |
@@ -589,7 +591,7 @@ python test.py
 RAAHAT is optimized for low-latency execution and efficient API usage:
 1. **Asynchronous Parallel Orchestration:** Using FastAPI's async loops and a dedicated thread pool (`ThreadPoolExecutor`), RAAHAT runs crisis evaluation and vector database retrieval concurrently.
 2. **Context and Profile Caching:** User profiles and history are cached in memory (`_context_cache` and `_profile_cache` with a 120-second TTL). This avoids repeated Supabase queries for consecutive messages.
-3. **FAISS Database Warmup:** The FAISS index is loaded on startup via a background executor. Tokens are passed through the embedding model to warm up sentence-transformers cache before processing user queries.
+3. **FAISS Database & Model Warmup:** Embedding models (both `all-mpnet-base-v2` for RAG and `paraphrase-multilingual-MiniLM-L12-v2` for safety) and the FAISS index are loaded and warmed up synchronously during FastAPI startup. This prevents lazy loading latency on the first request. The startup sequence fails fast and clearly if the FAISS index files cannot be found or loaded correctly.
 4. **LRU Vector Search Cache:** The similarity search uses an LRU cache (`@lru_cache(maxsize=128)`) to store frequent queries. Repeating a query retrieves matches instantly.
 5. **Context Window Compression:** The message history sent to the LLM is capped at 6-8 messages (3-4 turns). Older messages are summarized to fit the context window, keeping latency low and preventing token bloat.
 
@@ -599,6 +601,7 @@ RAAHAT is optimized for low-latency execution and efficient API usage:
 
 RAAHAT implements several layers of security to protect user data and ensure system stability:
 - **JWT Signature Validation:** API routes verify signatures against Supabase Auth to prevent unauthorized database access.
+- **Secure user sync (`/api/sync-user`):** The endpoint only executes with a verified Bearer JWT authenticated session. The backend resolves the verified identity from Supabase, extracts the authenticated email, and compares it to the request payload to reject mismatched emails or forged payloads with `401 Unauthorized`.
 - **IP-Based Rate Limiting:** Limits endpoints to prevent abuse. Accounts are restricted to a maximum of 3 signup attempts and 5 login attempts per minute per IP address.
 - **Password Constraints:** Enforces a minimum password length of 8 characters during signup.
 - **SQL Injection Safeguards:** Supabase client bindings serialize and escape parameters to prevent injection vectors.

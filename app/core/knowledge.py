@@ -89,13 +89,13 @@ def get_embeddings() -> Embeddings:
 def get_vector_store(path=None):
     """Load and cache the FAISS index globally — never reload per request."""
     global _vector_store, _vector_store_path
-    load_path = path or FAISS_DB_PATH
+    load_path = os.path.abspath(path or FAISS_DB_PATH)
     if _vector_store is not None and _vector_store_path == load_path:
         return _vector_store
     with _init_lock:
         if _vector_store is not None and _vector_store_path == load_path:
             return _vector_store
-        logger.info("Loading FAISS index...")
+        logger.info("Loading FAISS index from %s...", load_path)
         _vector_store = FAISS.load_local(
             load_path,
             get_embeddings(),
@@ -123,7 +123,18 @@ def warmup_retrieval(path=None) -> None:
 
 
 def startup_warmup(faiss_path=None):
-    pass
+    """
+    Synchronously loads and warms up the embedding model and the FAISS index during startup.
+    Fails clearly (raises an exception) if FAISS cannot load.
+    """
+    logger.info("Initializing knowledge base startup warmup...")
+    # Pre-authenticate HuggingFace
+    authenticate_huggingface()
+    # 1. Warm up embedding model
+    warmup_embeddings()
+    # 2. Warm up retrieval (loads FAISS and does a test search)
+    warmup_retrieval(faiss_path)
+    logger.info("Knowledge base startup warmup complete.")
 
 
 def extract_text(file_path):

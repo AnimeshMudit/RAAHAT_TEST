@@ -538,17 +538,84 @@ async def get_current_user_id(request: Request, authorization: str = Header(None
         )
 
 
+# JWT Email Verification Dependency (Task B3)
+async def get_verified_email(request: Request, authorization: str = Header(None)) -> str:
+    logger.debug("get_verified_email dependency invoked")
+    if not authorization:
+        logger.debug("Missing authorization header")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authorization header"
+        )
+    if not authorization.startswith("Bearer "):
+        logger.debug("Invalid token format in authorization header")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token format"
+        )
+    token = authorization.split(" ", 1)[1]
+
+    # Dev/testing mock token bypass under strict conditions
+    if token.startswith("mock-user-"):
+        env = os.getenv("ENVIRONMENT", "production").lower()
+        enable_test_auth = os.getenv("ENABLE_TEST_AUTH", "false").lower() == "true"
+        client_ip = request.client.host if request.client else "unknown"
+        is_localhost = client_ip in ("127.0.0.1", "::1", "localhost")
+
+        if env == "development" and enable_test_auth and is_localhost:
+            email = token.split("mock-user-", 1)[1]
+            return email
+        else:
+            logger.warning(
+                "Rejected mock token request in get_verified_email. Conditions not met: env=%s, enable_test_auth=%s, localhost=%s",
+                env, enable_test_auth, is_localhost
+            )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Mock authentication bypass not allowed in this environment"
+            )
+
+    try:
+        auth_res = memory.supabase.auth.get_user(token)
+        if not auth_res or not auth_res.user:
+            logger.debug("supabase.auth.get_user returned empty response or empty user")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid session"
+            )
+        email = auth_res.user.email
+        if not email:
+            logger.debug("Email not found in token user data")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Email not found in token"
+            )
+        return email
+    except Exception as e:
+        logger.error("JWT verification failed in get_verified_email: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
+
 # -------------------- GOOGLE AUTH ENDPOINTS --------------------
 
 
 @app.post("/api/sync-user")
-async def sync_user(request: SyncUserRequest):
+async def sync_user(request: SyncUserRequest, verified_email: str = Depends(get_verified_email)):
     try:
-        user_record = memory.get_user_by_email(request.email)
+        if not request.email or request.email.strip().lower() != verified_email.strip().lower():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Mismatched email or forged payload"
+            )
+            
+        user_record = memory.get_user_by_email(verified_email)
         is_new_signup = False
         if not user_record:
             user_id = memory.create_user(
-                email=request.email,
+                email=verified_email,
                 hashed_password=None,
                 is_verified=True,
                 auth_provider="google",
@@ -559,11 +626,13 @@ async def sync_user(request: SyncUserRequest):
             user_id = user_record["id"]
         profile = serialize_user_profile(user_record)
         profile["user_id"] = user_id
-        profile["username"] = request.email
+        profile["username"] = verified_email
         profile["is_new_signup"] = is_new_signup
         return profile
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @app.get("/api/user-profile")
@@ -780,14 +849,30 @@ async def warmup_on_startup():
 
     loop = asyncio.get_running_loop()
 
-    # Launch warmup asynchronously
-    loop.run_in_executor(
-        _chat_executor,
-        knowledge.startup_warmup,
-        FAISS_DIR
-    )
+    # Task B1: Warm up the knowledge base (loads embeddings and FAISS index)
+    try:
+        logger.info("Initializing embedding model and FAISS vector store on startup...")
+        await loop.run_in_executor(
+            _chat_executor,
+            knowledge.startup_warmup,
+            FAISS_DIR
+        )
+        logger.info("Embedding model and FAISS vector store successfully loaded and warmed up.")
+    except Exception as e:
+        logger.critical("FATAL: Failed to load FAISS index or embedding model on startup: %s", e)
+        sys.exit(f"CRITICAL STARTUP ERROR: {e}")
 
-    logger.info("Warmup running in background.")
+    # Task B2: Warm up the multilingual safety classifier model
+    try:
+        logger.info("Initializing multilingual safety gate model on startup...")
+        await loop.run_in_executor(
+            _chat_executor,
+            brain.startup_warmup
+        )
+        logger.info("Multilingual safety gate model successfully loaded and warmed up.")
+    except Exception as e:
+        logger.critical("FATAL: Failed to load multilingual safety model on startup: %s", e)
+        sys.exit(f"CRITICAL STARTUP ERROR: {e}")
 
 
 # -------------------- CHAT & KNOWLEDGE API --------------------
