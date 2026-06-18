@@ -62,7 +62,7 @@ for env_var in ["SUPABASE_KEY", "SUPABASE_SERVICE_ROLE", "SERVICE_ROLE_KEY", "SE
         )
 
 # -------------------- CORE IMPORTS --------------------
-from app.core import memory, brain, knowledge, security, session
+from app.core import memory, brain, knowledge, security, session, audit
 from app.core.security import verify_email_real
 from app.core.google_auth import get_google_auth_url
 from app.core.metrics import (
@@ -123,6 +123,10 @@ class UpdateProfileRequest(BaseModel):
     user_id: UUID | None = None
     display_name: str
     age: int | None = None
+
+
+class PHQ9Request(BaseModel):
+    responses: list[int]
 
 
 # -------------------- UI ROUTING (FRONTEND) --------------------
@@ -1000,6 +1004,15 @@ async def chat(request: ChatRequest, authenticated_user_id: str = Depends(get_cu
                 retrieval_perf,
             ),
         )
+        try:
+            audit.log_audit_event(
+                user_id=user_id,
+                event_type="user_message",
+                risk_level="HIGH" if crisis_state.get("crisis_active") else "LOW",
+                content=request.message
+            )
+        except Exception:
+            logger.exception("Failed to log user message audit event")
         perf["safety"] = crisis_perf.get("safety", 0.0)
         perf["embedding"] = retrieval_perf.get("embedding", 0.0)
         perf["retrieval"] = retrieval_perf.get("retrieval", 0.0)
@@ -1048,6 +1061,15 @@ async def chat(request: ChatRequest, authenticated_user_id: str = Depends(get_cu
 
         t_post = time.perf_counter()
         memory.save_message(user_id, "ai", response_text)
+        try:
+            audit.log_audit_event(
+                user_id=user_id,
+                event_type="assistant_response",
+                risk_level="HIGH" if crisis_state.get("crisis_active") else "LOW",
+                content=response_text
+            )
+        except Exception:
+            logger.exception("Failed to log assistant response audit event")
         perf["response_formatting"] = time.perf_counter() - t_post
 
         perf["total"] = time.perf_counter() - start_total
@@ -1126,6 +1148,15 @@ async def chat_stream(request: ChatRequest, authenticated_user_id: str = Depends
                 retrieval_perf,
             ),
         )
+        try:
+            audit.log_audit_event(
+                user_id=user_id,
+                event_type="user_message",
+                risk_level="HIGH" if crisis_state.get("crisis_active") else "LOW",
+                content=request.message
+            )
+        except Exception:
+            logger.exception("Failed to log user message audit event in stream")
         perf["safety"] = crisis_perf.get("safety", 0.0)
         perf["embedding"] = retrieval_perf.get("embedding", 0.0)
         perf["retrieval"] = retrieval_perf.get("retrieval", 0.0)
@@ -1178,6 +1209,15 @@ async def chat_stream(request: ChatRequest, authenticated_user_id: str = Depends
                 if complete_text:
                     try:
                         memory.save_message(user_id, "ai", complete_text)
+                        try:
+                            audit.log_audit_event(
+                                user_id=user_id,
+                                event_type="assistant_response",
+                                risk_level="HIGH" if crisis_state.get("crisis_active") else "LOW",
+                                content=complete_text
+                            )
+                        except Exception:
+                            logger.exception("Failed to log assistant response audit event in stream")
                     except Exception:
                         logger.exception("Failed to save streamed response to database")
                 perf["response_formatting"] = time.perf_counter() - t_post
@@ -1213,4 +1253,62 @@ async def chat_stream(request: ChatRequest, authenticated_user_id: str = Depends
             status_code=500,
             detail="Internal server error",
         )
+
+
+@app.post("/api/phq9")
+async def phq9_assessment(request: PHQ9Request, authenticated_user_id: str = Depends(get_current_user_id)):
+    """
+    Standalone infrastructure for storing and calculating PHQ-9 scores.
+    DO NOT create diagnosis features or claim clinical effectiveness.
+    """
+    if not isinstance(request.responses, list) or len(request.responses) != 9:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Responses must be a list of exactly 9 integers."
+        )
+    
+    for val in request.responses:
+        if not isinstance(val, int) or val < 0 or val > 3:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Each response value must be an integer between 0 and 3."
+            )
+            
+    score = sum(request.responses)
+    
+    # Severity mapping:
+    # 0-4      Minimal
+    # 5-9      Mild
+    # 10-14    Moderate
+    # 15-19    Moderately Severe
+    # 20-27    Severe
+    if score <= 4:
+        severity = "Minimal"
+    elif score <= 9:
+        severity = "Mild"
+    elif score <= 14:
+        severity = "Moderate"
+    elif score <= 19:
+        severity = "Moderately Severe"
+    else:
+        severity = "Severe"
+        
+    try:
+        # Save score
+        audit.save_phq9_score(authenticated_user_id, score)
+        
+        # Log audit trail for PHQ-9 submission (only metadata and hash of content)
+        audit.log_audit_event(
+            user_id=authenticated_user_id,
+            event_type="phq9_assessment",
+            risk_level="HIGH" if score >= 15 else "LOW",
+            content=json.dumps(request.responses)
+        )
+    except Exception:
+        logger.exception("Failed to store PHQ-9 result or log audit event")
+        
+    return {
+        "score": score,
+        "severity": severity
+    }
 

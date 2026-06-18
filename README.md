@@ -11,7 +11,7 @@
 
 RAAHAT (राहत, meaning *Relief* in Hindi) is a specialized AI mental health companion designed to provide supportive, safe, and context-aware conversations. Unlike generic conversational agents, RAAHAT is built with a **Sandwich Architecture** where a Large Language Model (LLM) is encapsulated by strict regex-and-LLM safety guardrails and a local, high-performance vector database (FAISS) containing curated Psychological First Aid (PFA) and clinical workbooks. 
 
-By prioritizing **privacy-first principles**, **local database state caching**, and **cross-platform interfaces** (Web dashboard, Telegram bot, and CLI), RAAHAT delivers low-latency, empathetic interactions that support individuals dealing with stress, burnout, isolation, or anxiety. It is engineered with robust crisis detection that automatically routes to verified Indian helplines when high-risk language (English, Hindi, or Hinglish) is identified.
+By prioritizing **privacy-first principles**, **local database state caching**, and **distinct client interfaces** (Web dashboard, Telegram bot, and CLI), RAAHAT delivers low-latency, empathetic interactions that support individuals dealing with stress, burnout, isolation, or anxiety. It is engineered with robust crisis detection that automatically routes to verified Indian helplines when high-risk language (English, Hindi, or Hinglish) is identified.
 
 ---
 
@@ -30,7 +30,7 @@ The RAAHAT ecosystem is designed for high reliability, responsiveness, and safet
 | **Streaming Responses** | Chunk-by-chunk response streaming using Server-Sent Events (SSE) via FastAPI's `StreamingResponse`. | ✅ Fully Operational |
 | **Supabase Authentication** | Production-hardened email/password sign-in and Google OAuth integrations managed with Supabase Auth. | ✅ Fully Operational |
 | **Session Memory** | Automatic Extraction of preferred names, session-level dominant emotions, and recurring themes. | ✅ Fully Operational |
-| **Telegram Bot** | High-availability polling bot client syncing chat history and user state with the web backend via Supabase. | ✅ Fully Operational |
+| **Telegram Bot** | High-availability polling bot client. Note that Telegram and Web currently maintain separate user identities and conversation histories; cross-platform continuity is planned for a future release. | ✅ Fully Operational |
 | **CLI Interface** | Low-overhead terminal-based local chat interface supporting offline vector search. | ✅ Fully Operational |
 | **Web Interface** | Premium dark-themed dashboard featuring account onboarding, real-time streaming chat, and user profile management. | ✅ Fully Operational |
 | **Docker Deployment** | Production-hardened multi-stage container configurations with isolated bind-mount splits for development vs prod. | ✅ Fully Operational |
@@ -96,7 +96,7 @@ graph TD
 ```
 
 ### Explaining the Layers:
-1. **Client Layer:** RAAHAT supports three primary clients: a web dashboard (HTML5/JS), a Telegram bot (`app/bot/telegram_bot.py`), and a CLI loop (`app/cli/main.py`). All clients interact with the same centralized Supabase database, meaning a conversation started on the Web can be seamlessly continued on Telegram.
+1. **Client Layer:** RAAHAT supports three primary client interfaces: a web dashboard (HTML5/JS), a Telegram bot (`app/bot/telegram_bot.py`), and a CLI loop (`app/cli/main.py`). Currently, these clients maintain separate user identities and conversation histories. Cross-platform continuity is planned for a future release.
 2. **FastAPI Gateway (`app/api/server.py`):** Coordinates API requests, validates JWT tokens, handles route rate-limiting, and controls multi-threaded execution.
 3. **Safety Layer (`app/core/security.py` & `app/core/brain.py`):** Runs asynchronously alongside other operations to immediately flag crisis markers. If a crisis state is detected, the safety layer overrides the normal conversation loop and appends the crisis resource card.
 4. **Memory & Cache Layer (`app/core/memory.py`):** Rather than querying the database repeatedly, RAAHAT fetches the chat history once, constructs the user context (including session summary and recurring themes), and caches the profile for 120 seconds.
@@ -400,7 +400,7 @@ Ensure your `TELEGRAM_TOKEN` is configured in your `.env`, then start the bot se
 ```bash
 python run_bot.py
 ```
-Search for your bot username on Telegram and send a message. Your chat history will sync with your account on the web interface.
+Search for your bot username on Telegram and send a message. Note: Chat history on Telegram is stored separately and does not sync with your account on the web interface.
 
 ### 3. CLI Client
 Run the interactive console application:
@@ -606,6 +606,16 @@ RAAHAT implements several layers of security to protect user data and ensure sys
 - **Password Constraints:** Enforces a minimum password length of 8 characters during signup.
 - **SQL Injection Safeguards:** Supabase client bindings serialize and escape parameters to prevent injection vectors.
 - **Backdoor Safety Gates:** The developer bypass is disabled outside of local development environments. Enabling it in production prints a critical error and shuts down the server.
+
+---
+
+## Known Limitations
+
+1. **Telegram and Web identities are separate:** Users on Telegram and the Web dashboard have completely separate identities and conversation histories. Seamless continuity across these platforms is not currently supported.
+2. **Single-instance deployment assumptions:** The application design and its state caching mechanisms assume a single-instance deployment model and do not natively support distributed multi-instance architectures.
+3. **In-memory metrics and dashboard sessions:** Dashboard metrics, active sessions, and profile context caching are stored in the memory of the running process, meaning data in these metrics is instance-specific and reset when the server restarts.
+4. **Current deployment is not multi-tenant:** The application handles security and database mappings tailored for a single-tenant workspace.
+5. **Psychologist Edition is future work:** The specialized Psychologist/Clinician Portal and detailed review dashboards are not implemented in the current codebase.
 
 ---
 
