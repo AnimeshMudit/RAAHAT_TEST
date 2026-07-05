@@ -90,16 +90,22 @@ async def test_sync_user_missing_token(client):
 
 
 @pytest.mark.anyio
-async def test_sync_user_mismatched_email(client):
+async def test_sync_user_ignores_forged_email(client, mock_memory, mock_user):
     """
-    Verify /api/sync-user rejects requests with mismatched email / forged payload (returns 401).
+    Verify /api/sync-user ignores a forged email in the payload and uses the JWT instead.
     """
+    mock_user["username"] = "user@example.com"
+    mock_memory["users"][mock_user["id"]] = mock_user
+
     headers = {"Authorization": "Bearer mock-access-token"}
     payload = {"email": "forged_email@example.com"}
     response = client.post("/api/sync-user", json=payload, headers=headers)
     
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert "detail" in response.json()
+    assert response.status_code == 200
+    data = response.json()
+    assert "user_id" in data
+    # The returned username must be "user@example.com" (from JWT), NOT "forged_email@example.com"
+    assert data["username"] == "user@example.com"
 
 
 @pytest.mark.anyio

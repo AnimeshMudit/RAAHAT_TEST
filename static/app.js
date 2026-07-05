@@ -125,7 +125,7 @@ async function completeOAuthLogin() {
 
         const syncResult = await apiFetch('/api/sync-user', {
             method: 'POST',
-            body: { email },
+            body: {},
             timeout: 20000,
         });
 
@@ -185,7 +185,7 @@ async function restoreSessionFromSupabase() {
         try {
             const syncResult = await apiFetch('/api/sync-user', {
                 method: 'POST',
-                body: { email },
+                body: {},
                 timeout: 20000,
             });
 

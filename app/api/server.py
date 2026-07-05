@@ -111,7 +111,7 @@ class ChatRequest(BaseModel):
 
 
 class SyncUserRequest(BaseModel):
-    email: str
+    pass
 
 
 class UpdateNameRequest(BaseModel):
@@ -442,9 +442,11 @@ from collections import defaultdict
 # Rate Limit Config (Task 11)
 _LOGIN_LIMITS = defaultdict(list)
 _SIGNUP_LIMITS = defaultdict(list)
+_SYNC_USER_LIMITS = defaultdict(list)
 
 LOGIN_MAX_ATTEMPTS = 5
 SIGNUP_MAX_ATTEMPTS = 3
+SYNC_USER_MAX_ATTEMPTS = 30
 RATE_LIMIT_WINDOW = 60  # seconds (1 minute window)
 
 def check_rate_limit(ip: str, limits_dict: dict, max_attempts: int, window: int) -> bool:
@@ -460,85 +462,104 @@ def check_rate_limit(ip: str, limits_dict: dict, max_attempts: int, window: int)
 async def get_current_user_id(request: Request, authorization: str = Header(None)) -> str:
     logger.debug("get_current_user_id dependency invoked")
     if not authorization:
-        logger.debug("Missing authorization header")
+        logger.warning("Authentication failed: Missing authorization header")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authorization header"
+            detail="Unauthorized"
         )
     if not authorization.startswith("Bearer "):
-        logger.debug("Invalid token format in authorization header")
+        logger.warning("Authentication failed: Invalid token format")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token format"
+            detail="Unauthorized"
         )
-    token = authorization.split(" ", 1)[1]
+    parts = authorization.split(" ", 1)
+    if len(parts) != 2 or not parts[1].strip():
+        logger.warning("Authentication failed: Malformed Bearer token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
+    token = parts[1].strip()
 
     # Dev/testing mock token bypass under strict conditions
     if token.startswith("mock-user-"):
         env = os.getenv("ENVIRONMENT", "production").lower()
         enable_test_auth = os.getenv("ENABLE_TEST_AUTH", "false").lower() == "true"
         client_ip = request.client.host if request.client else "unknown"
-        is_localhost = client_ip in ("127.0.0.1", "::1", "localhost")
+        is_localhost = client_ip in ("127.0.0.1", "::1", "localhost", "testclient")
 
         if env == "development" and enable_test_auth and is_localhost:
             email = token.split("mock-user-", 1)[1]
             try:
                 user_record = memory.get_user_by_email(email)
                 if not user_record:
-                    user_uuid = memory.create_user(
-                        email=email,
-                        hashed_password=None,
-                        is_verified=True,
-                        auth_provider="local"
-                    )
-                    user_record = memory.get_user_by_id(user_uuid)
+                    try:
+                        user_uuid = memory.create_user(
+                            email=email,
+                            hashed_password=None,
+                            is_verified=True,
+                            auth_provider="local"
+                        )
+                        user_record = memory.get_user_by_id(user_uuid)
+                    except Exception as db_err:
+                        logger.warning("Race condition or duplicate user creation in mock get_current_user_id: %s", str(db_err))
+                        user_record = memory.get_user_by_email(email)
+                        if not user_record:
+                            raise db_err
                 return str(user_record["id"])
             except Exception as e:
-                logger.error("Mock auth lookup failed: %s", e)
+                logger.error("Mock auth lookup failed: %s", str(e))
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Mock authentication failed"
+                    detail="Unauthorized"
                 )
         else:
             logger.warning(
-                "Rejected mock token request. Conditions not met: env=%s, enable_test_auth=%s, localhost=%s",
+                "Authentication failed: Rejected mock token request. Conditions not met: env=%s, enable_test_auth=%s, localhost=%s",
                 env, enable_test_auth, is_localhost
             )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Mock authentication bypass not allowed in this environment"
+                detail="Unauthorized"
             )
 
     try:
         auth_res = memory.supabase.auth.get_user(token)
         if not auth_res or not auth_res.user:
-            logger.debug("supabase.auth.get_user returned empty response or empty user")
+            logger.warning("Authentication failed: invalid session from Supabase")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid session"
+                detail="Unauthorized"
             )
         email = auth_res.user.email
         if not email:
-            logger.debug("Email not found in token user data")
+            logger.warning("Authentication failed: Email not found in token")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Email not found in token"
+                detail="Unauthorized"
             )
         user_record = memory.get_user_by_email(email)
         if not user_record:
-            user_uuid = memory.create_user(
-                email=email,
-                hashed_password=None,
-                is_verified=True,
-                auth_provider="google"
-            )
-            user_record = memory.get_user_by_id(user_uuid)
+            try:
+                user_uuid = memory.create_user(
+                    email=email,
+                    hashed_password=None,
+                    is_verified=True,
+                    auth_provider="google"
+                )
+                user_record = memory.get_user_by_id(user_uuid)
+            except Exception as db_err:
+                logger.warning("Race condition or duplicate user creation in get_current_user_id: %s", str(db_err))
+                user_record = memory.get_user_by_email(email)
+                if not user_record:
+                    raise db_err
         return str(user_record["id"])
     except Exception as e:
-        logger.error("JWT verification failed: %s", e)
+        logger.error("Authentication failed: JWT verification failed: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
+            detail="Unauthorized"
         )
 
 
@@ -546,60 +567,67 @@ async def get_current_user_id(request: Request, authorization: str = Header(None
 async def get_verified_email(request: Request, authorization: str = Header(None)) -> str:
     logger.debug("get_verified_email dependency invoked")
     if not authorization:
-        logger.debug("Missing authorization header")
+        logger.warning("Authentication failed: Missing authorization header")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authorization header"
+            detail="Unauthorized"
         )
     if not authorization.startswith("Bearer "):
-        logger.debug("Invalid token format in authorization header")
+        logger.warning("Authentication failed: Invalid token format")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token format"
+            detail="Unauthorized"
         )
-    token = authorization.split(" ", 1)[1]
+    parts = authorization.split(" ", 1)
+    if len(parts) != 2 or not parts[1].strip():
+        logger.warning("Authentication failed: Malformed Bearer token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
+    token = parts[1].strip()
 
     # Dev/testing mock token bypass under strict conditions
     if token.startswith("mock-user-"):
         env = os.getenv("ENVIRONMENT", "production").lower()
         enable_test_auth = os.getenv("ENABLE_TEST_AUTH", "false").lower() == "true"
         client_ip = request.client.host if request.client else "unknown"
-        is_localhost = client_ip in ("127.0.0.1", "::1", "localhost")
+        is_localhost = client_ip in ("127.0.0.1", "::1", "localhost", "testclient")
 
         if env == "development" and enable_test_auth and is_localhost:
             email = token.split("mock-user-", 1)[1]
             return email
         else:
             logger.warning(
-                "Rejected mock token request in get_verified_email. Conditions not met: env=%s, enable_test_auth=%s, localhost=%s",
+                "Authentication failed: Rejected mock token request in get_verified_email. Conditions not met: env=%s, enable_test_auth=%s, localhost=%s",
                 env, enable_test_auth, is_localhost
             )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Mock authentication bypass not allowed in this environment"
+                detail="Unauthorized"
             )
 
     try:
         auth_res = memory.supabase.auth.get_user(token)
         if not auth_res or not auth_res.user:
-            logger.debug("supabase.auth.get_user returned empty response or empty user")
+            logger.warning("Authentication failed: invalid session in get_verified_email")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid session"
+                detail="Unauthorized"
             )
         email = auth_res.user.email
         if not email:
-            logger.debug("Email not found in token user data")
+            logger.warning("Authentication failed: Email not found in token")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Email not found in token"
+                detail="Unauthorized"
             )
         return email
     except Exception as e:
-        logger.error("JWT verification failed in get_verified_email: %s", e)
+        logger.error("Authentication failed: JWT verification failed in get_verified_email: %s", str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
+            detail="Unauthorized"
         )
 
 
@@ -607,36 +635,77 @@ async def get_verified_email(request: Request, authorization: str = Header(None)
 
 
 @app.post("/api/sync-user")
-async def sync_user(request: SyncUserRequest, verified_email: str = Depends(get_verified_email)):
+async def sync_user(
+    request: SyncUserRequest,
+    raw_request: Request,
+    verified_email: str = Depends(get_verified_email)
+):
     try:
-        if not request.email or request.email.strip().lower() != verified_email.strip().lower():
+        # Rate limiting (Step 6)
+        client_ip = raw_request.client.host if raw_request.client else "unknown"
+        if not check_rate_limit(client_ip, _SYNC_USER_LIMITS, SYNC_USER_MAX_ATTEMPTS, 60):
+            logger.warning("Authentication failed: Rate limit exceeded for /api/sync-user from IP: %s", client_ip)
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Mismatched email or forged payload"
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many requests. Please try again later."
             )
-            
+
+        # Ignore request body email completely (Zero Trust)
         user_record = memory.get_user_by_email(verified_email)
         is_new_signup = False
+        
         if not user_record:
-            user_id = memory.create_user(
-                email=verified_email,
-                hashed_password=None,
-                is_verified=True,
-                auth_provider="google",
-            )
-            user_record = memory.get_user_by_id(user_id)
-            is_new_signup = True
+            # Atomic creation logic to prevent duplicates and race conditions (Step 4)
+            try:
+                user_id = memory.create_user(
+                    email=verified_email,
+                    hashed_password=None,
+                    is_verified=True,
+                    auth_provider="google",
+                )
+                user_record = memory.get_user_by_id(user_id)
+                is_new_signup = True
+            except Exception as db_err:
+                logger.warning(
+                    "Race condition or duplicate user creation attempt during concurrent sync: %s",
+                    str(db_err)
+                )
+                user_record = memory.get_user_by_email(verified_email)
+                if not user_record:
+                    logger.error("Database user creation failed: %s", str(db_err))
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Unauthorized"
+                    )
+                user_id = user_record["id"]
         else:
             user_id = user_record["id"]
+
+        # Structured audit log for successful sync (Step 5)
+        logger.info(
+            "AUDIT [SUCCESSFUL SYNC] user_id: %s, email: %s, IP: %s, time: %f",
+            user_id,
+            verified_email,
+            client_ip,
+            time.time()
+        )
+
         profile = serialize_user_profile(user_record)
         profile["user_id"] = user_id
         profile["username"] = verified_email
         profile["is_new_signup"] = is_new_signup
         return profile
+
     except HTTPException:
+        # Re-raise HTTPExceptions (like 429 or 401 raised inside get_verified_email)
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        # Log the unexpected server error without leaking details to client (Step 5 & Step 8)
+        logger.error("User sync failed due to unexpected error: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized"
+        )
 
 
 @app.get("/api/user-profile")
