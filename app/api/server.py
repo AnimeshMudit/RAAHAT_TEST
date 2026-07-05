@@ -1154,7 +1154,11 @@ async def chat(request: ChatRequest, authenticated_user_id: str = Depends(get_cu
             success=True
         )
         logger.info("[REQ %s] Chat request completed", request_id)
-        return {"response": response_text}
+        return {
+            "response": response_text,
+            "is_crisis": bool(crisis_state.get("crisis_active")),
+            "crisis_recovered": bool(crisis_state.get("recovered", False)),
+        }
     except HTTPException:
         record_request(
             latency=time.time() - request_start,
@@ -1250,6 +1254,8 @@ async def chat_stream(request: ChatRequest, authenticated_user_id: str = Depends
             full_response = []
             start_llm = time.perf_counter()
             stream_success = True
+            # Emit a leading event before the text stream carrying crisis metadata
+            yield f"data: {json.dumps({'meta': {'is_crisis': bool(crisis_state.get('crisis_active')), 'crisis_recovered': bool(crisis_state.get('recovered', False))}})}\n\n"
             try:
                 generator = brain.get_response_stream(
                     user_message=request.message,

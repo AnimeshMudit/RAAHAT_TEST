@@ -657,7 +657,7 @@ function bindLandingPage() {
     });
 }
 
-function createMessageBubble(role, text) {
+function createMessageBubble(role, text, isCrisis = false) {
     const wrapper = document.createElement('div');
     wrapper.className = role === 'user' ? 'flex justify-end fade-in-up' : 'flex justify-start fade-in-up';
 
@@ -680,7 +680,11 @@ function createMessageBubble(role, text) {
     avatar.innerHTML = '<span class="material-symbols-outlined text-[16px]">psychiatry</span>';
 
     const bubble = document.createElement('div');
-    bubble.className = 'bg-lavender-soft/40 p-stack-md rounded-2xl rounded-bl-sm shadow-sm border border-lavender-soft/50';
+    if (isCrisis) {
+        bubble.className = 'crisis-bubble';
+    } else {
+        bubble.className = 'bg-lavender-soft/40 p-stack-md rounded-2xl rounded-bl-sm shadow-sm border border-lavender-soft/50';
+    }
     const paragraph = document.createElement('p');
     paragraph.className = 'font-body-md text-body-md text-on-surface whitespace-pre-wrap';
     paragraph.textContent = text;
@@ -921,7 +925,22 @@ async function bindChatPage() {
                     
                     try {
                         const parsed = JSON.parse(cleanLine.substring(6));
-                        if (parsed.text) {
+                        if (parsed.meta) {
+                            const isCrisis = !!parsed.meta.is_crisis;
+                            const crisisRecovered = !!parsed.meta.crisis_recovered;
+                            if (isCrisis) {
+                                bubble.className = 'crisis-bubble';
+                                const crisisBar = document.getElementById('crisis-bar');
+                                if (crisisBar) crisisBar.classList.add('visible');
+                            } else {
+                                bubble.className = 'bg-lavender-soft/40 p-stack-md rounded-2xl rounded-bl-sm shadow-sm border border-lavender-soft/50';
+                                const crisisBar = document.getElementById('crisis-bar');
+                                if (crisisBar) crisisBar.classList.remove('visible');
+                            }
+                            if (crisisRecovered && typeof showRecoveryToast === 'function') {
+                                showRecoveryToast();
+                            }
+                        } else if (parsed.text) {
                             aiResponseText += parsed.text;
                             paragraph.textContent = aiResponseText;
                             scrollToBottom();
@@ -939,7 +958,22 @@ async function bindChatPage() {
                 if (cleanLine.startsWith('data: ')) {
                     try {
                         const parsed = JSON.parse(cleanLine.substring(6));
-                        if (parsed.text) {
+                        if (parsed.meta) {
+                            const isCrisis = !!parsed.meta.is_crisis;
+                            const crisisRecovered = !!parsed.meta.crisis_recovered;
+                            if (isCrisis) {
+                                bubble.className = 'crisis-bubble';
+                                const crisisBar = document.getElementById('crisis-bar');
+                                if (crisisBar) crisisBar.classList.add('visible');
+                            } else {
+                                bubble.className = 'bg-lavender-soft/40 p-stack-md rounded-2xl rounded-bl-sm shadow-sm border border-lavender-soft/50';
+                                const crisisBar = document.getElementById('crisis-bar');
+                                if (crisisBar) crisisBar.classList.remove('visible');
+                            }
+                            if (crisisRecovered && typeof showRecoveryToast === 'function') {
+                                showRecoveryToast();
+                            }
+                        } else if (parsed.text) {
                             aiResponseText += parsed.text;
                             paragraph.textContent = aiResponseText;
                             scrollToBottom();
@@ -958,7 +992,21 @@ async function bindChatPage() {
                     timeout: 60000,
                 });
                 hideTyping();
-                messagesEl.appendChild(createMessageBubble('ai', result?.response || 'I am here with you.'));
+                const isCrisis = result ? !!result.is_crisis : false;
+                const crisisRecovered = result ? !!result.crisis_recovered : false;
+                messagesEl.appendChild(createMessageBubble('ai', result?.response || 'I am here with you.', isCrisis));
+                
+                const crisisBar = document.getElementById('crisis-bar');
+                if (crisisBar) {
+                    if (isCrisis) {
+                        crisisBar.classList.add('visible');
+                    } else {
+                        crisisBar.classList.remove('visible');
+                    }
+                }
+                if (crisisRecovered && typeof showRecoveryToast === 'function') {
+                    showRecoveryToast();
+                }
             } catch (fallbackError) {
                 console.error('Fallback chat send failed:', fallbackError);
                 hideTyping();

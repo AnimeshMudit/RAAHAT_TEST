@@ -285,7 +285,7 @@ VIBE: Match user energy. High energy → enthusiastic with emojis. Low energy �
 
 HYPERBOLE FILTER: Distinguish slang excitement from real threats. Do not trigger safety for metaphors (e.g. "killing it", "dying of laughter"). Context matters for design/UI/success topics.
 
-SAFETY: Crisis resources are handled separately. Do not add helplines for general sadness/stress. If CRISIS MODE ACTIVE appears: respond with warmth/empathy, do not invent helplines (backend appends verified resources), stay RAAHAT not robotic.
+SAFETY: Crisis resources are handled separately. Do not add helplines for general sadness/stress. If CRISIS MODE ACTIVE appears: respond with warmth/empathy, do not invent helplines (backend appends verified resources), stay RAAHAT not robotic. If the user indicates they are safe/recovered, acknowledge their recovery warmly and return to normal supportive conversation. Do not continue crisis framing.
 
 CONVERSATION: Avoid therapist/motivational/self-help tone. Do not jump into coping strategies after every emotional message. Sometimes reflect and sit with emotions rather than fixing. Natural flow over constant intervention.
 """
@@ -361,13 +361,47 @@ def llm_safety_classify(user_message: str) -> str:
     return "HIGH"
 
 
-def check_recent_crisis(history) -> bool:
-    if not history:
+def detect_recovery(message: str) -> bool:
+    """Detect if the user's message indicates they have recovered or are safe/calm."""
+    if not message:
         return False
-    for msg in reversed(history[-10:]):
-        content = msg.get("content", "")
-        if msg.get("role") in ("assistant", "ai") and "Kiran Mental Health Helpline" in content:
+    msg_lower = message.lower().strip()
+    recovery_phrases = [
+        "i'm okay", "i am okay", "i'm ok", "i feel better", "i'm safe", 
+        "i'm calm now", "i'm fine now", "i don't want to hurt myself", 
+        "i'm not going to", "i changed my mind", "thank you", "i'm sorry", 
+        "i'm稳定", "i'm stable",
+        "i'm alright", "i am alright", "i'm all right", "i am all right",
+        "alright now", "all right now", "cheered up", "cheared up",
+        "i'm cheered up", "i'm cheared up", "i am cheered up", "i am cheared up",
+        "feeling better", "feel better now", "feeling better now",
+        "i'm feeling better", "i am feeling better", "contacted them",
+        "i don't want to commit suicide", "i don't wanna commit suicide",
+        "not going to commit suicide", "not gonna commit suicide",
+        "i don't want to kill myself", "i don't wanna kill myself",
+        "not going to kill myself", "not gonna kill myself",
+        "i don't want to end my life", "i don't wanna end my life",
+        "not going to end my life", "not gonna end my life",
+        "i don't want to end it all", "i don't wanna end it all",
+        "i don't want to die", "i don't wanna die", "i want to live", "i wanna live",
+        "main theek hoon", "main thik hu", "main safe hoon", "thik ho gaya", 
+        "theek hai ab", "ab main theek hu", "kuch nahi karunga", "kuch nahi karungi"
+    ]
+    # Remove punctuation for matching
+    import string
+    translator = str.maketrans("", "", string.punctuation)
+    msg_cleaned = msg_lower.translate(translator)
+    
+    for phrase in recovery_phrases:
+        phrase_cleaned = phrase.lower().translate(translator)
+        if phrase_cleaned in msg_cleaned or phrase in msg_lower:
             return True
+    return False
+
+
+def check_recent_crisis(history) -> bool:
+    # Option 1: Removed check_recent_crisis history scanning to eliminate the self-perpetuating latch.
+    # Crisis state is now activated only by the current message, and recovery acts as an immediate off-switch.
     return False
 
 
@@ -414,6 +448,8 @@ def should_use_retrieval(user_message: str, history: list = None) -> bool:
 
 def is_crisis_active(message: str, history: list[dict] = None) -> bool:
     """Helper to check if crisis mode is active for the current message or recent session."""
+    if detect_recovery(message):
+        return False
     history = history or []
     matched_trigger = safety_check(message)
     if matched_trigger:
@@ -425,29 +461,35 @@ def is_crisis_active(message: str, history: list[dict] = None) -> bool:
         if llm_class in ("HIGH", "CRISIS"):
             return True
             
-    if check_recent_crisis(history):
-        return True
     return False
 
 
 def evaluate_crisis_state(message: str, history: list[dict] | None = None) -> dict:
     """Single-pass crisis evaluation reused by server and get_response."""
     history = history or []
+    recovered = detect_recovery(message)
     matched_trigger = safety_check(message)
     llm_class = (
         llm_safety_classify(message)
         if should_run_safety_classifier(message)
         else "SAFE"
     )
-    recent_crisis = check_recent_crisis(history)
-    crisis_active = bool(matched_trigger) or (llm_class in ("HIGH", "CRISIS")) or recent_crisis
-    card_appended = crisis_active
+    recent_crisis = False  # Option 1: stop history scanning for activation
+    
+    if recovered:
+        crisis_active = False
+        card_appended = False
+    else:
+        crisis_active = bool(matched_trigger) or (llm_class in ("HIGH", "CRISIS"))
+        card_appended = crisis_active
+        
     return {
         "crisis_active": crisis_active,
-        "matched_trigger": matched_trigger,
-        "llm_class": llm_class,
+        "matched_trigger": matched_trigger if not recovered else None,
+        "llm_class": llm_class if not recovered else "SAFE",
         "recent_crisis": recent_crisis,
         "card_appended": card_appended,
+        "recovered": recovered,
     }
 
 
