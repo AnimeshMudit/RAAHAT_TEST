@@ -238,6 +238,11 @@ async def onboarding_page():
     return render_static_html("onboarding.html")
 
 
+@app.get("/phq9", response_class=HTMLResponse)
+async def phq9_page():
+    return render_static_html("chat.html")
+
+
 @app.get("/api/config")
 async def get_config():
     supabase_url = get_required_env("SUPABASE_URL")
@@ -1433,3 +1438,15 @@ async def phq9_history(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve history."
         )
+
+
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+async def spa_catch_all(full_path: str):
+    # Do not shadow real backend routes
+    reserved_prefixes = (
+        "api/", "static/", "auth/", "dashboard/",
+        "health", "metrics",
+    )
+    if full_path.startswith(reserved_prefixes) or full_path == "":
+        raise HTTPException(status_code=404, detail="Not found")
+    return render_static_html("chat.html")
