@@ -1,8 +1,48 @@
-venv/
+# Environment Secrets
 .env
+.env.local
+.env.*.local
+*.env
+
+# Python caching & byte-code
 __pycache__/
-.vs/
-core/__pycache__/
-scratch/
-raahat_audit.db
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Database files
 *.db
+*.sqlite3
+
+# Node.js / Frontend dependencies & builds
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+dist-ssr/
+frontend/dist-ssr/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor & OS files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

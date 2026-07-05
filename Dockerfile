@@ -1,3 +1,12 @@
+# Stage 1: Build React Frontend
+FROM node:18-alpine AS frontend-builder
+WORKDIR /frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+# Stage 2: Final Python/Uvicorn Backend
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -12,7 +21,11 @@ RUN apt-get update \
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy all files (including app, evaluations, configurations)
 COPY . .
+
+# Copy compiled React HTML and asset builds from the builder stage
+COPY --from=frontend-builder /static /app/static
 
 EXPOSE 8000
 

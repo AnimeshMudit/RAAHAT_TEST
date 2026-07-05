@@ -10,6 +10,22 @@ echo.
 cd /d "%~dp0"
 
 :: ---------------------------------------
+:: Build React Frontend
+:: ---------------------------------------
+echo Building React Frontend...
+where npm >nul 2>&1
+if errorlevel 1 (
+    echo [WARNING] npm not found. Skipping local frontend compilation.
+    echo Make sure you have Node.js installed to build the frontend.
+) else (
+    cd frontend
+    call npm run build
+    cd ..
+)
+echo.
+
+
+:: ---------------------------------------
 :: Ensure Docker Desktop is running
 :: ---------------------------------------
 
