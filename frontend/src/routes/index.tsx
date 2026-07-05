@@ -6,6 +6,7 @@ import LoginPage from '../pages/LoginPage';
 import OnboardingPage from '../pages/OnboardingPage';
 import ChatPage from '../pages/ChatPage';
 import NotFoundPage from '../pages/NotFoundPage';
+import Phq9Page from '../pages/Phq9Page';
 
 // Route Guard for authenticated pages (/chat, /onboarding)
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -89,6 +90,14 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <ChatPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/phq9"
+        element={
+          <ProtectedRoute>
+            <Phq9Page />
           </ProtectedRoute>
         }
       />

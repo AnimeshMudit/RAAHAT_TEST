@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../context/ChatContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import logoUrl from '../assets/raahat_light-removebg-preview.png';
 import defaultAvatar from '../assets/default_avatar.png';
+import Phq9Launcher from '../components/Phq9Launcher';
 
 const ChatPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, updateName, logout, refreshProfile } = useAuth();
   const {
     messages,
@@ -446,6 +449,7 @@ const ChatPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Phq9Launcher onOpen={() => navigate('/phq9')} />
             <button
               onClick={() => setIsInfoOpen((prev) => !prev)}
               className="w-8 h-8 rounded-full border border-[#e8e0d0] hover:bg-[#f5f0e8]/50 flex items-center justify-center transition-colors text-[#6b7a68] hover:text-[#3d4a3a]"

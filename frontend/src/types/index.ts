@@ -27,3 +27,6 @@ export interface SupabaseConfig {
   supabase_url: string;
   supabase_anon_key: string;
 }
+
+export type { Severity, Phq9Submission, Phq9HistoryEntry } from '../services/phq9';
+
