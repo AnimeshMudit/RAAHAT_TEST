@@ -1329,6 +1329,7 @@ async def chat_stream(request: ChatRequest, authenticated_user_id: str = Depends
             detail="Internal server error",
         )
 
+phq9_cooldowns: dict[str, float] = {}
 
 @app.post("/api/phq9")
 async def phq9_assessment(request: PHQ9Request, authenticated_user_id: str = Depends(get_current_user_id)):
@@ -1336,6 +1337,14 @@ async def phq9_assessment(request: PHQ9Request, authenticated_user_id: str = Dep
     Standalone infrastructure for storing and calculating PHQ-9 scores.
     DO NOT create diagnosis features or claim clinical effectiveness.
     """
+    current_time = time.time()
+    last_time = phq9_cooldowns.get(authenticated_user_id)
+    if last_time and (current_time - last_time < 60):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Please wait before submitting another assessment."
+        )
+
     if not isinstance(request.responses, list) or len(request.responses) != 9:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1343,13 +1352,14 @@ async def phq9_assessment(request: PHQ9Request, authenticated_user_id: str = Dep
         )
     
     for val in request.responses:
-        if not isinstance(val, int) or val < 0 or val > 3:
+        if not isinstance(val, int) or isinstance(val, bool) or val < 0 or val > 3:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Each response value must be an integer between 0 and 3."
             )
             
     score = sum(request.responses)
+    q9_flag = request.responses[8] > 0
     
     # Severity mapping:
     # 0-4      Minimal
@@ -1370,20 +1380,56 @@ async def phq9_assessment(request: PHQ9Request, authenticated_user_id: str = Dep
         
     try:
         # Save score
-        audit.save_phq9_score(authenticated_user_id, score)
+        inserted_id = audit.save_phq9_score(authenticated_user_id, score, request.responses)
         
+        # Retrieve the exact database timestamp
+        entry = audit.get_phq9_entry(inserted_id)
+        if entry:
+            timestamp = entry["timestamp"]
+        else:
+            from datetime import datetime, timezone
+            timestamp = datetime.now(timezone.utc).isoformat()
+            
         # Log audit trail for PHQ-9 submission (only metadata and hash of content)
         audit.log_audit_event(
             user_id=authenticated_user_id,
             event_type="phq9_assessment",
-            risk_level="HIGH" if score >= 15 else "LOW",
+            risk_level="HIGH" if (score >= 15 or q9_flag) else "LOW",
             content=json.dumps(request.responses)
         )
-    except Exception:
+    except Exception as e:
         logger.exception("Failed to store PHQ-9 result or log audit event")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to store assessment result."
+        )
         
+    phq9_cooldowns[authenticated_user_id] = current_time
+    
+    disclaimer = "This is a screening tool, not a diagnosis. If you are in crisis, please contact the helpline numbers RAAHAT has shared with you."
+    
     return {
+        "assessment_id": inserted_id,
+        "timestamp": timestamp,
         "score": score,
-        "severity": severity
+        "severity": severity,
+        "q9_flag": q9_flag,
+        "disclaimer": disclaimer
     }
 
+
+@app.get("/api/phq9/history")
+async def phq9_history(
+    limit: int = 20,
+    authenticated_user_id: str = Depends(get_current_user_id)
+):
+    clamped_limit = max(1, min(limit, 100))
+    try:
+        history = audit.get_phq9_history(authenticated_user_id, clamped_limit)
+        return {"assessments": history}
+    except Exception as e:
+        logger.exception("Failed to retrieve PHQ-9 history")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve history."
+        )
