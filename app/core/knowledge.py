@@ -14,7 +14,7 @@ from langchain_core.documents import Document
 logger = logging.getLogger(__name__)
 
 FAISS_DB_PATH = "faiss_index"
-EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 _init_lock = threading.RLock()
 _embedding_model = None
@@ -321,18 +321,26 @@ if __name__ == "__main__":
 
     print("Loading existing FAISS index...")
 
-    vector_db = load_vector_store()
+    load_vector_store()
 
-    user_question = input("\nEnter test query: ")
+    while True:
+        user_question = input("\nEnter test query (or 'exit'): ")
 
-    results = search_knowledge(
-        user_question,
-        vector_db
-    )
+        if user_question.lower() == "exit":
+            break
 
-    print("\n--- 🎯 TOP SEARCH RESULT ---")
+        results = search_knowledge(user_question)
 
-    if results:
-        print(results[0])
+        print(f"\nRetrieved {len(results)} chunks")
 
-    print("---------------------------")
+        print("\n--- TOP SEARCH RESULTS ---")
+
+        if not results:
+            print("No relevant chunks found.")
+        else:
+            for i, result in enumerate(results, 1):
+                print(f"\n{'=' * 80}")
+                print(f"Result {i}")
+                print(result[:700])
+
+        print("\n" + "-" * 80)
