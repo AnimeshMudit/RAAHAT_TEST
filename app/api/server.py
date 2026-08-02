@@ -976,7 +976,13 @@ def _print_perf(timings: dict, label: str = "") -> None:
         ("Total", "total"),
     ]
     for name, key in rows:
-        print(f"{name:<22}{timings.get(key, 0.0):.2f}s")
+        val = timings.get(key, 0.0)
+        if val == 0.0:
+            print(f"{name:<22}0.00s")
+        elif val < 1.0:
+            print(f"{name:<22}{val * 1000:.2f}ms")
+        else:
+            print(f"{name:<22}{val:.2f}s")
 
 
 @app.get("/api/history")
